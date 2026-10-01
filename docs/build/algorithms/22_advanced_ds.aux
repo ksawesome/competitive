@@ -1,0 +1,117 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\@writefile{toc}{\contentsline {chapter}{\numberline {23}Ordered Sets, Treaps and Other Structures}{320}{chapter.23}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{ch:advds}{{23}{320}{Ordered Sets, Treaps and Other Structures}{chapter.23}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {23.1}Sets beyond lookups}{320}{section.23.1}\protected@file@percent }
+\newlabel{sec:setsorder}{{23.1}{320}{Sets beyond lookups}{section.23.1}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {23.1}{\ignorespaces Idioms for \lstinline [style=cpp]{std::set}, \lstinline [style=cpp]{multiset} and \lstinline [style=cpp]{map}; each costs $\ensuremath  {\mathcal  {O}(\log n)}$ unless stated otherwise.}}{321}{table.caption.2}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{tab:setops}{{23.1}{321}{Idioms for \cc {std::set}, \cc {multiset} and \cc {map}; each costs $\Oh {\log n}$ unless stated otherwise}{table.caption.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {23.1}{\ignorespaces Traffic Lights on a street of length 8 with lights added at 3, 6 and 2. The set holds the red points, the multiset the blue lengths; each new light removes one length and inserts two.}}{321}{figure.caption.3}\protected@file@percent }
+\newlabel{fig:traffic}{{23.1}{321}{Traffic Lights on a street of length 8 with lights added at 3, 6 and 2. The set holds the red points, the multiset the blue lengths; each new light removes one length and inserts two}{figure.caption.3}{}}
+\@writefile{toc}{\contentsline {paragraph}{Custom comparators.}{322}{paragraph*.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {23.2}Order statistics}{322}{section.23.2}\protected@file@percent }
+\newlabel{sec:orderstats}{{23.2}{322}{Order statistics}{section.23.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {23.2}{\ignorespaces Josephus Problem II with $n = 7$ and $k = 2$: the index of the next child to leave, modulo the number of children left.}}{323}{figure.caption.5}\protected@file@percent }
+\newlabel{fig:josephus2}{{23.2}{323}{Josephus Problem II with $n = 7$ and $k = 2$: the index of the next child to leave, modulo the number of children left}{figure.caption.5}{}}
+\newlabel{tpl:cposet}{{23.2}{323}{Order statistics}{section*.6}{}}
+\@writefile{toc}{\contentsline {paragraph}{Multisets.}{323}{paragraph*.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {23.3}Treaps}{324}{section.23.3}\protected@file@percent }
+\newlabel{sec:treap}{{23.3}{324}{Treaps}{section.23.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {23.3}{\ignorespaces A treap holding the sequence a, \dots  , g, drawn at (position, priority): parents lie above their children, and the in-order walk reads the sequence from left to right. Splitting after five elements walks down the path d, f, e across the cut (the red edges) and relinks it: e becomes the right child of d (green), and f, with g, forms the second treap. Merging the two treaps gives back the first picture.}}{324}{figure.caption.8}\protected@file@percent }
+\newlabel{fig:treap}{{23.3}{324}{A treap holding the sequence a, \dots , g, drawn at (position, priority): parents lie above their children, and the in-order walk reads the sequence from left to right. Splitting after five elements walks down the path d, f, e across the cut (the red edges) and relinks it: e becomes the right child of d (green), and f, with g, forms the second treap. Merging the two treaps gives back the first picture}{figure.caption.8}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {23.4}{\ignorespaces A range reversal on an implicit treap: two splits, one flag, two merges.}}{325}{figure.caption.9}\protected@file@percent }
+\newlabel{fig:treaprev}{{23.4}{325}{A range reversal on an implicit treap: two splits, one flag, two merges}{figure.caption.9}{}}
+\@writefile{toc}{\contentsline {paragraph}{Implicit keys.}{325}{paragraph*.10}\protected@file@percent }
+\newlabel{tpl:cptreap}{{23.3}{326}{Implicit keys}{section*.11}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {23.3.1}Persistent treaps}{326}{subsection.23.3.1}\protected@file@percent }
+\newlabel{sec:ptreap}{{23.3.1}{326}{Persistent treaps}{subsection.23.3.1}{}}
+\newlabel{tpl:cpptreap}{{23.3.1}{327}{Persistent treaps}{section*.12}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {23.4}CDQ divide and conquer}{327}{section.23.4}\protected@file@percent }
+\newlabel{sec:cdq}{{23.4}{327}{CDQ divide and conquer}{section.23.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {23.5}{\ignorespaces The merge step of CDQ: between the two halves only two coordinates are left.}}{328}{figure.caption.13}\protected@file@percent }
+\newlabel{fig:cdq}{{23.5}{328}{The merge step of CDQ: between the two halves only two coordinates are left}{figure.caption.13}{}}
+\newlabel{tpl:cpcdq}{{23.4}{329}{CDQ divide and conquer}{section*.14}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {23.5}Wavelet trees}{329}{section.23.5}\protected@file@percent }
+\newlabel{sec:wavelet}{{23.5}{329}{Wavelet trees}{section.23.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {23.6}{\ignorespaces A wavelet matrix over eight ranks: one bit per level, stably partitioned, with the range of a query followed down.}}{329}{figure.caption.15}\protected@file@percent }
+\newlabel{fig:wavelet}{{23.6}{329}{A wavelet matrix over eight ranks: one bit per level, stably partitioned, with the range of a query followed down}{figure.caption.15}{}}
+\newlabel{tpl:cpwavelet}{{23.5}{330}{Wavelet trees}{section*.16}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {23.2}{\ignorespaces Online range questions about values, none of which allow updates. The persistent segment tree is Section~\ref {sec:persistent}; when all queries are known in advance, counting needs only a sweep (Section~\ref {sec:sweepqueries}).}}{330}{table.caption.17}\protected@file@percent }
+\newlabel{tab:kthrange}{{23.2}{330}{Online range questions about values, none of which allow updates. The persistent segment tree is Section~\ref {sec:persistent}; when all queries are known in advance, counting needs only a sweep (Section~\ref {sec:sweepqueries})}{table.caption.17}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {23.6}Hash maps and hashing sets}{330}{section.23.6}\protected@file@percent }
+\newlabel{sec:hashmaps-adv}{{23.6}{330}{Hash maps and hashing sets}{section.23.6}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {23.3}{\ignorespaces Measured costs (g++ -O2, best of three runs). Every insertion is \texttt  {m[key]++}; half of the lookups hit.}}{330}{table.caption.18}\protected@file@percent }
+\newlabel{tab:dicts}{{23.3}{330}{Measured costs (g++ -O2, best of three runs). Every insertion is \texttt {m[key]++}; half of the lookups hit}{table.caption.18}{}}
+\newlabel{tpl:cphash}{{23.6}{331}{Hash maps and hashing sets}{section*.19}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {23.6.1}Hashing sets and multisets}{331}{subsection.23.6.1}\protected@file@percent }
+\newlabel{sec:xorhash}{{23.6.1}{331}{Hashing sets and multisets}{subsection.23.6.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {23.7}{\ignorespaces Prefix XOR hashes of $a = 1, 2, 2, 1, 3, 3, 1, 1$. Prefix $p_k$ sits at the boundary after the first $k$ elements; prefixes of the same class have equal hashes.}}{331}{figure.caption.20}\protected@file@percent }
+\newlabel{fig:xorhash}{{23.7}{331}{Prefix XOR hashes of $a = 1, 2, 2, 1, 3, 3, 1, 1$. Prefix $p_k$ sits at the boundary after the first $k$ elements; prefixes of the same class have equal hashes}{figure.caption.20}{}}
+\newlabel{tpl:cpxorhash}{{23.6.1}{332}{Hashing sets and multisets}{section*.21}{}}
+\@setckpt{algorithms/22_advanced_ds}{
+\setcounter{page}{334}
+\setcounter{equation}{0}
+\setcounter{enumi}{5}
+\setcounter{enumii}{0}
+\setcounter{enumiii}{0}
+\setcounter{enumiv}{0}
+\setcounter{footnote}{0}
+\setcounter{mpfootnote}{0}
+\setcounter{part}{6}
+\setcounter{chapter}{23}
+\setcounter{section}{6}
+\setcounter{subsection}{1}
+\setcounter{subsubsection}{0}
+\setcounter{paragraph}{0}
+\setcounter{subparagraph}{0}
+\setcounter{figure}{7}
+\setcounter{table}{3}
+\setcounter{parentequation}{0}
+\setcounter{lstnumber}{1}
+\setcounter{tcbbreakpart}{1}
+\setcounter{tcblayer}{0}
+\setcounter{tcolorbox@number}{986}
+\setcounter{tcblisting}{208}
+\setcounter{tcbrastercolumn}{1}
+\setcounter{tcbrasterrow}{1}
+\setcounter{tcbrasternum}{1}
+\setcounter{tcbraster}{5}
+\setcounter{cpsegfig}{0}
+\setcounter{LT@tables}{0}
+\setcounter{LT@chunks}{0}
+\setcounter{nlinenum}{0}
+\setcounter{ALG@line}{9}
+\setcounter{ALG@rem}{0}
+\setcounter{ALG@nested}{0}
+\setcounter{ALG@Lnr}{2}
+\setcounter{ALG@blocknr}{15}
+\setcounter{ALG@storecount}{0}
+\setcounter{ALG@tmpcounter}{0}
+\setcounter{algpx@codeBoxCount}{0}
+\setcounter{algpx@nestedCBoxCount}{0}
+\setcounter{algpx@startedBoxesCount}{0}
+\setcounter{algpx@endedBoxesCount}{0}
+\setcounter{algpx@nestedBoxedStringCount}{0}
+\setcounter{algpx@nestedBoxedStringMaxCount}{0}
+\setcounter{algpx@indentCount}{23}
+\setcounter{algpx@lastIndentEnded}{20}
+\setcounter{algpx@pageCount}{1}
+\setcounter{algpx@tmpCount}{2}
+\setcounter{caption@flags}{2}
+\setcounter{continuedfloat}{0}
+\setcounter{float@type}{16}
+\setcounter{section@level}{0}
+\setcounter{Item}{18}
+\setcounter{Hfootnote}{0}
+\setcounter{bookmark@seq@number}{0}
+\setcounter{algpx@indentEndPage-20@totc}{1}
+\setcounter{algpx@indentEndPage-21@totc}{1}
+\setcounter{algpx@indentEndPage-22@totc}{1}
+\setcounter{lstlisting}{0}
+\setcounter{algpx@indentEndPage-20}{1}
+\setcounter{algpx@indentEndPage-21}{1}
+\setcounter{algpx@indentEndPage-22}{1}
+}

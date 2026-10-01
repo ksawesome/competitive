@@ -1,0 +1,167 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\@writefile{toc}{\contentsline {chapter}{\numberline {20}DP Optimizations}{281}{chapter.20}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{ch:dpopt}{{20}{281}{DP Optimizations}{chapter.20}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {20.1}{\ignorespaces Which optimization fits which shape of transition.}}{281}{table.caption.368}\protected@file@percent }
+\newlabel{tab:dpopt}{{20.1}{281}{Which optimization fits which shape of transition}{table.caption.368}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {20.1}Windows and monotone queues}{282}{section.20.1}\protected@file@percent }
+\newlabel{sec:dpopt-window}{{20.1}{282}{Windows and monotone queues}{section.20.1}{}}
+\@writefile{toc}{\contentsline {paragraph}{The exact bounded knapsack.}{282}{paragraph*.369}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {20.1}{\ignorespaces The bounded knapsack along one remainder class, with $k = 2$ copies.}}{282}{figure.caption.370}\protected@file@percent }
+\newlabel{fig:bknapmq}{{20.1}{282}{The bounded knapsack along one remainder class, with $k = 2$ copies}{figure.caption.370}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {20.2}Divide and conquer optimization}{283}{section.20.2}\protected@file@percent }
+\newlabel{sec:dnc}{{20.2}{283}{Divide and conquer optimization}{section.20.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {20.2}{\ignorespaces Divide and conquer optimization: each row's optimum bounds the rows below and above it in the recursion.}}{283}{figure.caption.371}\protected@file@percent }
+\newlabel{fig:dnc}{{20.2}{283}{Divide and conquer optimization: each row's optimum bounds the rows below and above it in the recursion}{figure.caption.371}{}}
+\newlabel{tpl:cpdnc}{{20.2}{284}{Divide and conquer optimization}{section*.372}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {20.3}Monotone minima and SMAWK}{284}{section.20.3}\protected@file@percent }
+\newlabel{sec:smawk}{{20.3}{284}{Monotone minima and SMAWK}{section.20.3}{}}
+\newlabel{tpl:cpmonominima}{{20.3}{285}{Monotone minima and SMAWK}{section*.373}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {20.4}Knuth's optimization}{285}{section.20.4}\protected@file@percent }
+\newlabel{sec:knuth}{{20.4}{285}{Knuth's optimization}{section.20.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {20.3}{\ignorespaces The table of optimal split points of an interval DP is monotone in both directions.}}{285}{figure.caption.374}\protected@file@percent }
+\newlabel{fig:knuth}{{20.3}{285}{The table of optimal split points of an interval DP is monotone in both directions}{figure.caption.374}{}}
+\newlabel{tpl:cpknuth}{{20.4}{286}{Knuth's optimization}{section*.375}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {20.5}Convex hull trick}{286}{section.20.5}\protected@file@percent }
+\newlabel{sec:cht}{{20.5}{286}{Convex hull trick}{section.20.5}{}}
+\@writefile{toc}{\contentsline {paragraph}{Monotone slopes: a deque.}{286}{paragraph*.377}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {20.4}{\ignorespaces Monster Game~I on the sample with $x = 100$: one line per earlier kill, $y = f_j t + dp_j$. Each query takes the lowest line at $t = s_i$ (blue points, using only the lines that existed at that time). Of the six lines, only $100t$ and $20t + 3000$ end up on the final lower envelope (orange).}}{287}{figure.caption.376}\protected@file@percent }
+\newlabel{fig:cht}{{20.4}{287}{Monster Game~I on the sample with $x = 100$: one line per earlier kill, $y = f_j t + dp_j$. Each query takes the lowest line at $t = s_i$ (blue points, using only the lines that existed at that time). Of the six lines, only $100t$ and $20t + 3000$ end up on the final lower envelope (orange)}{figure.caption.376}{}}
+\newlabel{tpl:cpmonocht}{{20.5}{287}{Monotone slopes: a deque}{section*.378}{}}
+\@writefile{toc}{\contentsline {paragraph}{Any order: LineContainer and Li Chao trees.}{287}{paragraph*.379}\protected@file@percent }
+\newlabel{tpl:cplinecontainer}{{20.5}{288}{Any order: LineContainer and Li Chao trees}{section*.380}{}}
+\newlabel{tpl:cplichao}{{20.5}{288}{Any order: LineContainer and Li Chao trees}{section*.381}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {20.6}Slope trick}{288}{section.20.6}\protected@file@percent }
+\newlabel{sec:slopetrick}{{20.6}{288}{Slope trick}{section.20.6}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {20.5}{\ignorespaces Slope trick on $a = 3, 1, 2$ (make it non-decreasing at the least total change). Each panel is the cost as a function of the value $v$ of the last element; red dots mark the breakpoints that matter. The answer is the minimum of $f_3$, which is 2 (for example $1, 1, 2$).}}{289}{figure.caption.382}\protected@file@percent }
+\newlabel{fig:slopetrick}{{20.5}{289}{Slope trick on $a = 3, 1, 2$ (make it non-decreasing at the least total change). Each panel is the cost as a function of the value $v$ of the last element; red dots mark the breakpoints that matter. The answer is the minimum of $f_3$, which is 2 (for example $1, 1, 2$)}{figure.caption.382}{}}
+\newlabel{tpl:cpslope}{{20.6}{289}{Slope trick}{section*.383}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {20.7}Aliens trick}{290}{section.20.7}\protected@file@percent }
+\newlabel{sec:aliens}{{20.7}{290}{Aliens trick}{section.20.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {20.6}{\ignorespaces The best total $g(k)$ of exactly $k$ disjoint subarrays of $5, -2, 4, -6, 3, -1, 2, -3, 4$ is concave. With a penalty of 2 per subarray the penalised optimum is $g(k) - 2k = 9$, attained at $k = 3$ \emph  {and} $k = 4$ (red): a tie, because the slope from 3 to 4 is exactly 2.}}{290}{figure.caption.384}\protected@file@percent }
+\newlabel{fig:aliens}{{20.6}{290}{The best total $g(k)$ of exactly $k$ disjoint subarrays of $5, -2, 4, -6, 3, -1, 2, -3, 4$ is concave. With a penalty of 2 per subarray the penalised optimum is $g(k) - 2k = 9$, attained at $k = 3$ \emph {and} $k = 4$ (red): a tie, because the slope from 3 to 4 is exactly 2}{figure.caption.384}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {20.8}Convex (min, +) convolution}{291}{section.20.8}\protected@file@percent }
+\newlabel{sec:minplus}{{20.8}{291}{Convex (min, +) convolution}{section.20.8}{}}
+\newlabel{tpl:cpminplus}{{20.8}{291}{Convex (min, +) convolution}{section*.386}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {20.7}{\ignorespaces Merging the slopes of two convex sequences gives their $(\min , +)$ convolution. Here the result is $c = (0, -3, -5, -6, -6, -5, -3)$, exactly what the brute force $\min _{i + j = k}(a_i + b_j)$ computes.}}{292}{figure.caption.385}\protected@file@percent }
+\newlabel{fig:minplus}{{20.7}{292}{Merging the slopes of two convex sequences gives their $(\min , +)$ convolution. Here the result is $c = (0, -3, -5, -6, -6, -5, -3)$, exactly what the brute force $\min _{i + j = k}(a_i + b_j)$ computes}{figure.caption.385}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {20.9}Bitsets and swapped dimensions}{292}{section.20.9}\protected@file@percent }
+\newlabel{sec:dpopt-bitset}{{20.9}{292}{Bitsets and swapped dimensions}{section.20.9}{}}
+\@writefile{toc}{\contentsline {paragraph}{Bitsets.}{292}{paragraph*.387}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Swapping the value and a dimension.}{292}{paragraph*.388}\protected@file@percent }
+\@setckpt{algorithms/19_dp_optimizations}{
+\setcounter{page}{294}
+\setcounter{equation}{0}
+\setcounter{enumi}{5}
+\setcounter{enumii}{0}
+\setcounter{enumiii}{0}
+\setcounter{enumiv}{0}
+\setcounter{footnote}{0}
+\setcounter{mpfootnote}{0}
+\setcounter{part}{5}
+\setcounter{chapter}{20}
+\setcounter{section}{9}
+\setcounter{subsection}{0}
+\setcounter{subsubsection}{0}
+\setcounter{paragraph}{0}
+\setcounter{subparagraph}{0}
+\setcounter{figure}{7}
+\setcounter{table}{1}
+\setcounter{parentequation}{0}
+\setcounter{lstnumber}{1}
+\setcounter{tcbbreakpart}{1}
+\setcounter{tcblayer}{0}
+\setcounter{tcolorbox@number}{870}
+\setcounter{tcblisting}{181}
+\setcounter{tcbrastercolumn}{1}
+\setcounter{tcbrasterrow}{1}
+\setcounter{tcbrasternum}{1}
+\setcounter{tcbraster}{5}
+\setcounter{cpsegfig}{0}
+\setcounter{LT@tables}{0}
+\setcounter{LT@chunks}{0}
+\setcounter{nlinenum}{0}
+\setcounter{ALG@line}{11}
+\setcounter{ALG@rem}{0}
+\setcounter{ALG@nested}{0}
+\setcounter{ALG@Lnr}{2}
+\setcounter{ALG@blocknr}{15}
+\setcounter{ALG@storecount}{0}
+\setcounter{ALG@tmpcounter}{0}
+\setcounter{algpx@codeBoxCount}{0}
+\setcounter{algpx@nestedCBoxCount}{0}
+\setcounter{algpx@startedBoxesCount}{0}
+\setcounter{algpx@endedBoxesCount}{0}
+\setcounter{algpx@nestedBoxedStringCount}{0}
+\setcounter{algpx@nestedBoxedStringMaxCount}{0}
+\setcounter{algpx@indentCount}{20}
+\setcounter{algpx@lastIndentEnded}{19}
+\setcounter{algpx@pageCount}{1}
+\setcounter{algpx@tmpCount}{2}
+\setcounter{caption@flags}{2}
+\setcounter{continuedfloat}{0}
+\setcounter{float@type}{16}
+\setcounter{section@level}{0}
+\setcounter{Item}{18}
+\setcounter{Hfootnote}{0}
+\setcounter{bookmark@seq@number}{0}
+\setcounter{algpx@indentEndPage-0@totc}{0}
+\setcounter{algpx@indentEndPage-1@totc}{0}
+\setcounter{algpx@indentEndPage-2@totc}{0}
+\setcounter{algpx@indentEndPage-3@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-2@totc}{3}
+\setcounter{algpx@indentEndCoordIndex-0@totc}{3}
+\setcounter{algpx@indentEndPage-4@totc}{0}
+\setcounter{algpx@indentEndPage-5@totc}{0}
+\setcounter{algpx@indentEndPage-6@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-4@totc}{6}
+\setcounter{algpx@indentEndPage-7@totc}{0}
+\setcounter{algpx@indentEndPage-8@totc}{0}
+\setcounter{algpx@indentEndPage-9@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-8@totc}{9}
+\setcounter{algpx@indentEndPage-10@totc}{0}
+\setcounter{algpx@indentEndPage-11@totc}{0}
+\setcounter{algpx@indentEndPage-12@totc}{0}
+\setcounter{algpx@indentEndPage-13@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-12@totc}{13}
+\setcounter{algpx@indentEndCoordIndex-10@totc}{13}
+\setcounter{algpx@indentEndPage-14@totc}{0}
+\setcounter{algpx@indentEndPage-15@totc}{0}
+\setcounter{algpx@indentEndPage-16@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-15@totc}{16}
+\setcounter{algpx@indentEndPage-17@totc}{0}
+\setcounter{algpx@indentEndPage-18@totc}{1}
+\setcounter{algpx@indentEndPage-19@totc}{1}
+\setcounter{algpx@indentEndCoordIndex-18@totc}{19}
+\setcounter{lstlisting}{0}
+\setcounter{algpx@indentEndPage-0}{0}
+\setcounter{algpx@indentEndPage-1}{0}
+\setcounter{algpx@indentEndPage-2}{0}
+\setcounter{algpx@indentEndPage-3}{0}
+\setcounter{algpx@indentEndCoordIndex-2}{3}
+\setcounter{algpx@indentEndCoordIndex-0}{3}
+\setcounter{algpx@indentEndPage-4}{0}
+\setcounter{algpx@indentEndPage-5}{0}
+\setcounter{algpx@indentEndPage-6}{0}
+\setcounter{algpx@indentEndCoordIndex-4}{6}
+\setcounter{algpx@indentEndPage-7}{0}
+\setcounter{algpx@indentEndPage-8}{0}
+\setcounter{algpx@indentEndPage-9}{0}
+\setcounter{algpx@indentEndCoordIndex-8}{9}
+\setcounter{algpx@indentEndPage-10}{0}
+\setcounter{algpx@indentEndPage-11}{0}
+\setcounter{algpx@indentEndPage-12}{0}
+\setcounter{algpx@indentEndPage-13}{0}
+\setcounter{algpx@indentEndCoordIndex-12}{13}
+\setcounter{algpx@indentEndCoordIndex-10}{13}
+\setcounter{algpx@indentEndPage-14}{0}
+\setcounter{algpx@indentEndPage-15}{0}
+\setcounter{algpx@indentEndPage-16}{0}
+\setcounter{algpx@indentEndCoordIndex-15}{16}
+\setcounter{algpx@indentEndPage-17}{0}
+\setcounter{algpx@indentEndPage-18}{1}
+\setcounter{algpx@indentEndPage-19}{1}
+\setcounter{algpx@indentEndCoordIndex-18}{19}
+}

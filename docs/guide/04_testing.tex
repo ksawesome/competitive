@@ -1,0 +1,182 @@
+\chapter{Testing and Debugging}\label{ch:testing}
+
+\section{Debug printing with dbg()}\label{sec:dbg}
+
+\cc{dbg(...)} prints any number of expressions with their names and the line number, to standard error:
+
+\begin{code}
+int x = 3; vector<int> v{1, 2};
+map<string, pair<int, char>> mp{{"k", {7, 'z'}}};
+dbg(x, v, mp);
+dbg(v[0] + v[1]);
+dbg();                                  // just "reached": is this line executed?
+\end{code}
+\begin{shell}
+[L42] x = 3 | v = {1, 2} | mp = {("k", (7, 'z'))}
+[L43] v[0] + v[1] = 3
+[L44] reached
+\end{shell}
+
+\begin{center}
+\begin{tabularx}{\linewidth}{p{4.8cm}L}
+\toprule
+\thd{Type} & \thd{Printed as} \\
+\midrule
+numbers, \texttt{\_\_int128} & \texttt{42}, \texttt{-1267650600228229401496703205376} \\
+\texttt{bool}, \texttt{char}, strings & \texttt{true}, \texttt{'z'}, \texttt{"text"} \\
+pairs and tuples & \texttt{(1, "s", 2.5)} \\
+any container, nested & \texttt{\{\{1, 2\}, \{3\}\}}; maps as \texttt{\{(key, value), ...\}} \\
+\texttt{vector<bool>} & \texttt{\{true, false\}} \\
+\texttt{stack}, \texttt{queue}, \texttt{priority\_queue} & contents from the top/front, the original is untouched \\
+\texttt{bitset} & \texttt{0101} \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Where the output appears: in CPH it is the \emph{Standard Error} box under each test; with \key{F5} it is printed
+after the test's output when that test fails; with \key{Ctrl+F5} it goes straight to the terminal. The line is
+flushed immediately, so the last \cc{dbg} before a crash is always visible, which makes \cc{dbg()} a quick way
+to find the line that crashes.
+
+\begin{fact}[Why dbg never fails a test in CPH]
+CPH marks a test as failed whenever the program writes anything to standard error, unless the
+\texttt{cph.general.ignoreSTDERROR} setting is on. \emph{CP: Setup} turns it on. Verdicts then depend on the output and
+the exit code only, and crashes are still caught through the exit code.
+\end{fact}
+
+\begin{tip}
+\cc{dbg} is compiled out on the judge, so you never need to delete debug lines before submitting. Heavy \cc{dbg}
+calls inside a hot loop still slow down local runs, so comment those out when timing.
+\end{tip}
+
+\section{F5: CPH's tests with diagnostics}\label{sec:f5}
+
+\key{F5} (task \texttt{cf-run}) runs \file{tools/cp.py test} on the current file. It reads the same test cases CPH
+shows, from \file{.cph/.\textless file\textgreater\_\textless hash\textgreater.prob}, compiles with CPH's flags and
+runs every test with a timeout:
+
+\begin{shell}
+[cp] compiled tricky.cpp in 0.4 s
+[cp] tricky.cpp: 3 CPH test case(s), time limit 1000 ms
+[cp] test 1: PASS  153 ms, 0.9 MB
+[cp] test 2: WRONG ANSWER  7 ms, 0.9 MB
+---- input ----
+2
+5 5
+---- expected ----
+10
+---- got ----
+11
+---- stderr ----
+debug: n=2
+[cp] test 3: RUNTIME ERROR, exit 0xC00000FD: stack overflow (recursion too deep or a huge local array)  129 ms, 257.3 MB
+[cp] 1/3 passed
+\end{shell}
+
+Compared with CPH's panel you get the reason for a crash, the peak memory of every test, and a warning when a
+test takes longer than the problem's time limit. If the file has no CPH tests yet, F5 falls back to
+\key{Ctrl+F5} behaviour. Output is compared token by token, so extra spaces or a missing final newline never count
+as wrong.
+
+\begin{center}
+\begin{tabularx}{\linewidth}{>{\ttfamily}p{3.3cm}L}
+\toprule
+\thd{Exit code} & \thd{Meaning and usual cause} \\
+\midrule
+0xC00000FD & stack overflow: recursion deeper than the 256\,MB stack allows, or a huge local array (move it to a global or a vector) \\
+0xC0000005 & access violation: out-of-bounds pointer or C-array access, dereferencing \texttt{end()} \\
+0xC000001D & undefined behaviour trapped (only with \texttt{UB\_TRAP = True}, Section~\ref{sec:ubtrap}): signed overflow, bad index, bad shift \\
+0xC0000094 & integer division or modulo by zero \\
+0xC0000374 & heap corruption: writing past the end of an array \\
+3 & \texttt{abort()}: a failed \texttt{assert}, or the checked STL caught a bug; its message is in stderr \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{fact}[The checked STL]
+Every local build defines \texttt{\_GLIBCXX\_DEBUG}, so \cc{v[i]} with \cc{i} out of range, an invalid comparator in
+\cc{sort}, or using an invalidated iterator stops the program with a message naming the problem instead of
+silently producing garbage. That message appears in stderr, i.e.\ in CPH's Standard Error box or F5's output.
+\end{fact}
+
+\section{Ctrl+F5: typing input yourself}
+
+\key{Ctrl+F5} compiles the file and runs it in a terminal where you type the input. Finish with \key{Ctrl+Z} then
+\key{Enter} (end of file). When the program exits you get its exit code (decoded), CPU time and peak memory:
+
+\begin{shell}
+[cp] running sol.cpp  (type the input; Ctrl+Z then Enter sends EOF)
+3
+1 -2 5
+4
+[cp] exit 0 | cpu 0 ms | peak memory 0.9 MB | wall 4.21 s
+\end{shell}
+
+Binaries are cached in \file{.build/}: running again without editing the file skips compilation.
+
+\section{Stress testing}\label{sec:stress}
+
+When the samples pass but the judge disagrees, the bug hides in a case you have not thought of. A stress test
+finds it automatically by comparing your solution with a slow but obviously correct brute force on thousands of
+small random inputs.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  pr/.style={draw=cpblue, fill=cpblue!6, rounded corners=3pt, thick, minimum width=2.8cm, minimum height=1cm, align=center, font=\sffamily\small},
+  dat/.style={draw=cpgray, fill=white, tape, minimum width=1.9cm, minimum height=0.9cm, align=center, font=\ttfamily\scriptsize},
+  arr/.style={->, thick, cpgray}]
+  \node[pr] (gen) at (0, 0) {\file{gen.cpp}\\\scriptsize seed $i$};
+  \node[dat] (in) at (3.2, 0) {random\\input};
+  \node[pr] (brute) at (6.6, 1.1) {\file{brute.cpp}\\\scriptsize slow, correct};
+  \node[pr, draw=cporange, fill=cporange!6] (sol) at (6.6, -1.1) {your solution\\\scriptsize fast, suspect};
+  \node[pr, draw=cpteal, fill=cpteal!6, diamond, aspect=1.6, minimum width=2.4cm] (cmp) at (10.2, 0) {same?};
+  \draw[arr] (gen) -- (in);
+  \draw[arr] (in) -- (brute);
+  \draw[arr] (in) -- (sol);
+  \draw[arr] (brute) -- (cmp);
+  \draw[arr] (sol) -- (cmp);
+  \draw[arr, cpgreen] (cmp.north) -- ++(0, 1.1) -| node[above, pos=0.25, font=\sffamily\scriptsize, text=cpgreen] {yes: next seed $i+1$} (gen.north);
+  \draw[arr, cpred] (cmp.south) -- ++(0, -1.4) node[below, font=\sffamily\scriptsize, text=cpred, align=center] {no: print input, expected, got;\\copy the input to the clipboard};
+\end{tikzpicture}
+\caption{The stress loop run by \key{Ctrl+Alt+X}.}
+\end{figure}
+
+\subsection{How to use it}
+\begin{enumerate}
+  \item Edit \file{stress/gen.cpp} to print one random test in the problem's input format. The test number arrives as
+        \cc{argv[1]} and seeds the generator, so a failure can be reproduced. Keep inputs \emph{tiny} ($n \le 8$):
+        small failing cases are easy to understand.
+  \item Edit \file{stress/brute.cpp}: the simplest correct solution you can write, however slow (try everything).
+  \item Open your solution file and press \key{Ctrl+Alt+X}.
+\end{enumerate}
+
+The tester first runs \file{brute.cpp} on the problem's CPH samples; if the brute force fails a sample, it says so
+and stops, because every later verdict would be meaningless. Then it runs 300 random tests (\texttt{-n} changes the
+number when run by hand). On the first difference it prints the input, the brute force's output and yours, saves
+the input to \file{stress/fail.in} and copies it to the clipboard. In CPH press \emph{New Testcase}, paste, type the
+expected output, fix the bug and rerun.
+
+\begin{shell}
+[cp] brute.cpp passes all 1 CPH sample(s)
+[cp] stress testing positives_only.cpp against brute.cpp (100 tests)
+[cp] FAILED on test 1: wrong answer
+---- input ----
+2
+-8 -1
+---- expected (brute) ----
+-9
+---- got (yours) ----
+0
+[cp] input copied to the clipboard: in CPH press '+ New Testcase', paste it, and use the expected output above
+\end{shell}
+
+\subsection{Problems with several correct answers}
+If any valid answer is accepted, comparing outputs is wrong. Add \file{stress/checker.cpp}: it receives the paths of
+the input, the brute force's output and your output as \cc{argv[1..3]} and must exit with code 0 when your output
+is valid. When the file exists, the tester uses it instead of comparing text.
+
+\begin{tip}
+Write the brute force and the generator \emph{before} you are desperate. Ten minutes spent on them usually beats an
+hour of staring at code, and the same pair can be reused for the next attempt.
+\end{tip}

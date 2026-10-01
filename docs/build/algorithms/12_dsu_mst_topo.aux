@@ -1,0 +1,150 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\@writefile{toc}{\contentsline {chapter}{\numberline {13}Union--Find, Spanning Trees and Topological Order}{165}{chapter.13}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{ch:dsu}{{13}{165}{Union--Find, Spanning Trees and Topological Order}{chapter.13}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {13.1}Disjoint set union}{165}{section.13.1}\protected@file@percent }
+\newlabel{sec:dsu}{{13.1}{165}{Disjoint set union}{section.13.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {13.1}{\ignorespaces A DSU stores each set as a tree of parent pointers (arrows point to the parent); roots (red) are the representatives. Union by size links the root of the smaller tree under the root of the larger one.}}{165}{figure.caption.214}\protected@file@percent }
+\newlabel{fig:dsuunion}{{13.1}{165}{A DSU stores each set as a tree of parent pointers (arrows point to the parent); roots (red) are the representatives. Union by size links the root of the smaller tree under the root of the larger one}{figure.caption.214}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {13.2}{\ignorespaces Path compression. A \emph  {find} on the deepest vertex walks the whole path once, and afterwards every vertex on it is one step from the root.}}{166}{figure.caption.215}\protected@file@percent }
+\newlabel{fig:pathcomp}{{13.2}{166}{Path compression. A \emph {find} on the deepest vertex walks the whole path once, and afterwards every vertex on it is one step from the root}{figure.caption.215}{}}
+\newlabel{tpl:cpdsu}{{13.1}{166}{Disjoint set union}{section*.216}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {13.1.1}Beyond connectivity: sizes, offsets and parities}{166}{subsection.13.1.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {13.3}{\ignorespaces A weighted DSU: offsets along the path to the root add up to the difference between a vertex and its root.}}{167}{figure.caption.217}\protected@file@percent }
+\newlabel{fig:weighteddsu}{{13.3}{167}{A weighted DSU: offsets along the path to the root add up to the difference between a vertex and its root}{figure.caption.217}{}}
+\newlabel{tpl:cpdsurb}{{13.1.1}{168}{Beyond connectivity: sizes, offsets and parities}{section*.218}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {13.2}Minimum spanning trees}{168}{section.13.2}\protected@file@percent }
+\newlabel{sec:mst}{{13.2}{168}{Minimum spanning trees}{section.13.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {13.4}{\ignorespaces The cut property: a lightest edge crossing any cut can always be part of a minimum spanning tree.}}{168}{figure.caption.219}\protected@file@percent }
+\newlabel{fig:cutprop}{{13.4}{168}{The cut property: a lightest edge crossing any cut can always be part of a minimum spanning tree}{figure.caption.219}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {13.2.1}Kruskal's algorithm}{169}{subsection.13.2.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {13.5}{\ignorespaces Kruskal's algorithm. Edges are taken in order of weight; an edge is accepted (orange, then green) when it joins two different components and rejected (red, dashed) when its endpoints are already connected. The MST has weight $1 + 2 + 3 + 4 = 10$.}}{169}{figure.caption.220}\protected@file@percent }
+\newlabel{fig:kruskal}{{13.5}{169}{Kruskal's algorithm. Edges are taken in order of weight; an edge is accepted (orange, then green) when it joins two different components and rejected (red, dashed) when its endpoints are already connected. The MST has weight $1 + 2 + 3 + 4 = 10$}{figure.caption.220}{}}
+\newlabel{tpl:cpkruskal}{{13.2.1}{169}{Kruskal's algorithm}{section*.221}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {13.2.2}Prim's algorithm}{170}{subsection.13.2.2}\protected@file@percent }
+\newlabel{tpl:cpprim}{{13.2.2}{170}{Prim's algorithm}{section*.222}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {13.2.3}Thresholds and the Kruskal reconstruction tree}{170}{subsection.13.2.3}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {13.6}{\ignorespaces A graph and its Kruskal reconstruction tree. Internal nodes (blue squares) are the accepted edges, labelled with their weights; labels grow towards the root.}}{171}{figure.caption.223}\protected@file@percent }
+\newlabel{fig:krt}{{13.6}{171}{A graph and its Kruskal reconstruction tree. Internal nodes (blue squares) are the accepted edges, labelled with their weights; labels grow towards the root}{figure.caption.223}{}}
+\newlabel{tpl:cpkrt}{{13.2.3}{171}{Thresholds and the Kruskal reconstruction tree}{section*.224}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {13.3}Prüfer codes}{172}{section.13.3}\protected@file@percent }
+\newlabel{sec:prufer}{{13.3}{172}{Prüfer codes}{section.13.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {13.7}{\ignorespaces Computing a Prüfer code. The red numbers give the order in which leaves are removed.}}{172}{figure.caption.225}\protected@file@percent }
+\newlabel{fig:prufer}{{13.7}{172}{Computing a Prüfer code. The red numbers give the order in which leaves are removed}{figure.caption.225}{}}
+\newlabel{tpl:cpprufer}{{13.3}{173}{Prüfer codes}{section*.226}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {13.4}Topological order}{174}{section.13.4}\protected@file@percent }
+\newlabel{sec:topo}{{13.4}{174}{Topological order}{section.13.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {13.8}{\ignorespaces A DAG and one of its topological orders. Kahn's algorithm produces it by repeatedly removing a vertex with no incoming edges: first 0 and 1, then 2, then 3 and 4, then 5.}}{174}{figure.caption.227}\protected@file@percent }
+\newlabel{fig:toposort}{{13.8}{174}{A DAG and one of its topological orders. Kahn's algorithm produces it by repeatedly removing a vertex with no incoming edges: first 0 and 1, then 2, then 3 and 4, then 5}{figure.caption.227}{}}
+\newlabel{tpl:cptopo}{{13.4}{175}{Topological order}{section*.228}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {13.4.1}Dynamic programming along a topological order}{175}{subsection.13.4.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {13.9}{\ignorespaces Counting paths in a DAG by summing over incoming edges in topological order.}}{175}{figure.caption.229}\protected@file@percent }
+\newlabel{fig:gameroutes}{{13.9}{175}{Counting paths in a DAG by summing over incoming edges in topological order}{figure.caption.229}{}}
+\@setckpt{algorithms/12_dsu_mst_topo}{
+\setcounter{page}{177}
+\setcounter{equation}{0}
+\setcounter{enumi}{2}
+\setcounter{enumii}{0}
+\setcounter{enumiii}{0}
+\setcounter{enumiv}{0}
+\setcounter{footnote}{0}
+\setcounter{mpfootnote}{0}
+\setcounter{part}{3}
+\setcounter{chapter}{13}
+\setcounter{section}{4}
+\setcounter{subsection}{1}
+\setcounter{subsubsection}{0}
+\setcounter{paragraph}{0}
+\setcounter{subparagraph}{0}
+\setcounter{figure}{9}
+\setcounter{table}{0}
+\setcounter{parentequation}{0}
+\setcounter{lstnumber}{27}
+\setcounter{tcbbreakpart}{1}
+\setcounter{tcblayer}{0}
+\setcounter{tcolorbox@number}{536}
+\setcounter{tcblisting}{105}
+\setcounter{tcbrastercolumn}{1}
+\setcounter{tcbrasterrow}{1}
+\setcounter{tcbrasternum}{1}
+\setcounter{tcbraster}{3}
+\setcounter{cpsegfig}{0}
+\setcounter{LT@tables}{0}
+\setcounter{LT@chunks}{0}
+\setcounter{nlinenum}{0}
+\setcounter{ALG@line}{7}
+\setcounter{ALG@rem}{0}
+\setcounter{ALG@nested}{0}
+\setcounter{ALG@Lnr}{2}
+\setcounter{ALG@blocknr}{15}
+\setcounter{ALG@storecount}{0}
+\setcounter{ALG@tmpcounter}{0}
+\setcounter{algpx@codeBoxCount}{0}
+\setcounter{algpx@nestedCBoxCount}{0}
+\setcounter{algpx@startedBoxesCount}{0}
+\setcounter{algpx@endedBoxesCount}{0}
+\setcounter{algpx@nestedBoxedStringCount}{0}
+\setcounter{algpx@nestedBoxedStringMaxCount}{0}
+\setcounter{algpx@indentCount}{14}
+\setcounter{algpx@lastIndentEnded}{13}
+\setcounter{algpx@pageCount}{0}
+\setcounter{algpx@tmpCount}{0}
+\setcounter{caption@flags}{2}
+\setcounter{continuedfloat}{0}
+\setcounter{float@type}{16}
+\setcounter{section@level}{0}
+\setcounter{Item}{8}
+\setcounter{Hfootnote}{0}
+\setcounter{bookmark@seq@number}{0}
+\setcounter{algpx@indentEndPage-0@totc}{0}
+\setcounter{algpx@indentEndPage-1@totc}{0}
+\setcounter{algpx@indentEndPage-2@totc}{0}
+\setcounter{algpx@indentEndPage-3@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-2@totc}{3}
+\setcounter{algpx@indentEndCoordIndex-0@totc}{3}
+\setcounter{algpx@indentEndPage-4@totc}{0}
+\setcounter{algpx@indentEndPage-5@totc}{0}
+\setcounter{algpx@indentEndPage-6@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-4@totc}{6}
+\setcounter{algpx@indentEndPage-7@totc}{0}
+\setcounter{algpx@indentEndPage-8@totc}{0}
+\setcounter{algpx@indentEndPage-9@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-8@totc}{9}
+\setcounter{algpx@indentEndPage-10@totc}{0}
+\setcounter{algpx@indentEndPage-11@totc}{0}
+\setcounter{algpx@indentEndPage-12@totc}{0}
+\setcounter{algpx@indentEndPage-13@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-12@totc}{13}
+\setcounter{algpx@indentEndCoordIndex-10@totc}{13}
+\setcounter{algpx@indentEndPage-14@totc}{0}
+\setcounter{algpx@indentEndPage-15@totc}{0}
+\setcounter{algpx@indentEndPage-16@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-15@totc}{16}
+\setcounter{algpx@indentEndPage-17@totc}{0}
+\setcounter{algpx@indentEndPage-18@totc}{1}
+\setcounter{algpx@indentEndPage-19@totc}{1}
+\setcounter{algpx@indentEndCoordIndex-18@totc}{19}
+\setcounter{lstlisting}{0}
+\setcounter{algpx@indentEndPage-0}{0}
+\setcounter{algpx@indentEndPage-1}{0}
+\setcounter{algpx@indentEndPage-2}{0}
+\setcounter{algpx@indentEndPage-3}{0}
+\setcounter{algpx@indentEndCoordIndex-2}{3}
+\setcounter{algpx@indentEndCoordIndex-0}{3}
+\setcounter{algpx@indentEndPage-4}{0}
+\setcounter{algpx@indentEndPage-5}{0}
+\setcounter{algpx@indentEndPage-6}{0}
+\setcounter{algpx@indentEndCoordIndex-4}{6}
+\setcounter{algpx@indentEndPage-7}{0}
+\setcounter{algpx@indentEndPage-8}{0}
+\setcounter{algpx@indentEndPage-9}{0}
+\setcounter{algpx@indentEndCoordIndex-8}{9}
+\setcounter{algpx@indentEndPage-10}{0}
+\setcounter{algpx@indentEndPage-11}{0}
+\setcounter{algpx@indentEndPage-12}{0}
+\setcounter{algpx@indentEndPage-13}{0}
+\setcounter{algpx@indentEndCoordIndex-12}{13}
+\setcounter{algpx@indentEndCoordIndex-10}{13}
+}

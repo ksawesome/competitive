@@ -1,0 +1,616 @@
+\chapter{How to Approach a Problem}\label{ch:approach}
+
+Knowing algorithms is half of competitive programming. The other half is getting from a problem statement to the right
+algorithm, under time pressure, without fooling yourself. That second half is a skill like any other: it has a method, the
+method can be practised, and people who are good at it are good because they practised it deliberately, not because they
+were born knowing which problem wants a segment tree.
+
+This chapter describes that method. It follows one problem from the first reading of its statement to accepted code, then
+collects the questions that experienced competitors ask themselves when they are stuck, and ends with the most useful proof
+technique for greedy algorithms: the exchange argument.
+
+\begin{chapterintro}{\bronze\ \silver}{nothing; this is the place to start.}
+  \item how to read a statement so that it tells you what the solution looks like;
+  \item an eight-step loop that takes you from the statement to tested code;
+  \item a checklist of questions for when you have no idea;
+  \item how to prove a greedy algorithm correct, and how to find the counterexample when it is wrong;
+  \item how to tell what kind of problem you are facing, and how to practise.
+\end{chapterintro}
+
+% ======================================================================================================================
+\section[Anatomy of a problem]{Anatomy of a problem \hfill \bronze}\label{sec:anatomy}
+
+A problem statement is not only a question; it is also a collection of hints about the answer. Every part carries
+information, and learning to extract that information is the first skill to build. Figure~\ref{fig:anatomy} dissects a
+typical statement.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  % one row per part of the statement: the part on the left, what it tells you on the right (rows cannot collide)
+  \matrix (m) [matrix of nodes, column sep=10mm, row sep=2.2mm, nodes={anchor=north west, inner sep=3pt},
+      column 1/.style={nodes={text width=7.6cm, font=\small, align=left}},
+      column 2/.style={nodes={text width=5.4cm, font=\sffamily\scriptsize, text=fgink, align=left}}] {
+    |[font=\sffamily\bfseries\normalsize]| Barn Paths & \\
+    Farmer John's $n$ barns are joined by $m$ two-way paths. Bessie is in barn 1 and wants to reach barn $n$ walking along
+      as few paths as possible. Print that number, or $-1$ if she cannot. &
+    \textbf{The story} hides the mathematics: barns are vertices, paths are edges, ``as few paths as possible'' is an
+      unweighted shortest path. \\
+    \textbf{Input.} The first line has $n$ and $m$. Each of the next $m$ lines has two barns $a_i$ and $b_i$ joined by a
+      path. &
+    \textbf{The input format} names the objects: an edge list, so a general graph, not a tree and not a grid. \\
+    \textbf{Limits.} $2 \le n \le 10^5$, $\ 1 \le m \le 2 \cdot 10^5$. &
+    \textbf{The limits} set the budget: about $3 \cdot 10^5$ items, so $\Oh{n + m}$ time. BFS fits. \\
+    \textbf{Sample.} \texttt{4 4 / 1 2 / 2 4 / 1 3 / 3 4} $\;\to\;$ \texttt{2} &
+    \textbf{The sample} checks your reading: $1 \to 2 \to 4$ uses two paths. \\
+    \textbf{Subtask 1 (30 points).} $m = n - 1$ and path $i$ joins barns $i$ and $i + 1$. &
+    \textbf{The subtask} is a hint: on a line the answer is $n - 1$. \\
+  };
+  \begin{scope}[on background layer]
+    \node[draw=fgline, fill=fgpaper, rounded corners=3pt, line width=0.6pt, fit=(m-1-1)(m-6-1), inner sep=2pt] {};
+  \end{scope}
+  \foreach \r in {2,...,6}
+    \draw[brace] ($(m-\r-1.north east)+(0.3,-0.05)$) -- ($(m-\r-1.south east)+(0.3,0.05)$);
+\end{tikzpicture}
+\caption{The parts of a statement and what each one tells you. The limits are the most informative line of all: they
+tell you how fast the solution must be before you know what it is.}
+\label{fig:anatomy}
+\end{figure}
+
+\paragraph{The story.} Almost every statement wraps a mathematical question in a story: cows, cities, robots, games. The
+first job is to strip the story away and restate the question in the vocabulary of this book. ``Barns connected by paths''
+is a graph. ``A schedule of meetings'' is a set of intervals. ``Pouring water between buckets'' is a state space you can
+search. ``Each day the price changes'' is an array, and ``answer $q$ questions about days $l$ to $r$'' is a range query.
+Once you can name the objects, you can ask what you know about them.
+
+\paragraph{The input format.} The shape of the input narrows things further. An input with exactly $n - 1$ edges on $n$
+vertices is a tree (if it is connected), and trees have their own toolbox (Part~IV). A grid of characters is a graph whose
+edges you never store. A list of queries after the data means you must answer many questions fast, which suggests
+precomputation or a data structure. Read the input format with the question ``what objects am I given?'' in mind.
+
+\paragraph{The limits.} This is the line that experienced competitors read first. A judge performs about $10^8$ simple
+operations per second, so the limits tell you which complexities are possible (Table~\ref{tab:constraints} in the next
+chapter). $n \le 20$ invites trying all $2^n$ subsets; $n \le 5000$ allows $\Oh{n^2}$; $n \le 2 \cdot 10^5$ demands
+$\Oh{n \log n}$; $n \le 10^{18}$ means the answer is a formula or a logarithmic algorithm. The same story with different
+limits is a different problem.
+
+\paragraph{The samples.} Samples exist to check that you understood the question, not to test your code. Work at least one
+sample by hand before designing anything. Many wrong answers come from solving a slightly different problem than the one
+asked: 0-indexed versus 1-indexed, ``at most'' versus ``exactly'', ``subsequence'' versus ``substring''.
+
+\paragraph{Subtasks.} Olympiads split the points into subtasks with extra restrictions, and those restrictions are hints.
+``All values are distinct'', ``the graph is a line'', ``$k = 1$'': each one removes a difficulty, and the solution to a
+subtask is often a stepping stone to the full solution. Even when you cannot solve the whole problem, a subtask gives you
+points; in the IOI, most medals are decided by partial scores.
+
+\begin{tip}
+Before writing code, write the restated problem in one sentence of mathematics at the top of your file as a comment:
+\cc{// shortest path from 0 to n-1 in an unweighted graph, n <= 1e5}. If you cannot write that sentence, you have not
+understood the problem yet, and no amount of coding will fix that.
+\end{tip}
+
+% ======================================================================================================================
+\section[A method that works]{A method that works \hfill \bronze}\label{sec:method}
+
+Figure~\ref{fig:method} shows the loop that takes a problem from statement to accepted code. The steps are not new; what
+matters is doing all of them, in order, every time. Most people who get stuck on a problem skipped steps 3 and 4 and are
+trying to jump straight to a clever idea.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[stp/.style={fstep=3.4cm, minimum height=1.45cm}]
+  % a snake through a 3 x 3 grid: row 1 left to right, row 2 right to left, row 3 left to right
+  \node[stp] (s1) at (0, 0) {\textbf{1. Read twice}\\{\footnotesize restate it in one sentence}};
+  \node[stp] (s2) at (4.6, 0) {\textbf{2. Limits}\\{\footnotesize which complexity fits?}};
+  \node[stp] (s3) at (9.2, 0) {\textbf{3. Small cases}\\{\footnotesize solve by hand, find patterns}};
+  \node[stp] (s4) at (9.2, -2.5) {\textbf{4. Brute force}\\{\footnotesize the obviously correct slow solution}};
+  \node[stp] (s5) at (4.6, -2.5) {\textbf{5. Find structure}\\{\footnotesize what does the brute force waste?}};
+  \node[fq=3.4cm, minimum height=1.45cm] (q) at (0, -2.5) {\textbf{Fast enough?}\\{\footnotesize\mdseries for the limits of step 2}};
+  \node[stp] (s6) at (0, -5.0) {\textbf{6. Verify}\\{\footnotesize prove it, or stress test it}};
+  \node[stp] (s7) at (4.6, -5.0) {\textbf{7. Code}\\{\footnotesize template, library, clean names}};
+  \node[fend=3.4cm, minimum height=1.45cm] (s8) at (9.2, -5.0) {8. Test\\{\footnotesize\mdseries samples, edge cases, largest input}};
+  \draw[farr] (s1) -- (s2); \draw[farr] (s2) -- (s3); \draw[farr] (s3) -- (s4);
+  \draw[farr] (s4) -- (s5); \draw[farr] (s5) -- (q);
+  \draw[farr] (q) -- node[fyes, right] {yes} (s6);
+  \draw[farr] (s6) -- (s7); \draw[farr] (s7) -- (s8);
+  % the two ways back to step 5, each in its own gap between the rows
+  \draw[farr, fgverm] ($(q.north)+(0.9,0)$) to[out=65, in=115] node[fno, above] {no} ($(s5.north)+(-0.9,0)$);
+  \draw[farr, fgverm, dashed] ($(s6.north)+(1.2,0)$) to[out=60, in=-120] node[fno, pos=0.55, right=2pt] {counterexample}
+    ($(s5.south)+(-1.0,0)$);
+\end{tikzpicture}
+\caption{The problem-solving loop. Steps 3 to 5 are where the thinking happens; step 6 is what separates people who get
+accepted from people who get \emph{wrong answer on test 17}.}
+\label{fig:method}
+\end{figure}
+
+We follow one problem through all eight steps. It is a classic from the CSES Problem Set, and it is a good example
+because the right idea is not visible in the statement.
+
+\begin{problem}{Array Division (CSES)}
+You are given $n$ positive integers and a number $k$. Divide the array into $k$ contiguous, non-empty parts so that the
+largest sum of a part is as small as possible, and print that largest sum. Limits: $1 \le k \le n \le 2 \cdot 10^5$,
+values up to $10^9$.
+\end{problem}
+
+\subsection{Step 1: read twice, restate once}
+
+Read the whole statement, then restate it in one sentence of mathematics: \emph{choose $k - 1$ cut positions in the array
+to minimize the maximum part sum.} Check the restatement against the words: the parts are contiguous (so we cut, we do not
+choose subsets), every part is non-empty (so the cuts are distinct), and all values are positive (remember this: positivity
+often matters). The sample in CSES is $n = 5$, $k = 3$, array $2, 4, 7, 3, 5$, answer 8.
+
+\subsection{Step 2: let the limits talk}
+
+$n \le 2 \cdot 10^5$ rules out anything quadratic: $n^2 = 4 \cdot 10^{10}$ operations would take minutes. We need roughly
+$\Oh{n \log n}$ or $\Oh{n \log(\text{something})}$. That already hints at sorting, a binary search, a heap or a segment
+tree, and it rules out ``try every way to cut'', which is $\binom{n-1}{k-1}$, astronomically many. The sums can reach
+$2 \cdot 10^5 \cdot 10^9 = 2 \cdot 10^{14}$, so the answer needs 64-bit integers.
+
+\subsection{Step 3: solve small cases by hand}
+
+Take the sample and try splits by hand (Figure~\ref{fig:arraydiv-cases}). A few observations fall out immediately. The
+answer is at least the largest element (7 here), because that element sits in some part. It is at most the total (21),
+the answer for $k = 1$. And the good splits are ``balanced'': moving a cut towards the heavier side makes things better.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[psum/.style={font=\sffamily\scriptsize, text=fggray}, pmax/.style={font=\sffamily\scriptsize\bfseries, text=fgverm}]
+  % each row: the array, the two cuts (bars), the sum of every part below it, the largest sum on the right
+  \foreach \y [count=\r] in {0, -1.55, -3.1, -4.65} \arr{R\r}{0}{\y}{2,4,7,3,5};
+  \newcommand{\arrcut}[2]{\draw[line width=2.4pt, fgverm] ({#1*0.7}, {#2+0.5}) -- ({#1*0.7}, {#2-0.5});}
+  \arrcut{2}{0} \arrcut{3}{0} \arrcut{3}{-1.55} \arrcut{4}{-1.55} \arrcut{1}{-3.1} \arrcut{3}{-3.1} \arrcut{2}{-4.65} \arrcut{4}{-4.65}
+  % part sums: centred under each part
+  \foreach \x/\y/\s/\st in {0.7/0/6/psum, 1.75/0/7/psum, 2.8/0/8/pmax,
+      1.05/-1.55/13/pmax, 2.45/-1.55/3/psum, 3.15/-1.55/5/psum,
+      0.35/-3.1/2/psum, 1.4/-3.1/11/pmax, 2.8/-3.1/8/psum,
+      0.7/-4.65/6/psum, 2.1/-4.65/10/pmax, 3.15/-4.65/5/psum}
+    \node[\st] at (\x, {\y-0.58}) {\s};
+  \foreach \y/\m/\c in {0/8/fggreen, -1.55/13/fggray, -3.1/11/fggray, -4.65/10/fggray}
+    \node[font=\sffamily\small, text=\c, anchor=west] at (4.1, \y) {largest part: \textbf{\m}};
+  \node[font=\sffamily\scriptsize\bfseries, text=fggreen, anchor=east] at (-0.25, 0) {best};
+  \begin{scope}[on background layer]
+    \fill[fggreen!9, rounded corners=3pt] (-1.0, 0.62) rectangle (6.9, -0.82);
+  \end{scope}
+\end{tikzpicture}
+\caption{Four of the six ways to cut $2, 4, 7, 3, 5$ into three parts. The best one (green) has maximum 8; no split can do
+better than 7, the largest element, and here even 7 is impossible.}
+\label{fig:arraydiv-cases}
+\end{figure}
+
+\subsection{Step 4: write down the brute force}
+
+The obviously correct solution tries every way to cut: choose $k - 1$ of the $n - 1$ gaps and take the best. A slightly
+smarter brute force is a DP, $\mathrm{best}[i][j]$ = the smallest possible maximum when the first $i$ elements are cut into
+$j$ parts, which takes $\Oh{n^2 k}$ time. Both are far too slow for the real limits, and that is fine: the brute force is
+not meant to be submitted. It fixes \emph{what} we compute, gives us a reference to test against, and for small subtasks it
+is often worth points on its own.
+
+\subsection{Step 5: find structure}
+
+Now ask what the brute force wastes. It builds every split and \emph{then} measures its maximum. What if we turn the
+question around and fix the maximum first? ``Can the array be cut into $k$ parts, each with sum at most $C$?'' is a much
+easier question, because a greedy answers it: walk through the array, extend the current part while it still fits under
+$C$, and start a new part when it does not. Extending a part as far as possible never hurts, since it leaves the fewest
+elements for the remaining parts (this is an exchange argument, Section~\ref{sec:exchange}). If the greedy needs at most $k$
+parts, the answer is yes; with fewer than $k$ parts we can always split some part further, because every value is positive
+and every part has at least one element.
+
+The question also has the crucial property of \emph{monotonicity}: if cap $C$ works, every larger cap works too. So the
+answers form a block of ``no'' followed by a block of ``yes'' (Figure~\ref{fig:arraydiv-mono}), and we can binary search for
+the boundary. This is binary search on the answer, the subject of Chapter~\ref{ch:binsearch}.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \arr{C}{0}{0}{7,8,9,10,11,12,13}
+  \node[lbl, anchor=east] at (-0.15, 0) {cap $C$};
+  \arr{P}{0}{-0.85}{4,3,3,3,3,3,2}
+  \node[lbl, anchor=east] at (-0.15, -0.85) {parts needed};
+  \arrs{V}{0}{-1.7}{no/hot, yes/good, yes/good, yes/good, yes/good, yes/good, yes/good}
+  \node[lbl, anchor=east] at (-0.15, -1.7) {$\le k = 3$?};
+  \draw[hded] ($(V-2.south)+(0,-0.7)$) node[below, lbl, text=fgverm] {smallest cap that works: 8} -- (V-2.south);
+  \node[notel, text width=6.3cm, anchor=west] at (5.4, -0.85)
+    {Greedy with cap 8 cuts $2,4 \mid 7 \mid 3,5$. With cap 7 it needs $2,4 \mid 7 \mid 3 \mid 5$: four parts, too many.
+     Larger caps never need more parts, so the column of answers is ``no'' then ``yes''.};
+\end{tikzpicture}
+\caption{For each cap $C$, the number of parts the greedy needs. The yes/no row is monotone, so binary search finds the
+first ``yes'' in about $\log_2(2\cdot 10^{14}) \approx 48$ steps.}
+\label{fig:arraydiv-mono}
+\end{figure}
+
+\subsection{Step 6: verify before you code}
+
+Two claims carry the solution: the greedy check is correct, and the answers are monotone. The monotonicity is immediate (a
+split that respects cap $C$ also respects $C + 1$). For the greedy, a short exchange argument works: take any valid split
+into at most $k$ parts; its first part ends no later than the greedy's first part, because the greedy extends as far as the
+cap allows; moving that first cut to where the greedy put it only shrinks the second part; repeat. So if any valid split
+exists, the greedy finds one with no more parts. When you cannot find a proof in a few minutes, the fallback is to stress
+test the idea against the brute force on thousands of small random inputs (Section~\ref{sec:stress-idea}).
+
+\subsection{Step 7: code}
+
+Only now do we type. The search range is from the largest element (the answer can never be smaller) to the total (the
+answer for one part).
+
+\begin{code}
+void solve() {
+    int n, k;
+    cin >> n >> k;
+    vi a(n);
+    cin >> a;
+    auto parts_needed = [&](ll cap) {  // greedy: extend a part while it fits
+        ll parts = 1, cur = 0;
+        for (ll x : a) {
+            if (cur + x > cap) parts++, cur = 0;
+            cur += x;
+        }
+        return parts;
+    };
+    ll lo = *max_element(all(a)), hi = accumulate(all(a), 0LL);
+    while (lo < hi) {  // smallest cap that needs at most k parts
+        ll mid = lo + (hi - lo) / 2;
+        if (parts_needed(mid) <= k) hi = mid;
+        else lo = mid + 1;
+    }
+    print(lo);
+}
+\end{code}
+
+The complexity is $\Oh{n \log S}$ where $S$ is the total: about $2 \cdot 10^5 \cdot 48 \approx 10^7$ operations, which runs
+in a few milliseconds. This code, like every complete program in this book, was compiled with your template and checked
+against a brute force on random inputs.
+
+\subsection{Step 8: test}
+
+Run the CPH samples first. Then think about the edges of the input space: $n = 1$; $k = 1$ (the answer is the total);
+$k = n$ (the answer is the maximum); all elements equal; one huge element among small ones; the largest possible input (to
+check speed and 64-bit overflow). Each of these catches a different class of bug. If anything is uncertain, a stress test
+against the brute force settles it.
+
+\begin{fact}[The loop in real contests]
+Experienced competitors run through this loop in their heads in a minute or two for easy problems, and spend most of their
+contest time in steps 3 to 6 for hard ones. The two most common causes of a lost problem are skipping step 2 (an $\Oh{n^2}$
+solution for $n = 2 \cdot 10^5$) and skipping step 6 (a greedy that ``obviously'' works and does not).
+\end{fact}
+
+% ======================================================================================================================
+\section[Thinking tools]{Thinking tools \hfill \bronze}\label{sec:thinking}
+
+Step 5 of the loop, ``find structure'', is where problems are solved, and it is the step that feels least like a method.
+It becomes much more mechanical once you have a set of moves to try. These are the ones that work most often, adapted from
+George P\'olya's classic \emph{How to Solve It}.
+
+\paragraph{Draw a picture.} Arrays become bars, intervals become segments on a line, pairs $(x, y)$ become points in the
+plane, states become vertices. A picture makes monotonicity, overlaps and symmetry visible in a way that indices never do.
+Most figures in this book exist because the author needed them to see the idea.
+
+\paragraph{Specialise.} Solve an easier version first: all values equal, $k = 1$, the graph is a path, the grid has one row.
+The special case either solves the problem outright (surprisingly often) or shows which part is hard. Subtasks are special
+cases chosen by the problem setter, and they are chosen because they are stepping stones.
+
+\paragraph{Generalise.} Sometimes the more general problem is easier. ``Is there a path from 1 to $n$?'' is best answered by
+computing \emph{all} reachable vertices. ``Answer this for $k = 5$'' becomes easier as ``answer this for every $k$'', which
+may have a recurrence.
+
+\paragraph{Work backwards.} Start from the goal. What must the last move of a game look like? What does the final state of a
+process look like, and what could have come just before it? Many DP and game problems are clearest when read from the end.
+
+\paragraph{Look at the answer.} What does an optimal solution look like? Can you assume it has a normal form (sorted, with no
+crossing pairs, with the largest element first)? Proving that ``some optimal solution has form X'' often cuts the search
+space from exponential to polynomial.
+
+\paragraph{Change one thing at a time.} If the answer for an input is known, how does it change when one element is added,
+removed or modified? The answer to that question is often an incremental algorithm or a data structure.
+
+\paragraph{Find the bottleneck.} In the brute force, which part is slow? If it is ``for every pair, compute something'', can
+the something be precomputed? If it is ``for every query, scan the array'', can the array be preprocessed? Improving the
+bottleneck by one factor of $n$ is usually the whole solution.
+
+% ======================================================================================================================
+\section[When you are stuck]{When you are stuck: a checklist \hfill \silver}\label{sec:stuck}
+
+When nothing comes, go through these questions one by one. Each has solved thousands of problems, and together they cover
+the large majority of what appears in contests up to the Gold level. Chapter~\ref{ch:patterns} develops the most important
+of them into full patterns with worked examples.
+
+\begin{description}[style=nextline, leftmargin=1.2em, itemsep=4pt, font=\sffamily\bfseries\small\color{cpblue}]
+  \item[Is the answer monotone in some parameter?] If ``$x$ works'' implies ``$x + 1$ works'', binary search on the answer
+    turns an optimisation problem into a sequence of yes/no checks, as in Array Division above (Chapter~\ref{ch:binsearch}).
+  \item[Would sorting change nothing?] If the answer does not depend on the input order, sort it. Sorted data enables greedy
+    choices, two pointers, sweeps and binary search (Chapter~\ref{ch:sorting}).
+  \item[Can each element's contribution be counted separately?] ``Sum over all subarrays of their minimum'' is hard as
+    stated; ``for each element, in how many subarrays is it the minimum?'' is easy with a monotonic stack. This is the
+    contribution technique (Section~\ref{sec:contribution}).
+  \item[Is the complement easier?] Counting ``at least one'' is often done as total minus ``none''. Counting pairs that are
+    \emph{not} coprime is total minus coprime pairs. Inclusion--exclusion generalises this (Chapter~\ref{ch:combinatorics}).
+  \item[Can I fix one thing and solve the rest fast?] Fix the left endpoint, the maximum element, the middle of a
+    palindrome, the first move. Then the remaining problem is often one-dimensional and fast with a data structure.
+  \item[Can I process things in a different order?] Offline (read all queries first, answer them in a convenient order),
+    backwards in time (deletions become insertions, which DSU handles), or sorted by some key (sweep line).
+  \item[Is there an invariant?] A quantity that never changes proves that something is impossible; a quantity that always
+    decreases proves that a process terminates. Parity and colouring arguments are the classic ones
+    (Section~\ref{sec:invariants}).
+  \item[Does the answer depend only on a small state?] If the future depends only on ``where I am'' and a few numbers, not
+    on the whole history, dynamic programming applies (Part~V).
+  \item[Are things connected to other things?] Model it as a graph: vertices for the objects, edges for the relation, and
+    reach for Part~III.
+  \item[Is some parameter small?] Values up to 100, $k \le 20$, at most 60 distinct colours: iterate over the small
+    parameter, or use it as a bitmask.
+  \item[Do large and small cases behave differently?] Handle ``heavy'' items (few, each large) and ``light'' items (many,
+    each small) with different methods; the threshold $\sqrt n$ balances them (Chapter~\ref{ch:static}).
+  \item[What does an optimal solution look like?] Prove it can be assumed sorted, non-crossing or canonical, then search only
+    among such solutions.
+  \item[Is it a known problem in disguise?] Shortest path, matching, interval scheduling, LIS, knapsack and flow appear in
+    costume constantly. The recognition table in Chapter~\ref{ch:craft} maps statement signals to techniques.
+\end{description}
+
+\begin{trick}[Change the question]
+Many hard problems become easy when you ask a different but equivalent question. ``Minimise the maximum'' becomes ``can the
+maximum be at most $X$?''. ``Count pairs with property $P$'' becomes ``for each element, count the partners seen so far''.
+``Is there a path?'' becomes ``are they in the same component?''. ``What is the $k$-th smallest?'' becomes ``how many are at
+most $x$?''. Train yourself to rephrase every problem at least twice before choosing an algorithm; the second phrasing is
+usually the one with a known solution.
+\end{trick}
+
+% ======================================================================================================================
+\section[Proving greedy choices]{Proving greedy choices: the exchange argument \hfill \silver}\label{sec:exchange}
+
+A greedy algorithm builds a solution one piece at a time, always taking the choice that looks best right now, and never
+reconsidering. Greedy algorithms are short, fast and very often wrong. The exchange argument is the standard way to tell
+the difference before you spend half an hour coding one.
+
+\subsection{The argument}
+
+To show that a greedy algorithm is optimal, show that \emph{some} optimal solution agrees with the greedy's first choice.
+Then the rest of the problem is a smaller instance of the same kind, and induction finishes the proof:
+
+\begin{enumerate}
+  \item Take any optimal solution $O$. If its first choice equals the greedy choice $g$, there is nothing to do.
+  \item Otherwise, \emph{exchange}: modify $O$ so that it makes the choice $g$, and show that the result $O'$ is still valid
+        and is no worse than $O$. Then $O'$ is optimal too.
+  \item $O'$ agrees with the greedy on the first choice; repeat the argument on what remains.
+\end{enumerate}
+
+\begin{problem}{Interval scheduling}
+Given $n$ intervals, choose as many pairwise disjoint ones as possible.
+\solution Sort by end time and repeatedly take the first interval that does not overlap the ones already taken. Exchange:
+let $O$ be an optimal solution whose first interval $o_1$ is not the greedy's first interval $g$, which is the interval that
+ends first overall. Replace $o_1$ by $g$ (Figure~\ref{fig:exchange-intervals}). Since $g$ ends no later than $o_1$, it
+cannot overlap $o_2$, which starts after $o_1$ ends. The new solution is valid and has the same size, so it is optimal and
+starts with $g$.
+\usetemplate{Intervals: merge + max disjoint}{Ctrl+Alt+T, Shift+N}{cpintervals}
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.72cm]
+  \numline{0}{12}{0}{time}
+  \node[lbl, anchor=east] at (-0.4, 1.9) {optimal $O$};
+  \ivl{1}{5}{1.9}{fgline}{$o_1$} \ivl{6}{8}{1.9}{fgblue!55}{$o_2$} \ivl{9}{12}{1.9}{fgblue!55}{$o_3$}
+  \node[lbl, anchor=east] at (-0.4, 0.85) {exchanged $O'$};
+  \ivl{2}{4}{0.85}{fggreen!70}{$g$} \ivl{6}{8}{0.85}{fgblue!55}{$o_2$} \ivl{9}{12}{0.85}{fgblue!55}{$o_3$}
+  \draw[xed] (4, 0.45) -- (4, 2.35); \draw[xed] (5, 0.45) -- (5, 2.35);
+  \node[notel, anchor=west, text width=3.7cm] at (13.1, 1.4) {$g$ ends at 4, before $o_1$ ends at 5, so it cannot reach
+    $o_2$. Same size, still valid.};
+\end{tikzpicture}
+\caption{The exchange for interval scheduling: swapping the first interval of an optimal solution for the interval that ends
+earliest keeps the solution valid and just as large.}
+\label{fig:exchange-intervals}
+\end{figure}
+
+\subsection{A second example: adjacent swaps}
+
+When the greedy is an \emph{ordering} (``process items sorted by $X$''), the cleanest exchange is between two neighbours.
+Take any order that is not sorted by the greedy key; somewhere two adjacent items are in the wrong order; swapping them
+changes only their own contribution, so you just compare two numbers.
+
+\begin{problem}{Tasks and Deadlines (CSES)}
+There are $n$ tasks; task $i$ takes $a_i$ time units and has deadline $d_i$. You do them one after another, in an order you
+choose, starting at time 0. Finishing task $i$ at time $f_i$ earns $d_i - f_i$ points (possibly negative). Maximise the
+total. Limits: $n \le 2 \cdot 10^5$.
+\solution The total is $\sum d_i - \sum f_i$, and $\sum d_i$ does not depend on the order, so we must minimise the sum of
+finishing times. Do the shortest task first. Proof by adjacent swap (Figure~\ref{fig:exchange-swap}): if task $i$ comes
+immediately before task $j$ and both start after time $T$, their finishing times are $T + a_i$ and $T + a_i + a_j$; swapped,
+they are $T + a_j$ and $T + a_j + a_i$. Every other task is unaffected, so the swap changes the total by $a_j - a_i$. If
+$a_i > a_j$, swapping strictly helps; hence an optimal order has no ``longer before shorter'' neighbours, which means it is
+sorted by duration.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.75cm]
+  \numline{0}{11}{0}{time}
+  \node[lbl, anchor=east] at (-0.5, 1.9) {long first};
+  \fill[fgline!40] (0, 1.72) rectangle (3, 2.08); \node[font=\sffamily\scriptsize] at (1.5, 1.9) {earlier};
+  \fill[fgverm!45] (3, 1.72) rectangle (8, 2.08); \node[font=\sffamily\scriptsize] at (5.5, 1.9) {$i$: $a_i = 5$};
+  \fill[fgblue!40] (8, 1.72) rectangle (10, 2.08); \node[font=\sffamily\scriptsize] at (9, 1.9) {$j$};
+  \node[lbl, anchor=west] at (11.2, 1.9) {finish at 8 and 10: sum 18};
+  \node[lbl, anchor=east] at (-0.5, 0.85) {short first};
+  \fill[fgline!40] (0, 0.67) rectangle (3, 1.03); \node[font=\sffamily\scriptsize] at (1.5, 0.85) {earlier};
+  \fill[fgblue!40] (3, 0.67) rectangle (5, 1.03); \node[font=\sffamily\scriptsize] at (4, 0.85) {$j$};
+  \fill[fgverm!45] (5, 0.67) rectangle (10, 1.03); \node[font=\sffamily\scriptsize] at (7.5, 0.85) {$i$: $a_i = 5$};
+  \node[lbl, anchor=west] at (11.2, 0.85) {finish at 5 and 10: sum 15};
+  \draw[xed] (10, 0.5) -- (10, 2.3);
+\end{tikzpicture}
+\caption{Swapping two adjacent tasks leaves everything outside them untouched (both orders end at time 10), and puts the
+shorter task's finishing time first. The sum drops by $a_i - a_j = 3$.}
+\label{fig:exchange-swap}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vector<pll> task(n);  // (duration, deadline)
+    for (auto& [a, d] : task) cin >> a >> d;
+    sort(all(task));  // shortest first
+    ll now = 0, reward = 0;
+    for (auto [a, d] : task) now += a, reward += d - now;
+    print(reward);
+}
+\end{code}
+
+Notice what the deadlines did: nothing. The statement made them look important, the mathematics showed they are irrelevant.
+This happens more often than you would think, and it is exactly what the restatement in step 1 is for.
+
+\subsection{When greedy is wrong}
+
+A greedy that ``obviously works'' fails more often than it succeeds. The classic example is making change: with coins
+$\{1, 3, 4\}$ and amount 6, ``always take the largest coin that fits'' pays $4 + 1 + 1$ (three coins), but $3 + 3$ uses two.
+The exchange argument breaks exactly where the greedy breaks: you cannot swap the 4 into an optimal solution without paying
+extra elsewhere. The cure is dynamic programming (Chapter~\ref{ch:dp}).
+
+\begin{tip}[Hunting counterexamples]
+If you cannot prove a greedy in a few minutes, look for a counterexample in the smallest cases: two or three items, values
+from 1 to 5. Wrong greedy ideas almost always fail on inputs of size 3 to 6. Even better, let the computer look: a brute
+force plus a random generator plus a loop finds the counterexample in seconds (next section).
+\end{tip}
+
+% ======================================================================================================================
+\section[Testing an idea before trusting it]{Testing an idea before trusting it \hfill \silver}\label{sec:stress-idea}
+
+A \defn{stress test} runs your fast solution and a brute force on thousands of small random inputs and stops at the first
+input where they disagree (Figure~\ref{fig:stress}). It is the single most effective debugging technique in competitive
+programming, and it is just as useful \emph{before} coding the real solution: implement the brute force and a quick,
+throwaway version of the idea, and let the stress test tell you whether the idea is right.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[fstep=2.7cm, minimum height=1.3cm] (gen) at (0, 0) {\textbf{generator}\\{\footnotesize random small input from seed $s$}};
+  \node[fstep=2.3cm] (fast) at (4.1, 1.05) {\textbf{fast}\\{\footnotesize your solution}};
+  \node[fstep=2.3cm] (brute) at (4.1, -1.05) {\textbf{brute}\\{\footnotesize obviously correct}};
+  \node[fq=2.1cm, minimum height=1.1cm] (cmp) at (7.9, 0) {\textbf{same output?}};
+  \node[fend=3.1cm, minimum height=1.3cm] (stop) at (11.9, 0) {counterexample\\{\footnotesize\mdseries the smallest failing input}};
+  \draw[farr] (gen.east) -- (fast.west); \draw[farr] (gen.east) -- (brute.west);
+  \draw[farr] (fast.east) -- (cmp.west); \draw[farr] (brute.east) -- (cmp.west);
+  \draw[farr] (cmp) -- node[fno, above] {no} (stop);
+  \draw[farr] (cmp.south) -- (7.9, -2.3) -- node[fyes, below] {yes: try the next seed $s + 1$} (0, -2.3) -- (gen.south);
+\end{tikzpicture}
+\caption{A stress test. Because the inputs are small, the counterexample it finds is small enough to debug by hand. Your
+setup runs this loop with \key{Ctrl+Alt+X} (GUIDE.pdf, Section~4.4).}
+\label{fig:stress}
+\end{figure}
+
+Three details make stress tests effective. First, keep the inputs \emph{tiny}: $n$ from 1 to 6, values from 1 to 10. Bugs
+show up on small inputs just as reliably as on large ones, and a failing input of size 4 can be debugged by hand. Second,
+make the brute force as dumb as possible, so that it is obviously correct; its speed does not matter. Third, when the test
+finds a counterexample, add it to CPH as a test case before fixing anything, so that it stays fixed.
+
+% ======================================================================================================================
+\section[Kinds of problems]{Kinds of problems \hfill \bronze}\label{sec:kinds}
+
+Problems fall into a handful of kinds, and each kind has its own habits. Recognising the kind is often the first real step
+towards the solution.
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{p{2.6cm}Lp{4.8cm}}
+\toprule
+\thd{Kind} & \thd{Asks for} & \thd{Typical tools} \\
+\midrule
+Decision & yes or no: is it possible? & invariants, greedy, graph search, 2-SAT \\
+Optimisation & the best value, or a best object & greedy, DP, binary search on the answer, flows \\
+Counting & how many (usually modulo $10^9+7$) & combinatorics, DP, inclusion--exclusion \\
+Construction & any valid object, or proof there is none & patterns from small cases, induction, greedy \\
+Queries & many questions on one structure & prefix sums, segment trees, offline processing \\
+Interactive & ask questions, deduce a hidden object & binary search, adaptive strategies \\
+Games & who wins with perfect play & game DP, Sprague--Grundy, symmetry \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\paragraph{Decision problems} often have a clean characterisation: ``possible if and only if the sum is even and no element
+exceeds half of it''. Look for the invariant that makes impossible cases impossible, then check that everything else is
+possible.
+
+\paragraph{Optimisation problems} ask for a minimum or maximum. The first question is always whether a greedy works (try to
+prove it, or break it on small cases); the second is whether the answer is monotone in some parameter (binary search); the
+third is what state a DP would need.
+
+\paragraph{Counting problems} print huge numbers modulo a prime. They almost never ask you to enumerate: count by
+structure. Decompose the objects you count, count each part independently, multiply; when parts overlap, use
+inclusion--exclusion; when the structure is sequential, use DP.
+
+\paragraph{Construction problems} accept any valid answer. Solve small cases by hand and look for a pattern that
+generalises, often by induction: a construction for $n$ from one for $n - 1$ or $n - 2$. Checking your output with a small
+validator program is worth the minute it takes.
+
+\paragraph{Query problems} give data and many questions. Decide first whether the data changes (static or dynamic), whether
+the queries can be answered offline (read them all first), and what operation combines two ranges (sum, min, gcd). Part~VI is
+about exactly this.
+
+\paragraph{Interactive problems} hide an object and let you ask questions. The number of allowed questions is the key
+constraint: $\log_2$ of the number of possibilities means binary search; more questions allow more naive strategies
+(Chapter~\ref{ch:special}).
+
+\paragraph{Games} ask who wins with perfect play. Small games are solved by DP over positions (winning if some move leads to
+a losing position); sums of independent games are solved by Sprague--Grundy theory (Chapter~\ref{ch:combinatorics}).
+
+% ======================================================================================================================
+\section[How to practise]{How to practise \hfill \bronze}\label{sec:practise}
+
+Solving problems is the only way to get better at solving problems, but not all practice is equal.
+
+\begin{itemize}
+  \item \textbf{Work slightly above your level.} Problems you solve in five minutes teach little; problems you cannot even
+        start teach little too. The sweet spot is problems you solve in 30 to 60 minutes, or solve after reading one hint.
+  \item \textbf{Upsolve.} After every contest, solve the problems you could not solve during it, reading the editorial if
+        needed. Then write down, in one sentence, the idea you were missing. This habit is worth more than any single
+        technique in this book.
+  \item \textbf{Implement, do not just read.} Reading an editorial gives the feeling of understanding; implementing it shows
+        whether you really do. Most of the details that matter only appear when you write the code.
+  \item \textbf{Build a library and know it.} This book comes with one (GUIDE.pdf). Knowing what is in it, and pasting it
+        with one shortcut, saves minutes in every contest and removes a whole class of bugs.
+  \item \textbf{Review your mistakes.} Keep a list of the bugs you made (overflow, off-by-one, uninitialised variables,
+        wrong reading of the statement). The same five bugs cause most of everyone's wrong answers.
+\end{itemize}
+
+\begin{pitfall}[Coding before thinking]
+Five minutes of thinking saves thirty minutes of debugging. If you cannot explain your algorithm, and why it is correct, in
+three sentences, do not start typing. The pressure of a contest makes typing feel like progress; it usually is not.
+\end{pitfall}
+
+\begin{summary}[Chapter summary]
+\begin{itemize}
+  \item Read the statement for information: the story names the objects, the input format their shape, the limits the
+        complexity, the samples your understanding, the subtasks the path to the solution.
+  \item Follow the loop: read, budget, small cases, brute force, structure, verify, code, test. Do not skip steps 3, 4 and 6.
+  \item When stuck, run through the checklist; the most powerful move is to change the question.
+  \item Prove greedy algorithms with an exchange argument, or break them with a small counterexample, ideally found by a
+        stress test.
+\end{itemize}
+\end{summary}
+
+\begin{practice}
+\ppgroup{Warm-up: reading and restating}
+\begin{pplist}
+  \item Weird Algorithm
+  \item Missing Number
+  \item Repetitions
+  \item Increasing Array
+  \item Permutations
+  \item Number Spiral
+  \item Two Knights
+  \item Two Sets
+  \item Coin Piles
+\end{pplist}
+\ppgroup{Small cases, patterns and constructions}
+\begin{pplist}
+  \item Bit Strings
+  \item Trailing Zeros
+  \item Palindrome Reorder
+  \item Gray Code
+  \item Tower of Hanoi
+  \item Digit Queries
+\end{pplist}
+\ppgroup{Greedy and exchange arguments}
+\begin{pplist}
+  \item Stick Lengths
+  \item Movie Festival
+  \item Tasks and Deadlines
+  \item Array Division
+  \item Ferris Wheel
+  \item Missing Coin Sum
+\end{pplist}
+\end{practice}

@@ -1,0 +1,223 @@
+\chapter{The Template, Line by Line}\label{ch:template}
+
+\file{template/template.cpp} is the file CPH copies for every new problem. It is strictly C++17, compiles without a
+single warning under \texttt{-Wall -Wextra -Wshadow -Wpedantic}, and was tested three ways: as CPH builds it locally,
+as a C++17 judge builds it, and as a C++20 judge builds it. This chapter walks through it top to bottom.
+Your original template is kept as \file{template/template.cpp.bak}.
+
+\section{Header}
+
+\begin{code}
+/**
+ *    author:  Kshitish Madbhavi
+ *    problem: $name$
+ *    source:  $group$
+ *    url:     $url$
+ *    created: $date$ $time$
+ */
+\end{code}
+
+The \texttt{\$...\$} words are CPH template variables. When CPH creates a file it replaces each one with the
+corresponding field of the problem it received, so every solution records where it came from. Files made with
+\key{Ctrl+Shift+N} are filled the same way by \file{tools/cp.py}; the \texttt{cptemplate} snippet fills them with
+VS Code's date and file-name variables.
+
+\section{Includes and the debug hook}
+
+\begin{code}
+#include <bits/stdc++.h>
+using namespace std;
+
+#ifdef LOCAL
+#include "debug.h"
+#else
+#define dbg(...)
+#endif
+\end{code}
+
+\cc{LOCAL} is defined by every local build (CPH, F5, the stress tester) and never by a judge. Locally,
+\file{include/debug.h} provides \cc{dbg(...)}; on the judge \cc{dbg(...)} is defined as nothing, so
+\cc{dbg(a, b);} becomes an empty statement. Chapter~\ref{ch:testing} shows what \cc{dbg} prints.
+
+\section{Types}
+
+\begin{code}
+#define int long long
+
+using ll = long long;
+using ld = long double;
+using pii = pair<int, int>;
+using pll = pair<ll, ll>;
+using vi = vector<int>;
+using vvi = vector<vi>;
+template <class T> using minpq = priority_queue<T, vector<T>, greater<T>>;
+\end{code}
+
+\cc{#define int long long} turns every \cc{int} in your code into a 64-bit integer, which removes the most common
+source of wrong answers: overflow of intermediate values such as \cc{a * b} when both are up to $10^9$.
+
+\begin{fact}[Fixed from the old template]
+In the old template \cc{#define int long long} came \emph{after} the aliases, so \cc{pii} was still
+\cc{pair<int,int>} with 32-bit ints. Pushing a \cc{long long} distance into a \cc{minpqpii} silently truncated it,
+a classic source of mysterious Dijkstra failures. The define now comes first, so every alias is 64-bit.
+\end{fact}
+
+Consequences of \cc{#define int long long} to remember:
+\begin{itemize}
+  \item \cc{main} must be declared as \cc{signed main()} (it is), because \cc{long long main()} is illegal.
+  \item \cc|printf("%d", x)| is wrong for an \cc{int}; use \cc{cout} or \cc|%lld|.
+  \item \cc{max(x, 0)} fails to compile when \cc{x} is \cc{int}, because \cc{0} is a real 32-bit \cc{int}
+        literal. Write \cc{max<int>(x, 0)}, \cc{max(x, 0LL)} or use \cc{chmax} below (it accepts mixed types).
+  \item \cc{__builtin_popcount(x)} truncates to 32 bits; use \cc{__builtin_popcountll}.
+  \item Memory doubles for \cc{vector<int>}. $10^7$ \cc{int}s are now 80\,MB instead of 40\,MB.
+\end{itemize}
+
+\cc{minpq<T>} is a min-heap: \cc|minpq<pii> pq; pq.push({dist, v});| pops the smallest pair first. It replaces the
+four separate \cc{minpqi}/\cc{minpql}/\cc{minpqpii}/\cc{minpqpll} aliases of the old template.
+
+\section{Macros}
+
+\begin{code}
+#define all(x) (x).begin(), (x).end()
+#define rall(x) (x).rbegin(), (x).rend()
+#define sz(x) (int)(x).size()
+#define rep(...)   // rep(i, n): 0..n-1   rep(i, a, b): a..b-1
+#define per(...)   // same ranges, backwards
+\end{code}
+
+\begin{center}
+\begin{tabularx}{\linewidth}{>{\ttfamily}p{4.2cm}>{\ttfamily}p{5.8cm}L}
+\toprule
+\thd{You write} & \thd{It means} & \thd{Typical use} \\
+\midrule
+sort(all(v)) & sort(v.begin(), v.end()) & any STL algorithm on a whole container \\
+sort(rall(v)) & sort(v.rbegin(), v.rend()) & sort in decreasing order \\
+sz(v) & (int)v.size() & avoids signed/unsigned warnings and \texttt{v.size() - 1} underflow \\
+rep(i, n) & for (int i = 0; i < n; i++) & the everyday loop \\
+rep(i, 1, n + 1) & for (int i = 1; i < n + 1; i++) & 1-indexed loops \\
+per(i, n) & for (int i = n - 1; i >= 0; i--) & reverse loops \\
+per(i, a, b) & for (int i = b - 1; i >= a; i--) & reverse over $[a, b)$ \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\cc{rep} picks its two- or three-argument form by counting arguments (the \cc{PICK3} helper macro), a standard
+C++17-compatible preprocessor trick.
+
+\begin{pitfall}[Why \texttt{sz} matters]
+\cc{v.size()} is unsigned. If \cc{v} is empty, \cc{v.size() - 1} is $2^{64}-1$, so
+\cc{for (int i = 0; i < v.size() - 1; i++)} runs forever. \cc{sz(v) - 1} is $-1$ and the loop is skipped.
+Library code avoids the \cc{sz} name for anything else, because the macro would swallow it.
+\end{pitfall}
+
+\section{Constants}
+
+\begin{code}
+constexpr ll INF = 4e18;
+constexpr int MOD = 1'000'000'007;  // 998'244'353
+\end{code}
+
+\cc{INF} is large enough to mean ``unreachable'' yet \cc{INF + INF} still fits in a \cc{long long}
+($8\times10^{18} < 9.22\times10^{18}$). \cc{MOD} is used by every modular template in the library (\texttt{cpmint},
+\texttt{cpncr}, \ldots); switch the comment when a problem wants 998\,244\,353.
+
+\section{Helpers}
+
+\begin{code}
+chmin(a, b);  chmax(a, b);   // a = min(a, b) / max(a, b); true if a changed; mixed types OK
+cdiv(a, b);   fdiv(a, b);    // ceil(a / b) and floor(a / b), correct for negative numbers too
+cin >> v;                    // reads a whole vector (sized beforehand) or a pair
+cout << v;                   // prints a vector separated by spaces
+print(a, b, c);              // prints "a b c" and a newline
+yn(ok);                      // prints YES or NO
+\end{code}
+
+\begin{center}
+\begin{tabular}{>{\ttfamily}l>{\ttfamily}r>{\ttfamily}r>{\ttfamily}r}
+\toprule
+\thd{expression} & \thd{C++ \texttt{/}} & \thd{cdiv} & \thd{fdiv} \\
+\midrule
+7 / 2 & 3 & 4 & 3 \\
+-7 / 2 & -3 & -3 & -4 \\
+7 / -2 & -3 & -3 & -4 \\
+-8 / -3 & 2 & 3 & 2 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+C++ division truncates toward zero, which is neither floor nor ceiling for negative results; \cc{cdiv} and
+\cc{fdiv} were checked on all sign combinations. \cc{chmin}/\cc{chmax} take two type parameters so
+\cc{chmax(ans, 0)} compiles even though \cc{0} is a plain \cc{int}.
+
+\section{Automatic USACO file I/O}\label{sec:fileio}
+
+\begin{code}
+void file_io() {
+#ifndef LOCAL
+    auto file = [](const string& spec) { /* extract "fileName":"..." */ };
+    string in = file(R"($input$)"), out = file(R"($output$)");
+    if (!in.empty()) freopen(in.c_str(), "r", stdin);
+    if (!out.empty()) freopen(out.c_str(), "w", stdout);
+#endif
+}
+\end{code}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  bx/.style={draw=cpblue, fill=cpblue!5, rounded corners=3pt, thick, align=left, font=\ttfamily\scriptsize, inner sep=5pt},
+  arr/.style={->, very thick, cpteal}, lab/.style={font=\sffamily\scriptsize, text=cpgray, align=center}]
+  \node[bx] (json) at (0, 0) {"input": \{"type": "file",\\ \ \ \ \ \ \ \ \ \ "fileName": "moocast.in"\}\\
+    "output": \{"type": "file",\\ \ \ \ \ \ \ \ \ \ \ "fileName": "moocast.out"\}};
+  \node[bx, draw=cpteal, fill=cpteal!5] (tmpl) at (0, -2.6) {string in = file(R"(\$input\$)");};
+  \node[bx, draw=cporange, fill=cporange!6] (res) at (8.1, -2.6) {string in = file(R"("type":"file",\\
+    \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "fileName":"moocast.in")");};
+  \node[bx, draw=cpgreen, fill=cpgreen!6] (judge) at (8.1, 0) {judge: freopen("moocast.in") ...\\locally (-DLOCAL): skipped, CPH uses stdin};
+  \node[lab, above=2pt of json] {Competitive Companion sends};
+  \node[lab, below=2pt of tmpl] {\file{template.cpp}};
+  \draw[arr] (json) -- node[left, lab] {CPH} (tmpl);
+  \draw[arr] (tmpl) -- node[above, lab] {\$input\$ replaced} (res);
+  \draw[arr] (res) -- node[right, lab] {at run time} (judge);
+\end{tikzpicture}
+\caption{How a USACO problem switches on file I/O without any manual step.}
+\end{figure}
+
+CPH replaces \texttt{\$input\$} with the problem's input description, minus its outer braces. For USACO that is
+\texttt{"type":"file","fileName":"moocast.in"}, so \cc{file()} finds a file name and \cc{freopen} runs; for every
+other judge it is \texttt{"type":"stdin"}, no file name is found and nothing happens. The raw string literal
+\cc{R"(...)"} means the quotes need no escaping. The whole function is compiled only when \cc{LOCAL} is
+\emph{not} defined, so CPH keeps running your samples through standard input.
+
+\begin{tip}
+If a file was created some other way and you need file I/O, change the placeholder by hand to
+\texttt{R"("fileName":"name.in")"} (and the output one to \texttt{name.out}), or recreate the file with
+\key{Ctrl+Shift+U}.
+\end{tip}
+
+\section{solve() and main()}
+
+\begin{code}
+void solve() {
+
+}
+
+signed main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    cout << fixed << setprecision(10);
+    file_io();
+
+    int t = 1;
+    // cin >> t;
+    while (t--) solve();
+}
+\end{code}
+
+\begin{itemize}
+  \item \cc{sync_with_stdio(false)} and \cc{cin.tie(nullptr)} make \cc{cin}/\cc{cout} as fast as \cc{scanf}. After them,
+        do not mix \cc{cin} with \cc{scanf} or \cc{cout} with \cc{printf}.
+  \item \cc{fixed << setprecision(10)} prints floating-point answers with ten decimals, which satisfies every
+        ``absolute or relative error $10^{-6}$'' checker. Integers are unaffected.
+  \item Print \cc|'\n'|, not \cc{endl}: \cc{endl} flushes the output every time and can turn a fast program into
+        a TLE. The one exception is interactive problems, which need the flush (\texttt{cpinteractive}).
+\end{itemize}

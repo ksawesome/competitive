@@ -1,0 +1,838 @@
+\chapter{Strings}\label{ch:strings}
+
+String problems look diverse, but most of them reduce to a few questions. Does a pattern occur, and where? Are two substrings equal?
+What is the longest common prefix of two suffixes? Which substrings are palindromes, and how many distinct substrings are there? This
+chapter builds the standard tools in order of power: hashing, borders and the Z-function, tries and Aho--Corasick, the palindrome
+tools, Lyndon words, and the two structures that capture all substrings at once, the suffix array and the suffix automaton.
+
+\begin{chapterintro}{\gold\ \plat\ \ioi}{Chapter~\ref{ch:cpp} (strings in C++) and Chapter~\ref{ch:segtree} (Fenwick trees).}
+  \item compare substrings in $\Oh{1}$ with hashing, and keep the hashes under updates;
+  \item compute borders, periods and pattern matches with the prefix function and the Z-function, and turn KMP into an automaton;
+  \item match many patterns at once with tries and Aho--Corasick;
+  \item find palindromes with Manacher's algorithm and count them with the palindromic tree;
+  \item factorise strings into Lyndon words and find minimal rotations;
+  \item answer questions about all substrings with suffix arrays and suffix automata.
+\end{chapterintro}
+
+% ======================================================================================================================
+\section[String hashing]{String hashing \hfill \gold}\label{sec:strhash}
+
+A \defn{polynomial hash} maps a string to a number: $h(s) = s_0 B^{n-1} + s_1 B^{n-2} + \dots + s_{n-1} \bmod M$ for a base $B$ and a
+modulus $M$. The prefix hashes $H_i = h(s_0 \dots s_{i-1})$ satisfy $H_{i+1} = H_i B + s_i$, and they give the hash of any substring in
+$\Oh{1}$:
+\[
+  h\bigl(s[l, r)\bigr) = H_r - H_l \cdot B^{r - l} \pmod M ,
+\]
+because $H_r$ contains $H_l$ shifted by $r - l$ positions (Figure~\ref{fig:strhash}). Equal substrings have equal hashes. For a random
+base, two \emph{different} strings of length at most $n$ collide with probability at most $n / M$, since their difference is a non-zero
+polynomial in $B$ of degree below $n$, which has fewer than $n$ roots.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[blbl, anchor=east] at (-0.2, 0) {$s$};
+  \arrs{H}{0}{0}{a/cool, b/cool, r/cool, a/cool, c/n, a/n, d/n, a/cool, b/cool, r/cool, a/cool}
+  \idx{H}{11}
+  \spanabove{H-1}{H-4}{$H_4$}
+  \spanabove{H-8}{H-11}{$H_{11} - H_7 \cdot B^4$}
+  \node[notel, anchor=west, text width=5.4cm] at (8.2, -0.1) {Both windows hash to the same number, so ``abra'' occurs at 0 and at 7:
+    checked in $\Oh{1}$ after $\Oh{n}$ preprocessing, whatever the window length.};
+\end{tikzpicture}
+\caption{Substring hashes from prefix hashes: $h(s[7, 11)) = H_{11} - H_7 B^4$.}
+\label{fig:strhash}
+\end{figure}
+
+\usetemplate{String hashing}{Ctrl+Alt+T, H}{cpstrhash}
+
+\begin{pitfall}[Weak hashes get hacked]
+With $M = 2^{64}$ (letting \cc{unsigned long long} overflow) the Thue--Morse strings collide for \emph{every} base, and with a fixed
+small modulus and a fixed base, anybody can construct collisions in advance. The library uses $M = 2^{61} - 1$, a prime for which
+multiplication stays fast, and a base drawn at run time: about $5 \cdot 10^{-13}$ per comparison of strings of length $10^6$, and
+nothing to precompute against.
+\end{pitfall}
+
+\paragraph{Hashes under updates.} A hash is a sum of $s_i B^{\text{position}}$ terms, so a Fenwick tree over these terms keeps substring
+hashes available while characters change: a point update replaces one term, and a range sum gives the hash, multiplied by a power of $B$.
+
+\begin{problem}{Palindrome Queries (CSES)}
+A string of length $n \le 2 \cdot 10^5$ receives $m \le 2 \cdot 10^5$ operations: change one character, or ask whether $s[a..b]$ is a
+palindrome.
+\solution Keep two Fenwick trees: one over $s_i B^i$ (the string read forwards) and one over $s_i B^{n-1-i}$ (backwards). The range
+sums $F$ and $R$ over $[a, b]$ hash the substring and its reverse with different alignments. If the substring is a palindrome, then
+$R = B^{n-1-a-b} F$, so the test is $F \cdot B^{n-1-b} = R \cdot B^{a}$. Each operation is $\Oh{\log n}$: 0.16\,s in total.
+\end{problem}
+
+\begin{code}
+void solve() {  // StrHash (cpstrhash) is pasted above solve(): mul, base, MODH
+    int n, m;
+    string s;
+    cin >> n >> m >> s;
+    const uint64_t M = StrHash::MODH;
+    vector<uint64_t> pw(n + 1, 1);
+    rep(i, n) pw[i + 1] = StrHash::mul(pw[i], StrHash::base());
+    // Fenwick trees over s[i] B^i (forward) and s[i] B^(n-1-i) (backward)
+    vector<uint64_t> fw(n + 1), bw(n + 1);
+    auto add = [&](vector<uint64_t>& f, int i, uint64_t v) {
+        for (i++; i <= n; i += i & -i) f[i] = (f[i] + v) % M;
+    };
+    auto sum = [&](vector<uint64_t>& f, int i) {  // the first i entries
+        uint64_t r = 0;
+        for (; i > 0; i -= i & -i) r = (r + f[i]) % M;
+        return r;
+    };
+    auto put = [&](int i, char c, bool remove) {  // add or remove letter c at i
+        uint64_t a = StrHash::mul(c, pw[i]);
+        uint64_t b = StrHash::mul(c, pw[n - 1 - i]);
+        if (remove) a = M - a, b = M - b;
+        add(fw, i, a), add(bw, i, b);
+    };
+    rep(i, n) put(i, s[i], false);
+    while (m--) {
+        int t;
+        cin >> t;
+        if (t == 1) {
+            int k;
+            char x;
+            cin >> k >> x;
+            put(k - 1, s[k - 1], true), s[k - 1] = x, put(k - 1, x, false);
+        } else {
+            int a, b;
+            cin >> a >> b;
+            a--, b--;
+            uint64_t f = (sum(fw, b + 1) + M - sum(fw, a)) % M;
+            uint64_t r = (sum(bw, b + 1) + M - sum(bw, a)) % M;
+            // a palindrome reads the same both ways; align the powers
+            yn(StrHash::mul(f, pw[n - 1 - b]) == StrHash::mul(r, pw[a]));
+        }
+    }
+}
+\end{code}
+
+\begin{trick}[Hash plus binary search]
+The longest common prefix of two suffixes is found by binary search on its length, comparing hashes: $\Oh{\log n}$. That gives
+$\Oh{\log n}$ lexicographic comparison of any two substrings (compare the first character after the common prefix), the longest
+palindrome centred at every position, the longest substring that occurs twice (binary search the length, with all hashes of that length
+in a hash set), and suffix sorting in $\Oh{n \log^2 n}$ with an ordinary \cc{sort}.
+\end{trick}
+
+% ======================================================================================================================
+\section[Borders and the prefix function]{Borders and the prefix function \hfill \plat}\label{sec:kmp}
+
+A \defn{border} of a string is a proper prefix that is also a suffix: ``aba'' is a border of ``ababa''. The \defn{prefix function} $\pi[i]$
+is the length of the longest border of $s[0..i]$ (Figure~\ref{fig:prefixfunc}). Two facts make it computable in $\Oh{n}$. First, a border
+of $s[0..i]$, minus its last character, is a border of $s[0..i-1]$, so $\pi[i] \le \pi[i-1] + 1$. Second, the borders of $s[0..i-1]$ are
+exactly $\pi[i-1]$, then $\pi[\pi[i-1] - 1]$, and so on, because a border of a border is a border. So try to extend the longest border
+by $s[i]$; if that fails, fall back to the next shorter border and try again.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[blbl, anchor=east] at (-0.2, 0) {$s$};
+  \arrs{P}{0}{0}{a/cool, b/cool, a/cool, b/n, a/n, c/n, a/warn, b/warn, a/warn, b/warn}
+  \idx{P}{10}
+  \node[blbl, anchor=east] at (-0.2, -1.2) {$\pi$};
+  \arrs{Q}{0}{-1.2}{0/n, 0/n, 1/n, 2/n, 3/n, 0/n, 1/n, 2/n, 3/n, 4/hot}
+  \spanabove{P-1}{P-4}{border ``abab''}
+  \spanabove{P-7}{P-10}{suffix ``abab''}
+  \node[notel, anchor=west, text width=5.6cm] at (7.5, -0.6) {$\pi[9] = 4$: the prefix ``abab'' (blue) equals the suffix (orange).
+    The next border is $\pi[3] = 2$ (``ab''), then $\pi[1] = 0$: the borders of the whole string are 4 and 2.};
+\end{tikzpicture}
+\caption{The prefix function of ``ababacabab''.}
+\label{fig:prefixfunc}
+\end{figure}
+
+The loop is linear by an amortised argument: the current border length $j$ grows by at most 1 per character, and every fallback
+decreases it, so there are at most $n$ fallbacks in total. To find a pattern $p$ in a text $t$, compute $\pi$ of $p + \# + t$ with a
+separator that occurs in neither: every position where $\pi = |p|$ ends an occurrence. This is the \textbf{Knuth--Morris--Pratt}
+algorithm, $\Oh{|p| + |t|}$; String Matching (page~\pageref{wp:kmp}) writes it out in full.
+
+\usetemplate{KMP (prefix function + pattern search)}{Ctrl+Alt+T, Shift+K}{cpkmp}
+
+\begin{problem}{Finding Borders (CSES)}
+Print the lengths of all borders of a string of length $n \le 10^6$, in increasing order.
+\solution The longest border is $\pi[n-1]$, and following the chain $b \mapsto \pi[b - 1]$ visits all the others. 0.15\,s even for
+``aaa\dots a'', which has $n - 1$ borders.
+\end{problem}
+
+\begin{code}
+void solve() {  // prefix_function (cpkmp) is pasted above solve()
+    string s;
+    cin >> s;
+    vi pi = prefix_function(s), borders;
+    for (int b = pi.back(); b > 0; b = pi[b - 1]) borders.push_back(b);
+    reverse(all(borders));  // the borders of a border are borders too
+    print(borders);
+}
+\end{code}
+
+\paragraph{The KMP automaton.} Precompute, for every matched length $j < |p|$ and every letter $c$, the matched length after reading $c$:
+$j + 1$ if $p_j = c$, and otherwise the same transition from the next shorter border, $\mathit{go}(\pi[j-1], c)$. The result is a
+deterministic automaton that tracks ``the longest suffix of the text read so far that is a prefix of $p$'' (Figure~\ref{fig:kmpauto}),
+and DPs over strings can run on its states.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=2.1cm]
+  \tikzset{ks/.style={vtx, minimum size=8mm}, kl/.style={font=\sffamily\scriptsize\bfseries, inner sep=1.5pt, fill=white}}
+  \foreach \ii in {0, ..., 3} \node[ks] (K\ii) at (\ii, 0) {\ii};
+  \node[ks, good, double, double distance=1pt] (K4) at (4, 0) {4};
+  \foreach \ii/\jj/\klt in {0/1/A, 1/2/B, 2/3/A, 3/4/B} \draw[ded, line width=1pt, draw=fgblue] (K\ii) -- node[kl, text=fgblue] {\klt} (K\jj);
+  \draw[ded] (K0) to[loop above, looseness=6] node[kl] {B} (K0);
+  \draw[ded] (K1) to[loop above, looseness=6] node[kl] {A} (K1);
+  \draw[ded] (K2) to[bend left=40] node[kl] {B} (K0);
+  \draw[ded] (K3) to[bend left=40] node[kl] {A} (K1);
+  \draw[ded] (K4) to[loop above, looseness=6] node[kl] {A, B} (K4);
+  \node[notel, anchor=north, text width=11cm] at (2, -1.5) {The KMP automaton of ``ABAB'' over $\{A, B\}$. State $j$ means that the
+    last $j$ letters read equal the first $j$ letters of the pattern. A mismatch falls back along the borders: after ``ABA'' a B
+    completes the pattern, an A leaves ``A'' (state 1). For ``does the text contain $p$'' the final state is made absorbing.};
+\end{tikzpicture}
+\caption{A pattern-matching automaton built from the prefix function.}
+\label{fig:kmpauto}
+\end{figure}
+
+\begin{problem}{Required Substring (CSES)}
+Count the strings of length $n \le 1000$ over the alphabet A--Z that contain a given pattern of length $m \le 100$, modulo $10^9 + 7$.
+\solution Count the complement: strings that never reach state $m$ of the KMP automaton. The DP over (length, state) has $nm$ states with
+26 transitions each: 0.08\,s. The answer is $26^n$ minus the strings that avoid the pattern.
+\end{problem}
+
+\begin{code}
+void solve() {  // prefix_function (cpkmp) is pasted above solve()
+    int n;
+    string p;
+    cin >> n >> p;
+    int m = sz(p);
+    vi pi = prefix_function(p);
+    vvi go(m, vi(26));  // the KMP automaton: matched length after a letter
+    rep(j, m) rep(c, 26) {
+        if (p[j] - 'A' == c) go[j][c] = j + 1;
+        else go[j][c] = j ? go[pi[j - 1]][c] : 0;
+    }
+    vi dp(m), nd(m);  // dp[j]: strings so far whose longest match with p is j
+    dp[0] = 1;
+    ll total = 1;
+    rep(i, n) {
+        fill(all(nd), 0);
+        rep(j, m) rep(c, 26) {
+            int to = go[j][c];
+            if (to < m) nd[to] = (nd[to] + dp[j]) % MOD;
+        }
+        swap(dp, nd);  // strings that complete p are dropped: they contain it
+        total = total * 26 % MOD;
+    }
+    ll avoid = 0;
+    for (ll v : dp) avoid = (avoid + v) % MOD;
+    print((total - avoid + MOD) % MOD);
+}
+\end{code}
+
+% ======================================================================================================================
+\section[The Z-function]{The Z-function \hfill \plat}\label{sec:zfunc}
+
+The \defn{Z-function} $z[i]$ is the length of the longest common prefix of $s$ and its suffix starting at $i$. The algorithm keeps the
+rightmost \emph{Z-box} $[l, r)$ found so far, a window that matches the prefix $s[0, r - l)$ (Figure~\ref{fig:zfunc}). For a position $i$
+inside it, the window says that $s[i, r)$ equals $s[i - l, r - l)$, so $z[i] \ge \min(r - i, z[i - l])$ for free; only characters
+beyond $r$ are compared explicitly, and each such comparison moves $r$ to the right. Hence $\Oh{n}$ in total.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[blbl, anchor=east] at (-0.2, 0) {$s$};
+  \arrs{Z}{0}{0}{a/cool, a/cool, b/cool, x/cool, a/warn, a/warn, b/warn, x/warn, c/n, a/n, a/n, b/n}
+  \idx{Z}{12}
+  \node[blbl, anchor=east] at (-0.2, -1.2) {$z$};
+  \arrs{Y}{0}{-1.2}{0/n, 1/n, 0/n, 0/n, 4/hot, 1/n, 0/n, 0/n, 0/n, 3/n, 1/n, 0/n}
+  \spanabove{Z-5}{Z-8}{Z-box $[4, 8)$}
+  \node[notel, anchor=west, text width=4.6cm] at (8.9, -0.6) {$z[4] = 4$: ``aabx'' at 4 matches the prefix. Inside the box, $z[5]$ starts
+    from $z[1] = 1$ without comparing anything.};
+\end{tikzpicture}
+\caption{The Z-function of ``aabxaabxcaab''.}
+\label{fig:zfunc}
+\end{figure}
+
+\usetemplate{Z-function}{Ctrl+Alt+T, Z}{cpz}
+
+The Z-function and the prefix function carry the same information and convert into each other in $\Oh{n}$; use whichever reads more
+naturally. Matching a pattern is $z$ of $p + \# + t$; periods read off $z$ directly.
+
+\begin{problem}{Finding Periods (CSES)}
+Print all periods of a string of length $n \le 10^6$: the lengths $p$ such that $s_i = s_{i+p}$ for every valid $i$.
+\solution $p < n$ is a period exactly when the suffix starting at $p$ is a prefix of $s$, that is $z[p] = n - p$; $n$ itself always is.
+0.11\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // z_function (cpz) is pasted above solve()
+    string s;
+    cin >> s;
+    int n = sz(s);
+    vi z = z_function(s), periods;
+    rep(p, 1, n) if (z[p] == n - p) periods.push_back(p);  // s[p..) repeats s
+    periods.push_back(n);
+    print(periods);
+}
+\end{code}
+
+\begin{fact}[Periods and borders]
+$p$ is a period of $s$ exactly when $s$ has a border of length $n - p$, so the smallest period is $n - \pi[n-1]$, and $s$ is a power of a
+shorter string exactly when that period divides $n$. \textbf{Fine--Wilf}: if $p$ and $q$ are periods and $p + q - \gcd(p, q) \le n$, then
+$\gcd(p, q)$ is a period too.
+\end{fact}
+
+% ======================================================================================================================
+\section[Tries]{Tries \hfill \gold}\label{sec:trie}
+
+A \defn{trie} stores a set of strings as a rooted tree whose edges are letters: every string is the path from the root to a node, and
+strings with a common prefix share that part of the path (Figure~\ref{fig:trie}). Insertion and lookup cost $\Oh{|s|}$, and a node can
+store counts, such as the number of words that pass through it (``how many words start with $p$''). The binary trie of
+Section~\ref{sec:xor} is the same structure over the bits of numbers.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[level distance=11mm, level 1/.style={sibling distance=26mm}, level 2/.style={sibling distance=12mm}]
+  \tikzset{tw/.style={vtxs}, te/.style={font=\ttfamily\small, fill=white, inner sep=1pt}}
+  \node[tw] (R) {}
+    child {node[tw, hot] (A) {}
+      child {node[tw, hot] (AB) {}
+        child {node[tw] (ABA) {}
+          child {node[tw, hot] (ABAB) {} edge from parent[ed] node[te, right] {b}}
+          edge from parent[ed] node[te, right] {a}}
+        edge from parent[ed] node[te, right] {b}}
+      edge from parent[ed] node[te, left] {a}}
+    child {node[tw, hot] (B) {} edge from parent[ed] node[te, right] {b}};
+  \node[notel, anchor=west, text width=6.6cm] at (2.4, -1.9) {The trie of the words a, ab, abab and b (red: a word ends). Splitting
+    $s = $ abab: from position 0 the walk passes the ends of a, ab and abab, so $\mathit{dp}[0] = \mathit{dp}[1] + \mathit{dp}[2] +
+    \mathit{dp}[4] = 2 + 2 + 1 = 5$ ways.};
+\end{tikzpicture}
+\caption{A trie, and the walks of Word Combinations.}
+\label{fig:trie}
+\end{figure}
+
+\usetemplate{Trie / binary trie}{Ctrl+Alt+T, Shift+T / \textasciigrave}{cptrie, cpxortrie}
+
+\begin{problem}{Word Combinations (CSES)}
+In how many ways can a string of length $n \le 5000$ be split into words from a dictionary of $k \le 10^5$ distinct words (total length
+up to $10^6$)? Answer modulo $10^9 + 7$.
+\solution $\mathit{dp}[i]$, the number of ways to split $s[i..)$, is the sum of $\mathit{dp}[j + 1]$ over the dictionary words $s[i..j]$.
+Walking the trie along $s[i..]$ finds all of them in one pass, stopping as soon as no word continues: $\Oh{n \cdot L}$ for the longest
+word length $L$. 0.15\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // Trie (cptrie) is pasted above solve()
+    string s;
+    int k;
+    cin >> s >> k;
+    Trie t;
+    rep(i, k) {
+        string w;
+        cin >> w;
+        t.insert(w);
+    }
+    int n = sz(s);
+    vi dp(n + 1);  // dp[i]: the ways to split s[i..)
+    dp[n] = 1;
+    per(i, n) {
+        int u = 0;  // walk the trie along s[i..]; word ends split
+        for (int j = i; j < n && (u = t.nxt[u][s[j] - 'a']); j++)
+            if (t.ends[u]) dp[i] = (dp[i] + dp[j + 1]) % MOD;
+    }
+    print(dp[0]);
+}
+\end{code}
+
+% ======================================================================================================================
+\section[Aho--Corasick]{Aho--Corasick \hfill \ioi}\label{sec:aho}
+
+To find many patterns in a text at once, build their trie and add \defn{suffix links}: the link of a node points to the node of the
+longest proper suffix of its string that is also in the trie (Figure~\ref{fig:aho}). This generalises the prefix function from one
+pattern to a trie, and the links are computed the same way, in BFS order: the link of $u$'s child by letter $c$ is the child by $c$ of
+$u$'s link, falling back further when it does not exist. Filling in every missing child with that fallback turns the trie into a
+complete automaton, and the text is then read in one pass, one transition per character.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{an/.style={rectangle, rounded corners=2pt, draw=fgink!80, fill=fgfill, line width=0.7pt, font=\ttfamily\scriptsize,
+    minimum width=8mm, minimum height=5.6mm, inner sep=1.5pt}, ao/.style={an, good},
+    al/.style={->, line width=0.8pt, draw=fgverm, dashed, shorten >=1pt}}
+  \node[an] (r) at (0, 0) {$\varepsilon$};
+  \node[an] (h) at (-2.6, -1.1) {h};
+  \node[an] (s) at (2.6, -1.1) {s};
+  \node[ao] (he) at (-3.6, -2.2) {he};
+  \node[an] (hi) at (-1.6, -2.2) {hi};
+  \node[an] (her) at (-3.6, -3.3) {her};
+  \node[ao] (hers) at (-3.6, -4.4) {hers};
+  \node[ao] (his) at (-1.6, -3.3) {his};
+  \node[an] (sh) at (2.6, -2.2) {sh};
+  \node[ao] (she) at (2.6, -3.3) {she};
+  \draw[ed] (r) -- (h) (r) -- (s) (h) -- (he) (h) -- (hi) (he) -- (her) (her) -- (hers) (hi) -- (his) (s) -- (sh) (sh) -- (she);
+  \draw[al] (sh) to[bend right=12] (h);
+  \draw[al] (she) to[bend left=6] (he);
+  \draw[al] (his) to[bend right=15] (s);
+  \draw[al] (hers.east) to[bend right=30] (s.south);
+  \node[notel, anchor=west, text width=4.4cm] at (4.2, -2.3) {The trie of he, she, his and hers (green: a pattern ends). Red dashed
+    arrows are the suffix links that do not lead to the root. Reading ``she'' ends in node she, whose link reaches he: both patterns
+    occur there.};
+\end{tikzpicture}
+\caption{The Aho--Corasick automaton: a trie plus suffix links.}
+\label{fig:aho}
+\end{figure}
+
+A position of the text can end several patterns: those of the current node and of every node on its suffix-link path. Rather than walk
+that path at every character, count how often each node is the current one, and afterwards push the counts up the suffix links, in
+reverse BFS order: then every node's count is the number of occurrences of its string. The whole algorithm costs $\Oh{|\Sigma| \cdot
+\text{total pattern length} + |t|}$.
+
+\usetemplate{Aho--Corasick}{Ctrl+Alt+Y, Shift+A}{cpaho}
+
+\begin{problem}{Counting Patterns (CSES)}
+For a text of length $10^5$ and $k$ patterns of total length $5 \cdot 10^5$, print how many times each pattern occurs.
+\solution Aho--Corasick with counts pushed up the suffix links; identical patterns share a node. 0.08\,s for $10^5$ patterns.
+\end{problem}
+
+\begin{code}
+void solve() {  // AhoCorasick (cpaho) is pasted above solve()
+    string text;
+    int k;
+    cin >> text >> k;
+    AhoCorasick ac;
+    vi id(k);
+    rep(i, k) {
+        string p;
+        cin >> p;
+        id[i] = ac.add(p);  // equal patterns share a node
+    }
+    ac.build();
+    vector<ll> occ = ac.occurrences(text);  // counts pushed up the suffix links
+    rep(i, k) print(occ[id[i]]);
+}
+\end{code}
+
+\begin{recognize}
+Many patterns in one text (``count the dictionary words in a document''), and DPs over strings that must avoid or must contain a set of
+words: the automaton's states become the DP states, and ``strings of length $n$ with no forbidden word'' are walks of length $n$ that
+never enter a terminal state, a matrix power when $n$ is huge.
+\end{recognize}
+
+% ======================================================================================================================
+\section[Palindromes]{Palindromes \hfill \plat}\label{sec:palindromes}
+
+\paragraph{Manacher's algorithm.} For every centre $i$, let $d_1[i]$ be the number of odd palindromes centred at $i$ (the radius of the
+longest one, counting the centre). Manacher's algorithm computes all of them in $\Oh{n}$ with the idea of the Z-box: keep the palindrome
+$[l, r]$ that reaches furthest to the right. A centre $i$ inside it has a mirror image $j = l + r - i$, whose radius is already known, and
+the reflection guarantees $d_1[i] \ge \min(d_1[j], r - i + 1)$ (Figure~\ref{fig:manacher}). Only characters beyond $r$ are compared, and
+each comparison moves $r$. Even palindromes get a second array, or the string is interleaved with separators.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \arrs{M}{0}{0}{a/n, b/n, a/n, c/hot, a/n, b/n, a/n, d/n, a/n, b/n}
+  \idx{M}{10}
+  \draw[line width=1.2pt, draw=fgblue] (M-1.north) .. controls ($(M-1.north)+(0, 1.3)$) and ($(M-7.north)+(0, 1.3)$) .. (M-7.north);
+  \node[font=\sffamily\scriptsize, text=fgblue] at ($(M-4.north)+(0, 1.1)$) {``abacaba'' centred at 3};
+  \draw[line width=1pt, draw=fggreen] ($(M-1.south)+(0, -0.42)$) .. controls ($(M-1.south)+(0, -1.05)$) and ($(M-3.south)+(0, -1.05)$) .. ($(M-3.south)+(0, -0.42)$);
+  \draw[line width=1pt, draw=fggreen] ($(M-5.south)+(0, -0.42)$) .. controls ($(M-5.south)+(0, -1.05)$) and ($(M-7.south)+(0, -1.05)$) .. ($(M-7.south)+(0, -0.42)$);
+  \draw[->, line width=0.8pt, draw=fgink!60] ($(M-2.south)+(0, -1.05)$) to[bend right=20] node[below, lbl] {mirror} ($(M-6.south)+(0, -1.05)$);
+  \node[notel, anchor=west, text width=5.0cm] at (7.4, 0) {Inside the big palindrome, the centre 5 mirrors the centre 1, so it
+    inherits the palindrome ``aba'' (green) without a comparison. Here the radii are $d_1 = 1, 2, 1, 4, 1, 2, 1, 3, 1, 1$.};
+\end{tikzpicture}
+\caption{Manacher's algorithm reuses the mirror image inside the rightmost palindrome.}
+\label{fig:manacher}
+\end{figure}
+
+\usetemplate{Manacher}{Ctrl+Alt+Y, 6}{cpmanacher}
+
+\begin{problem}{Longest Palindrome (CSES)}
+Find a longest palindromic substring of a string of length $n \le 10^6$.
+\solution The largest radius among both arrays: 0.08\,s. The total number of palindromic substrings is $\sum_i d_1[i] + \sum_i d_2[i]$.
+\end{problem}
+
+\begin{code}
+void solve() {  // manacher (cpmanacher) is pasted above solve()
+    string s;
+    cin >> s;
+    auto [start, len] = longest_palindrome(s);
+    print(s.substr(start, len));
+}
+\end{code}
+
+\paragraph{The palindromic tree.} A string of length $n$ has at most $n$ \emph{distinct} palindromic substrings, because each new character
+creates at most one new one: the longest palindromic suffix of the new prefix (a shorter palindromic suffix is a mirror image inside the
+longest one, so it occurred earlier). The \defn{palindromic tree} (eertree) has one node per distinct palindrome. Its edges add a letter on
+both sides ($X \to cXc$), and two roots start the odd and the even palindromes: an imaginary one of length $-1$ (adding $c$ on both
+sides gives ``$c$'') and the empty palindrome of length 0. Every node also has a suffix link to its longest proper palindromic suffix
+(Figure~\ref{fig:eertree}). Appending a character means walking the suffix links from the current longest palindromic suffix until one
+can be extended by the new character, and the walks cost $\Oh{n}$ in total.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{en/.style={rectangle, rounded corners=2pt, draw=fgink!80, fill=fgfill, line width=0.7pt, font=\ttfamily\small,
+    minimum width=10mm, minimum height=6mm}, el/.style={->, line width=0.8pt, draw=fgverm, dashed, shorten >=1pt},
+    et/.style={font=\ttfamily\scriptsize\bfseries, fill=white, inner sep=1pt}}
+  \node[en, dim] (m1) at (0, 0) {$-1$};
+  \node[en, dim] (z0) at (4.2, 0) {$\varepsilon$};
+  \node[en] (pa) at (-1, -1.3) {a};
+  \node[en] (pb) at (1, -1.3) {b};
+  \node[en] (pbb) at (4.2, -1.3) {bb};
+  \node[en, good] (pabba) at (4.2, -2.6) {abba};
+  \draw[ded] (m1) -- node[et, left] {a} (pa);
+  \draw[ded] (m1) -- node[et, right] {b} (pb);
+  \draw[ded] (z0) -- node[et, right] {b} (pbb);
+  \draw[ded] (pbb) -- node[et, right] {a} (pabba);
+  \draw[el] (pa.south) to[bend right=35] (z0.south west);
+  \draw[el] (pb) to[bend left=10] (z0);
+  \draw[el] (pbb) -- (pb);
+  \draw[el] (pabba) to[bend left=25] (pa.south);
+  \draw[el] (z0) -- (m1);
+  \node[notel, anchor=west, text width=5.2cm] at (5.7, -1.3) {The palindromic tree of ``abba'': four distinct palindromes. Solid edges
+    put a letter on both sides; red dashed edges are suffix links (abba $\to$ a, bb $\to$ b, single letters $\to \varepsilon$, and
+    $\varepsilon \to -1$).};
+\end{tikzpicture}
+\caption{The palindromic tree has one node per distinct palindrome.}
+\label{fig:eertree}
+\end{figure}
+
+\usetemplate{Palindromic tree (eertree)}{Ctrl+Alt+U, Shift+E}{cpeertree}
+
+\begin{problem}{Palindromes (APIO 2014)}
+For a string of length $n \le 3 \cdot 10^5$, find the largest value of (length $\times$ number of occurrences) over its palindromic
+substrings.
+\solution Count, for every node, how often it was the longest palindromic suffix of a prefix; a palindrome also occurs wherever a longer
+palindrome ending at the same place has it as a suffix, so push the counts down the suffix links, from longer to shorter. 0.07\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // Eertree (cpeertree) is pasted above solve()
+    string s;
+    cin >> s;
+    Eertree t;
+    for (char c : s) t.add(c);
+    vector<ll> occ = t.occurrences();  // per distinct palindrome
+    ll best = 0;
+    rep(v, 2, sz(t.t)) chmax(best, t.t[v].len * occ[v]);  // 0, 1 are the roots
+    print(best);
+}
+\end{code}
+
+% ======================================================================================================================
+\section[Lyndon words and the minimal rotation]{Lyndon words and the minimal rotation \hfill \ioi}\label{sec:lyndon}
+
+A \defn{Lyndon word} is a string that is strictly smaller than all of its proper rotations, such as ``aab'' or ``abc'' (but not ``aba'' or
+``abab''). The \textbf{Chen--Fox--Lyndon theorem}: every string has a unique factorisation $s = w_1 w_2 \cdots w_k$ into Lyndon words with
+$w_1 \ge w_2 \ge \dots \ge w_k$ (Figure~\ref{fig:lyndon}). \textbf{Duval's algorithm} computes it in $\Oh{n}$ with three pointers. It keeps a
+prefix of the remaining string of the form $w w \cdots w w'$, where $w$ is a Lyndon word and $w'$ a proper prefix of $w$, and compares the
+next character $s_j$ with the character $s_k$ one period earlier. If they are equal, the periodic pattern continues; if $s_j > s_k$, the
+whole prefix together with $s_j$ becomes a single Lyndon word; if $s_j < s_k$, the copies of $w$ are output as factors and the scan
+restarts after them.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{lf/.style={rectangle, rounded corners=2pt, draw=fgblue, fill=fgsky!25, line width=0.8pt, font=\ttfamily\small,
+    minimum height=7mm, inner sep=3pt}}
+  \node[lf] (f1) at (0, 0) {b};
+  \node[lf, anchor=west] (f2) at ($(f1.east)+(0.25, 0)$) {ac};
+  \node[lf, anchor=west] (f3) at ($(f2.east)+(0.25, 0)$) {abc};
+  \node[lf, anchor=west] (f4) at ($(f3.east)+(0.25, 0)$) {ab};
+  \node[lf, anchor=west] (f5) at ($(f4.east)+(0.25, 0)$) {a};
+  \foreach \fa/\fb in {f1/f2, f2/f3, f3/f4, f4/f5}
+    \node[font=\small, text=fgverm] at ($(\fa.east)!0.5!(\fb.west)$) {$\ge$};
+  \node[notel, anchor=west, text width=6.6cm] at ($(f5.east)+(0.6, 0)$) {The Lyndon factorisation of ``bacabcaba'': five Lyndon words in
+    non-increasing order. The minimal rotation of a string starts at the last factor of $s + s$ that begins in the first half: for
+    ``abbaabbab'' it is ``aabbababb''.};
+\end{tikzpicture}
+\caption{The unique factorisation into non-increasing Lyndon words.}
+\label{fig:lyndon}
+\end{figure}
+
+The \textbf{minimal rotation} of $s$, a canonical form for cyclic strings and necklaces, starts at the beginning of the last Lyndon factor
+of $s + s$ that starts in the first half, so Duval's algorithm finds it in $\Oh{n}$ too.
+
+\usetemplate{Lyndon factorization (Duval) and minimal rotation}{Ctrl+Alt+U, Y}{cplyndon}
+
+\begin{problem}{Minimal Rotation (CSES)}
+Print the lexicographically smallest rotation of a string of length $n \le 10^6$.
+\solution Duval on $s + s$: 0.08\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // min_rotation (cplyndon) is pasted above solve()
+    string s;
+    cin >> s;
+    int k = min_rotation(s);  // Duval's algorithm on s + s
+    print(s.substr(k) + s.substr(0, k));
+}
+\end{code}
+
+% ======================================================================================================================
+\section[Suffix arrays]{Suffix arrays \hfill \ioi}\label{sec:suffixarray}
+
+The \defn{suffix array} lists the starting positions of all suffixes in lexicographic order, and the \defn{LCP array} stores the longest
+common prefix of every two neighbours in that order (Figure~\ref{fig:suffixarray}). Every substring is a prefix of some suffix, and the
+suffixes that start with a given string form one contiguous block of the order, so the two arrays answer most questions about all
+substrings at once.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[y=0.62cm]
+  \foreach \rk/\sav/\suf/\lc in {0/5/a/0, 1/3/ana/1, 2/1/anana/3, 3/0/banana/0, 4/4/na/0, 5/2/nana/2} {
+    \node[lbl] at (0, -\rk) {\rk};
+    \node[font=\ttfamily\small] at (0.9, -\rk) {\sav};
+    \node[font=\ttfamily\small] at (1.8, -\rk) {\lc};
+    \fill[fgsky!40] (2.6, -\rk - 0.3) rectangle ++(0.183*\lc, 0.6);
+    \node[font=\ttfamily\small, anchor=west, inner sep=0pt] at (2.6, -\rk) {\suf};
+  }
+  \node[blbl] at (0, 0.9) {rank};
+  \node[blbl] at (0.9, 0.9) {sa};
+  \node[blbl] at (1.8, 0.9) {lcp};
+  \node[blbl, anchor=west] at (2.6, 0.9) {suffix};
+  \node[notel, anchor=west, text width=6.8cm] at (5.2, -2.5) {The sorted suffixes of ``banana''. The shaded part of each suffix is its
+    common prefix with the previous one (the lcp column, here aligned with the later suffix). The distinct substrings are the
+    prefixes that are not shaded: $21 - (1 + 3 + 0 + 0 + 2) = 15$.};
+\end{tikzpicture}
+\caption{The suffix array and the LCP array of ``banana''.}
+\label{fig:suffixarray}
+\end{figure}
+
+\paragraph{Construction.} Sort the cyclic shifts of $s$ with a sentinel appended by their first $2^k$ characters, for $k = 0, 1, 2,
+\dots$ After round $k$ every shift has a rank among the strings of length $2^k$. The first $2^{k+1}$ characters of a shift are two
+halves of length $2^k$ whose ranks are already known, so round $k + 1$ sorts pairs of ranks, a radix sort in $\Oh{n}$. After $\log n$
+rounds all suffixes are ordered: $\Oh{n \log n}$. The LCP array follows in $\Oh{n}$ by \textbf{Kasai's algorithm}: process the suffixes
+in order of their starting position; when the suffix at $i$ has a common prefix of length $h$ with its successor in the order, the suffix
+at $i + 1$ has one of length at least $h - 1$ with its own successor, so the comparison resumes from $h - 1$.
+
+\usetemplate{Suffix array + LCP}{Ctrl+Alt+Y, 4}{cpsa}
+
+\begin{problem}{Distinct Substrings (CSES)}
+Count the distinct substrings of a string of length $n \le 10^5$.
+\solution Every substring is a prefix of a suffix, and walking the suffixes in sorted order, the prefixes of each suffix that were not
+already prefixes of the previous one are exactly those longer than their common prefix. The answer is $\frac{n(n+1)}{2} - \sum
+\mathit{lcp}$: 0.08\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // suffix_array, lcp_array (cpsa) are pasted above solve()
+    string s;
+    cin >> s;
+    ll n = sz(s), ans = n * (n + 1) / 2;
+    vi sa = suffix_array(s), lcp = lcp_array(s, sa);
+    for (ll x : lcp) ans -= x;  // prefixes shared with the previous suffix
+    print(ans);
+}
+\end{code}
+
+\begin{problem}{Substring Order I (CSES)}
+Find the $k$-th smallest distinct substring of a string of length $n \le 10^5$.
+\solution In sorted order, the suffix of rank $r$ contributes the new substrings of lengths $\mathit{lcp}[r-1] + 1, \dots, n - \mathit{sa}[r]$,
+and they come in increasing order. Skip whole suffixes until the $k$-th one falls inside: 0.08\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // suffix_array, lcp_array (cpsa) are pasted above solve()
+    string s;
+    ll k;
+    cin >> s >> k;
+    int n = sz(s);
+    vi sa = suffix_array(s), lcp = lcp_array(s, sa);
+    rep(r, n) {
+        ll shared = r ? lcp[r - 1] : 0;  // counted already at rank r - 1
+        ll fresh = n - sa[r] - shared;  // lengths shared + 1 .. n - sa[r]
+        if (k <= fresh) {
+            print(s.substr(sa[r], shared + k));
+            return;
+        }
+        k -= fresh;
+    }
+}
+\end{code}
+
+\begin{problem}{Substring Distribution (CSES)}
+For every length from 1 to $n$, count the distinct substrings of that length ($n \le 10^5$).
+\solution Each rank contributes one new substring of every length in an interval; add the intervals with a difference array. 0.09\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // suffix_array, lcp_array (cpsa) are pasted above solve()
+    string s;
+    cin >> s;
+    int n = sz(s);
+    vi sa = suffix_array(s), lcp = lcp_array(s, sa), diff(n + 2);
+    rep(r, n) {  // rank r: one new substring per length shared + 1 .. n - sa[r]
+        ll shared = r ? lcp[r - 1] : 0;
+        diff[shared + 1]++, diff[n - sa[r] + 1]--;
+    }
+    vi cnt(n);
+    ll run = 0;
+    rep(len, 1, n + 1) cnt[len - 1] = run += diff[len];
+    print(cnt);
+}
+\end{code}
+
+\begin{trick}[More from suffix arrays]
+\begin{itemize}
+  \item The LCP of any two suffixes is the minimum of the LCP array between their ranks: a sparse table answers it in $\Oh{1}$.
+  \item The longest repeated substring is the largest LCP value (Repeating Substring).
+  \item The longest common substring of $s$ and $t$: build the array of $s + \# + t$ and take the largest LCP between neighbours that come
+        from different strings.
+  \item A pattern's occurrences form a block of the order, found by binary search in $\Oh{|p| \log n}$.
+  \item The suffix array with its LCP array is a flattened \emph{suffix tree}, the compressed trie of all suffixes: its inner nodes are the
+        intervals of the order whose minimum LCP is the node's depth, so suffix-tree algorithms run on it with a stack.
+\end{itemize}
+\end{trick}
+
+% ======================================================================================================================
+\section[Suffix automata]{Suffix automata \hfill \ioi}\label{sec:sam}
+
+The \defn{suffix automaton} of $s$ is the smallest deterministic automaton that accepts exactly the substrings of $s$. Group the substrings
+by their set of end positions in $s$ (their \emph{endpos}): one state per group. Within a group the strings are suffixes of each other with
+consecutive lengths, so a state is described by its longest string, of length $\mathit{len}$, and by a \emph{suffix link} to the group
+of the next shorter suffix (Figure~\ref{fig:sam}). The automaton has at most $2n - 1$ states and $3n - 4$ transitions, and it is built
+online, one character at a time, in amortised $\Oh{1}$ per character: the new state is linked to existing ones along the suffix links,
+and when a transition would put strings with different endpos sets into one state, that state is split by a \emph{clone}.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{ss/.style={rectangle, rounded corners=3pt, draw=fgink!80, fill=fgfill, line width=0.7pt, font=\ttfamily\scriptsize,
+    minimum width=12mm, minimum height=7mm, align=center}, sl/.style={->, line width=0.8pt, draw=fgverm, dashed, shorten >=1pt},
+    st/.style={font=\ttfamily\scriptsize\bfseries, fill=white, inner sep=1pt}}
+  \node[ss, dim] (S0) at (0, 0) {$\varepsilon$};
+  \node[ss] (S1) at (2.4, 0) {a};
+  \node[ss] (S2) at (4.8, 0) {ab};
+  \node[ss, good] (S3) at (7.2, 0) {abb\\bb};
+  \node[ss, warn] (S4) at (3.6, -1.8) {b};
+  \draw[ded] (S0) -- node[st, above] {a} (S1);
+  \draw[ded] (S1) -- node[st, above] {b} (S2);
+  \draw[ded] (S2) -- node[st, above] {b} (S3);
+  \draw[ded] (S0) -- node[st, below left] {b} (S4);
+  \draw[ded] (S4) -- node[st, below right] {b} (S3);
+  \draw[sl] (S1) to[bend right=40] (S0);
+  \draw[sl] (S2) to[bend right=10] (S4);
+  \draw[sl] (S3) to[bend left=25] (S4);
+  \draw[sl] (S4) to[bend left=30] (S0);
+  \node[notel, anchor=west, text width=4.4cm] at (8.2, -0.9) {The suffix automaton of ``abb''. State ``b'' (orange) is the clone
+    created by the second b, when ``b'' started to end at two positions. Red dashed arrows are suffix links. Distinct substrings:
+    $\sum (\mathit{len} - \mathit{len}_{\mathrm{link}}) = 1 + 1 + 2 + 1 = 5$.};
+\end{tikzpicture}
+\caption{A suffix automaton: one state per endpos class.}
+\label{fig:sam}
+\end{figure}
+
+\usetemplate{Suffix automaton}{Ctrl+Alt+Y, 5}{cpsam}
+
+\begin{fact}[What a suffix automaton answers]
+The distinct substrings number $\sum_v (\mathit{len}(v) - \mathit{len}(\mathit{link}(v)))$. The number of occurrences of the strings of
+a state is the size of its endpos set: give every prefix's own state a count of 1 and add the counts up the suffix links, from the
+longest states down. The longest common substring of $s$ and $t$ is found by walking $t$ through the automaton of $s$, keeping the length
+of the current match. Since transitions always lead to longer states, sorting the states by $\mathit{len}$ orders the automaton
+topologically, and DPs over paths (the number of distinct substrings starting with a given prefix) run in that order.
+\end{fact}
+
+\begin{problem}{Substring Order II (CSES)}
+Find the $k$-th smallest substring of a string of length $n \le 10^5$, counting every occurrence separately.
+\solution Compute the occurrence count of every state, then $\mathit{total}(v)$, the number of substring occurrences on the paths that
+start at $v$: its own occurrences plus the totals of its successors. Walk from the start, choosing at each step the smallest letter whose
+total still reaches $k$: 0.12\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // SuffixAutomaton (cpsam) is pasted above solve()
+    string s;
+    ll k;
+    cin >> s >> k;
+    SuffixAutomaton sam(s);
+    auto& st = sam.st;
+    int m = sz(st);
+    vi occ(m), total(m), order(m);
+    int u = 0;
+    for (char ch : s) u = st[u].next[ch - 'a'], occ[u] = 1;  // prefix states
+    iota(all(order), 0);
+    sort(all(order), [&](int a, int b) { return st[a].len > st[b].len; });
+    for (int v : order)
+        if (v) occ[st[v].link] += occ[v];  // endpos sizes, longest states first
+    for (int v : order) {  // substrings with repetitions on paths from v
+        total[v] = v ? occ[v] : 0;
+        for (int w : st[v].next)
+            if (w != -1) total[v] += total[w];
+    }
+    string ans;
+    for (int v = 0; k > 0;) {
+        rep(c, 26) {
+            int w = st[v].next[c];
+            if (w == -1) continue;
+            if (total[w] < k) {
+                k -= total[w];
+                continue;
+            }
+            ans += char('a' + c), k -= occ[w], v = w;  // itself comes first
+            break;
+        }
+    }
+    print(ans);
+}
+\end{code}
+
+% ======================================================================================================================
+\section[Choosing a string tool]{Choosing a string tool \hfill \gold}\label{sec:stringtools}
+
+The tools overlap, and the simplest one that answers the question is usually the right choice. Figure~\ref{fig:stringflow} sorts them
+by the question asked.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=2.6mm]
+  \node[fq=5.2cm] (q1) {many patterns at once?};
+  \node[fend=4.6cm, right=12mm of q1] (a1) {Aho--Corasick};
+  \node[fq=5.2cm, below=of q1] (q2) {palindromes?};
+  \node[fend=4.6cm, right=12mm of q2] (a2) {Manacher; palindromic tree for distinct ones};
+  \node[fq=5.2cm, below=of q2] (q3) {equality of arbitrary substrings, or updates?};
+  \node[fend=4.6cm, right=12mm of q3] (a3) {hashing (+ Fenwick tree for updates)};
+  \node[fq=5.2cm, below=of q3] (q4) {one pattern, borders, periods?};
+  \node[fend=4.6cm, right=12mm of q4] (a4) {prefix function or Z-function};
+  \node[fq=5.2cm, below=of q4] (q5) {order, distinct substrings, LCPs?};
+  \node[fend=4.6cm, right=12mm of q5] (a5) {suffix array + LCP};
+  \node[fend=5.2cm, below=of q5] (a6) {suffix automaton (occurrences, online)};
+  \foreach \qq/\qa in {q1/a1, q2/a2, q3/a3, q4/a4, q5/a5} \draw[farr] (\qq) -- node[fyes, above] {yes} (\qa);
+  \foreach \qq/\nn in {q1/q2, q2/q3, q3/q4, q4/q5, q5/a6} \draw[farr] (\qq) -- node[fno, right] {no} (\nn);
+\end{tikzpicture}
+\caption{Which string tool to use.}
+\label{fig:stringflow}
+\end{figure}
+
+\begin{summary}[Chapter summary]
+\begin{itemize}
+  \item Polynomial hashes modulo $2^{61} - 1$ with a random base compare substrings in $\Oh{1}$; Fenwick trees keep them under updates.
+  \item The prefix function finds borders, periods and matches in $\Oh{n}$ by falling back along borders; it defines the KMP automaton
+        for DPs over strings. The Z-function gives the same information from the other side.
+  \item Tries share common prefixes; Aho--Corasick adds suffix links and matches many patterns in one pass.
+  \item Manacher finds all palindromes around every centre in $\Oh{n}$; the palindromic tree has one node per distinct palindrome.
+  \item Duval's algorithm factorises a string into non-increasing Lyndon words and finds the minimal rotation in $\Oh{n}$.
+  \item Suffix arrays with LCP arrays count and order all substrings; suffix automata recognise them, one state per endpos class, and
+        count occurrences.
+\end{itemize}
+\end{summary}
+
+\begin{practice}
+\ppgroup{String algorithms}
+\begin{pplist}
+  \item Word Combinations
+  \item String Matching
+  \item Finding Borders
+  \item Finding Periods
+  \item Minimal Rotation
+  \item Longest Palindrome
+  \item Required Substring
+  \item Palindrome Queries
+  \item Finding Patterns
+  \item Counting Patterns
+  \item Pattern Positions
+  \item Distinct Substrings
+  \item Repeating Substring
+  \item String Functions
+  \item Substring Order I
+  \item Substring Order II
+  \item Substring Distribution
+\end{pplist}
+\end{practice}

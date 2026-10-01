@@ -1,0 +1,144 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\@writefile{toc}{\contentsline {chapter}{\numberline {9}Prefix Sums, Two Pointers and Sliding Windows}{106}{chapter.9}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{ch:prefix}{{9}{106}{Prefix Sums, Two Pointers and Sliding Windows}{chapter.9}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {9.1}Prefix sums}{106}{section.9.1}\protected@file@percent }
+\newlabel{sec:prefix}{{9.1}{106}{Prefix sums}{section.9.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {9.1}{\ignorespaces Prefix sums sit \emph  {between} the elements: $P_i$ is the sum of everything to the left of boundary $i$. A range sum is the difference of the prefix sums at its two boundaries.}}{107}{figure.caption.140}\protected@file@percent }
+\newlabel{fig:prefix}{{9.1}{107}{Prefix sums sit \emph {between} the elements: $P_i$ is the sum of everything to the left of boundary $i$. A range sum is the difference of the prefix sums at its two boundaries}{figure.caption.140}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.1.1}Two dimensions}{107}{subsection.9.1.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {9.2}{\ignorespaces Two-dimensional prefix sums as a picture equation. The query rectangle (red frame) equals the region above and left of its lower-right corner, minus the strip above it, minus the strip to its left, plus the corner region that both strips removed.}}{107}{figure.caption.141}\protected@file@percent }
+\newlabel{fig:prefix2d}{{9.2}{107}{Two-dimensional prefix sums as a picture equation. The query rectangle (red frame) equals the region above and left of its lower-right corner, minus the strip above it, minus the strip to its left, plus the corner region that both strips removed}{figure.caption.141}{}}
+\newlabel{tpl:cpprefix2d}{{9.1.1}{108}{Two dimensions}{section*.142}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {9.2}Difference arrays}{108}{section.9.2}\protected@file@percent }
+\newlabel{sec:diff}{{9.2}{108}{Difference arrays}{section.9.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {9.3}{\ignorespaces A difference array. The update $+5$ on $[1, 4)$ becomes $+5$ at index 1 and $-5$ at index 4; after all updates, the prefix sums of $D$ are the final values.}}{108}{figure.caption.143}\protected@file@percent }
+\newlabel{fig:diff}{{9.3}{108}{A difference array. The update $+5$ on $[1, 4)$ becomes $+5$ at index 1 and $-5$ at index 4; after all updates, the prefix sums of $D$ are the final values}{figure.caption.143}{}}
+\newlabel{tpl:cpdiff}{{9.2}{108}{Difference arrays}{section*.144}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.2.1}Rectangles}{109}{subsection.9.2.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {9.4}{\ignorespaces Adding 1 to the rectangle of columns 2--5 and rows 1--3. The difference array gets $+1$ at the rectangle's top-left cell and at the cell diagonally beyond its bottom-right corner, and $-1$ at the cells just beyond its other two corners; 2D prefix sums turn these four values into exactly the rectangle.}}{109}{figure.caption.145}\protected@file@percent }
+\newlabel{fig:diff2d}{{9.4}{109}{Adding 1 to the rectangle of columns 2--5 and rows 1--3. The difference array gets $+1$ at the rectangle's top-left cell and at the cell diagonally beyond its bottom-right corner, and $-1$ at the cells just beyond its other two corners; 2D prefix sums turn these four values into exactly the rectangle}{figure.caption.145}{}}
+\newlabel{tpl:cpdiff2d}{{9.2.1}{109}{Rectangles}{section*.146}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.2.2}Arithmetic progressions: differences of differences}{110}{subsection.9.2.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {9.5}{\ignorespaces An arithmetic progression added to a range is three spikes in the second differences.}}{110}{figure.caption.147}\protected@file@percent }
+\newlabel{fig:diff-ap}{{9.5}{110}{An arithmetic progression added to a range is three spikes in the second differences}{figure.caption.147}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {9.3}Counting subarrays with a hash map}{110}{section.9.3}\protected@file@percent }
+\newlabel{sec:prefix-hash}{{9.3}{110}{Counting subarrays with a hash map}{section.9.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {9.6}{\ignorespaces Prefix sums as a walk. Every pair of equal heights is a subarray with sum 0; the bars below the axis show the four such subarrays (green at height 0, orange at height 2). Counting them is counting pairs of equal values in $P$.}}{111}{figure.caption.148}\protected@file@percent }
+\newlabel{fig:zerosum}{{9.6}{111}{Prefix sums as a walk. Every pair of equal heights is a subarray with sum 0; the bars below the axis show the four such subarrays (green at height 0, orange at height 2). Counting them is counting pairs of equal values in $P$}{figure.caption.148}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {9.4}Two pointers}{112}{section.9.4}\protected@file@percent }
+\newlabel{sec:two-pointers}{{9.4}{112}{Two pointers}{section.9.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {9.7}{\ignorespaces Two pointers as a staircase. Moving $r$ is a step to the right, moving $l$ a step up; the shaded region ($l > r$) is never entered here. The total number of steps is at most $2n$, although a single value of $r$ can move $l$ many times.}}{112}{figure.caption.149}\protected@file@percent }
+\newlabel{fig:staircase}{{9.7}{112}{Two pointers as a staircase. Moving $r$ is a step to the right, moving $l$ a step up; the shaded region ($l > r$) is never entered here. The total number of steps is at most $2n$, although a single value of $r$ can move $l$ many times}{figure.caption.149}{}}
+\newlabel{tpl:cptwoptr}{{9.4}{113}{Two pointers}{section*.150}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.4.1}Counting windows: at most, and exactly}{114}{subsection.9.4.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.4.2}Pointers from both ends}{114}{subsection.9.4.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {9.8}{\ignorespaces Two pointers from both ends as a walk through the table of pair sums: $12 > 10$ (left), $9 < 10$ (down), $11 > 10$ (left), $9 < 10$ (down), $10$ found. Each step discards a whole row or column, so at most $n$ steps are needed.}}{115}{figure.caption.151}\protected@file@percent }
+\newlabel{fig:saddleback}{{9.8}{115}{Two pointers from both ends as a walk through the table of pair sums: $12 > 10$ (left), $9 < 10$ (down), $11 > 10$ (left), $9 < 10$ (down), $10$ found. Each step discards a whole row or column, so at most $n$ steps are needed}{figure.caption.151}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {9.5}Sliding windows}{116}{section.9.5}\protected@file@percent }
+\newlabel{sec:sliding}{{9.5}{116}{Sliding windows}{section.9.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {9.9}{\ignorespaces Sliding window median with $k = 5$. \emph  {low} keeps the three smallest values of the window, \emph  {high} the other two; the median is the largest value in \emph  {low}. When the window slides, 5 is erased and 2 inserted, and the median becomes 3.}}{116}{figure.caption.152}\protected@file@percent }
+\newlabel{fig:slidingmedian}{{9.9}{116}{Sliding window median with $k = 5$. \emph {low} keeps the three smallest values of the window, \emph {high} the other two; the median is the largest value in \emph {low}. When the window slides, 5 is erased and 2 inserted, and the median becomes 3}{figure.caption.152}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {9.6}Monotonic stacks in action}{117}{section.9.6}\protected@file@percent }
+\newlabel{sec:monostack-apps}{{9.6}{117}{Monotonic stacks in action}{section.9.6}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {9.10}{\ignorespaces The largest rectangle in the histogram $2, 1, 5, 6, 2, 3$ has height 5, set by board 2. It extends from just after the nearest lower board on the left ($L_2 = 1$) to just before the nearest lower board on the right ($R_2 = 4$); both blockers are drawn in red.}}{117}{figure.caption.153}\protected@file@percent }
+\newlabel{fig:histogram}{{9.10}{117}{The largest rectangle in the histogram $2, 1, 5, 6, 2, 3$ has height 5, set by board 2. It extends from just after the nearest lower board on the left ($L_2 = 1$) to just before the nearest lower board on the right ($R_2 = 4$); both blockers are drawn in red}{figure.caption.153}{}}
+\@writefile{toc}{\contentsline {paragraph}{From one dimension to two.}{118}{paragraph*.154}\protected@file@percent }
+\@setckpt{algorithms/08_prefix_two_pointers}{
+\setcounter{page}{120}
+\setcounter{equation}{0}
+\setcounter{enumi}{2}
+\setcounter{enumii}{0}
+\setcounter{enumiii}{0}
+\setcounter{enumiv}{0}
+\setcounter{footnote}{0}
+\setcounter{mpfootnote}{0}
+\setcounter{part}{2}
+\setcounter{chapter}{9}
+\setcounter{section}{6}
+\setcounter{subsection}{0}
+\setcounter{subsubsection}{0}
+\setcounter{paragraph}{0}
+\setcounter{subparagraph}{0}
+\setcounter{figure}{10}
+\setcounter{table}{0}
+\setcounter{parentequation}{0}
+\setcounter{lstnumber}{23}
+\setcounter{tcbbreakpart}{2}
+\setcounter{tcblayer}{0}
+\setcounter{tcolorbox@number}{363}
+\setcounter{tcblisting}{69}
+\setcounter{tcbrastercolumn}{1}
+\setcounter{tcbrasterrow}{1}
+\setcounter{tcbrasternum}{1}
+\setcounter{tcbraster}{1}
+\setcounter{cpsegfig}{0}
+\setcounter{LT@tables}{0}
+\setcounter{LT@chunks}{0}
+\setcounter{nlinenum}{0}
+\setcounter{ALG@line}{7}
+\setcounter{ALG@rem}{0}
+\setcounter{ALG@nested}{0}
+\setcounter{ALG@Lnr}{2}
+\setcounter{ALG@blocknr}{15}
+\setcounter{ALG@storecount}{0}
+\setcounter{ALG@tmpcounter}{0}
+\setcounter{algpx@codeBoxCount}{0}
+\setcounter{algpx@nestedCBoxCount}{0}
+\setcounter{algpx@startedBoxesCount}{0}
+\setcounter{algpx@endedBoxesCount}{0}
+\setcounter{algpx@nestedBoxedStringCount}{0}
+\setcounter{algpx@nestedBoxedStringMaxCount}{0}
+\setcounter{algpx@indentCount}{7}
+\setcounter{algpx@lastIndentEnded}{6}
+\setcounter{algpx@pageCount}{0}
+\setcounter{algpx@tmpCount}{0}
+\setcounter{caption@flags}{2}
+\setcounter{continuedfloat}{0}
+\setcounter{float@type}{16}
+\setcounter{section@level}{0}
+\setcounter{Item}{8}
+\setcounter{Hfootnote}{0}
+\setcounter{bookmark@seq@number}{0}
+\setcounter{algpx@indentEndPage-0@totc}{0}
+\setcounter{algpx@indentEndPage-1@totc}{0}
+\setcounter{algpx@indentEndPage-2@totc}{0}
+\setcounter{algpx@indentEndPage-3@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-2@totc}{3}
+\setcounter{algpx@indentEndCoordIndex-0@totc}{3}
+\setcounter{algpx@indentEndPage-4@totc}{0}
+\setcounter{algpx@indentEndPage-5@totc}{0}
+\setcounter{algpx@indentEndPage-6@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-4@totc}{6}
+\setcounter{algpx@indentEndPage-7@totc}{0}
+\setcounter{algpx@indentEndPage-8@totc}{0}
+\setcounter{algpx@indentEndPage-9@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-8@totc}{9}
+\setcounter{algpx@indentEndPage-10@totc}{0}
+\setcounter{algpx@indentEndPage-11@totc}{0}
+\setcounter{algpx@indentEndPage-12@totc}{0}
+\setcounter{algpx@indentEndPage-13@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-12@totc}{13}
+\setcounter{algpx@indentEndCoordIndex-10@totc}{13}
+\setcounter{algpx@indentEndPage-14@totc}{0}
+\setcounter{algpx@indentEndPage-15@totc}{0}
+\setcounter{algpx@indentEndPage-16@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-15@totc}{16}
+\setcounter{algpx@indentEndPage-17@totc}{0}
+\setcounter{algpx@indentEndPage-18@totc}{1}
+\setcounter{algpx@indentEndPage-19@totc}{1}
+\setcounter{algpx@indentEndCoordIndex-18@totc}{19}
+\setcounter{lstlisting}{0}
+\setcounter{algpx@indentEndPage-0}{0}
+\setcounter{algpx@indentEndPage-1}{0}
+\setcounter{algpx@indentEndPage-2}{0}
+\setcounter{algpx@indentEndPage-3}{0}
+\setcounter{algpx@indentEndCoordIndex-2}{3}
+\setcounter{algpx@indentEndCoordIndex-0}{3}
+\setcounter{algpx@indentEndPage-4}{0}
+\setcounter{algpx@indentEndPage-5}{0}
+\setcounter{algpx@indentEndPage-6}{0}
+\setcounter{algpx@indentEndCoordIndex-4}{6}
+}

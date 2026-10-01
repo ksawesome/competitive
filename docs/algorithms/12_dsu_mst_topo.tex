@@ -1,0 +1,709 @@
+\chapter{Union--Find, Spanning Trees and Topological Order}\label{ch:dsu}
+
+This chapter is about three ideas that organise graphs globally rather than by searching them. The disjoint set union
+structure maintains a partition of the vertices under merging, in almost constant time per operation; it answers ``are these
+two connected?'' as edges arrive, and with small extensions it maintains equations and parities along the way. Minimum
+spanning trees connect everything as cheaply as possible, and their theory (the cut and cycle properties) explains a whole
+family of greedy algorithms. Prüfer codes turn labelled trees into sequences and back, which makes counting trees a matter of
+counting sequences. And topological order arranges a directed acyclic graph so that every edge points forward, the
+precondition for every dynamic programme on a DAG.
+
+\begin{chapterintro}{\gold\ \plat\ \ioi}{Chapter~\ref{ch:graphs} (graph basics) and Section~\ref{sec:greedy} (exchange
+arguments).}
+  \item implement a DSU with union by size and path compression, and extend it with sizes, offsets and parities;
+  \item prove the cut and cycle properties, and use them to justify Kruskal and Prim;
+  \item answer offline ``connected using edges of weight at most $x$'' queries, and build Kruskal reconstruction trees;
+  \item encode and decode Prüfer sequences, and count labelled trees with given degrees;
+  \item compute topological orders, detect cycles with them, and run DP along them.
+\end{chapterintro}
+
+% ======================================================================================================================
+\section[Disjoint set union]{Disjoint set union \hfill \gold}\label{sec:dsu}
+
+A \defn{disjoint set union} (DSU, also \emph{union--find}) maintains a partition of $\{0, \ldots, n - 1\}$ into disjoint sets
+under two operations: \emph{unite} the sets containing $a$ and $b$, and \emph{find} a representative of the set containing
+$x$, so that ``are $a$ and $b$ in the same set?'' becomes ``do they have the same representative?''. Each set is stored as a
+rooted tree of parent pointers whose root is the representative; uniting two sets links one root under the other
+(Figure~\ref{fig:dsuunion}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \begin{scope}
+    \node[vtxs, hot] (r1) at (0, 0) {0};
+    \node[vtxs] (a1) at (-0.6, -1) {1}; \node[vtxs] (a2) at (0.6, -1) {2}; \node[vtxs] (a3) at (0.6, -2) {3};
+    \draw[ded] (a1) -- (r1); \draw[ded] (a2) -- (r1); \draw[ded] (a3) -- (a2);
+    \node[vtxs, hot] (r2) at (2.0, 0) {4}; \node[vtxs] (b1) at (2.0, -1) {5};
+    \draw[ded] (b1) -- (r2);
+    \node[lbl] at (1.0, -2.75) {two sets, sizes 4 and 2};
+  \end{scope}
+  \draw[->, line width=1.2pt, draw=fgblue] (3.0, -1) -- node[above, font=\sffamily\scriptsize, text=fgblue]
+    {unite(3, 5)} (4.6, -1);
+  \begin{scope}[xshift=6.4cm]
+    \node[vtxs, hot] (r) at (0, 0) {0};
+    \node[vtxs] (c1) at (-1.0, -1) {1}; \node[vtxs] (c2) at (0, -1) {2}; \node[vtxs] (c3) at (0, -2) {3};
+    \node[vtxs, cool] (c4) at (1.0, -1) {4}; \node[vtxs] (c5) at (1.0, -2) {5};
+    \draw[ded] (c1) -- (r); \draw[ded] (c2) -- (r); \draw[ded] (c3) -- (c2); \draw[bded] (c4) -- (r);
+    \draw[ded] (c5) -- (c4);
+    \node[lbl, align=center] at (0, -2.85) {the smaller tree's root (4) goes\\under the larger tree's root (0)};
+  \end{scope}
+\end{tikzpicture}
+\caption{A DSU stores each set as a tree of parent pointers (arrows point to the parent); roots (red) are the representatives.
+Union by size links the root of the smaller tree under the root of the larger one.}
+\label{fig:dsuunion}
+\end{figure}
+
+Two optimisations make the operations fast.
+
+\begin{itemize}
+  \item \textbf{Union by size}: when uniting, link the root of the smaller tree under the root of the larger one. A vertex
+        then gets deeper only when its tree at least doubles in size, which can happen at most $\log_2 n$ times, so every
+        tree has depth $\Oh{\log n}$.
+  \item \textbf{Path compression}: during \emph{find}, make the vertices on the path point directly to the root, or at least
+        closer to it (Figure~\ref{fig:pathcomp}). Later finds on the same path become $\Oh{1}$.
+\end{itemize}
+
+\noindent With both, a sequence of operations costs $\Oh{\alpha(n)}$ amortised per operation, where $\alpha$ is the inverse
+Ackermann function, which is at most 4 for any $n$ that fits in the universe. For contest purposes, DSU operations are
+constant time. The template uses \emph{path halving} (\cc{x = par[x] = par[par[x]]}), which gets the same bound with a loop
+instead of recursion.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \begin{scope}
+    \foreach \vv/\yy in {0/0, 1/-0.9, 2/-1.8, 3/-2.7, 4/-3.6} \node[vtxs] (p\vv) at (0, \yy) {\vv};
+    \node[vtxs, hot] at (p0) {0};
+    \node[vtxs, cool] at (p4) {4};
+    \foreach \ea/\eb in {1/0, 2/1, 3/2, 4/3} \draw[ded] (p\ea) -- (p\eb);
+    \node[lbl] at (0, -4.35) {before find(4)};
+  \end{scope}
+  \draw[->, line width=1.2pt, draw=fgblue] (1.1, -1.8) -- (2.4, -1.8);
+  \begin{scope}[xshift=4.3cm]
+    \node[vtxs, hot] (q0) at (0, 0) {0};
+    \foreach \vv/\xx in {1/-1.8, 2/-0.6, 3/0.6, 4/1.8} \node[vtxs] (q\vv) at (\xx, -1.3) {\vv};
+    \node[vtxs, cool] at (q4) {4};
+    \foreach \a in {1, 2, 3, 4} \draw[ded] (q\a) -- (q0);
+    \node[lbl, align=center] at (0, -2.2) {after full compression:\\every vertex on the path points to the root};
+  \end{scope}
+\end{tikzpicture}
+\caption{Path compression. A \emph{find} on the deepest vertex walks the whole path once, and afterwards every vertex on it is
+one step from the root.}
+\label{fig:pathcomp}
+\end{figure}
+
+\usetemplate{DSU (union-find)}{Ctrl+Alt+T, U}{cpdsu}
+
+The complete use of a DSU for incremental connectivity, printing the number of components and the largest component after
+every new road, is the worked problem Road Construction (Chapter~\ref{ch:worked}). When the edges are \emph{removed} instead,
+reverse time so that they are added (Section~\ref{sec:reverse}).
+
+\begin{recognize}
+Merging groups and asking whether two things are in the same group; connectivity while edges are only added; Kruskal;
+``the first moment two things become connected'' (add edges by time or weight); equivalence classes (``$a$ and $b$ have the
+same colour''); offline queries sorted by a threshold.
+\end{recognize}
+
+\subsection{Beyond connectivity: sizes, offsets and parities}
+
+The root of a set is a natural place to store information about the whole set: its size, its sum, its minimum, a list of
+members. Uniting merges the information of the two roots. More interesting is information stored on the \emph{edges} of the
+DSU trees: each vertex stores a value relative to its parent, and a find accumulates these values along the path to the root.
+
+\begin{problem}{Consistent differences}
+There are $n$ unknowns. Process $q$ statements ``$x_b - x_a = c$'', reporting whether each one is consistent with the accepted
+statements so far (and accepting it if so), and queries ``what is $x_b - x_a$?'', answering \texttt{?} if it is not determined.
+\solution A \defn[weighted DSU]{weighted DSU}. Every vertex $v$ stores $\mathit{off}(v) = x_v - x_{\mathit{par}(v)}$; a find
+with path compression sums the offsets on the way, so afterwards $\mathit{off}(v) = x_v - x_{\mathit{root}}$
+(Figure~\ref{fig:weighteddsu}). Two vertices in the same set have a determined difference $\mathit{off}(b) - \mathit{off}(a)$.
+Uniting two sets for a new statement sets the offset of one root relative to the other so that the statement holds.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[vtx, hot] (r) at (0, 0) {1};
+  \node[vtx] (v2) at (-1.5, -1.4) {2};
+  \node[vtx] (v3) at (1.5, -1.4) {3};
+  \node[vtx] (v4) at (1.5, -2.9) {4};
+  \draw[ded] (v2) -- node[wl] {$+3$} (r);
+  \draw[ded] (v3) -- node[wl] {$-1$} (r);
+  \draw[ded] (v4) -- node[wl] {$+2$} (v3);
+  \node[notel, anchor=west, text width=6.4cm] at (3.0, -1.2) {Edge labels are $\mathit{off}(v) = x_v - x_{\mathit{par}(v)}$.
+    Relative to the root: $x_2 - x_1 = 3$, $x_3 - x_1 = -1$, $x_4 - x_1 = -1 + 2 = 1$. So the query $x_4 - x_2$ answers
+    $1 - 3 = -2$, and the statement $x_4 - x_2 = 5$ is a conflict.};
+\end{tikzpicture}
+\caption{A weighted DSU: offsets along the path to the root add up to the difference between a vertex and its root.}
+\label{fig:weighteddsu}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n, q;
+    cin >> n >> q;
+    // par[v] and off[v] = x_v - x_par[v]; the root r has off[r] = 0
+    vi par(n + 1), off(n + 1, 0), siz(n + 1, 1);
+    iota(all(par), 0);
+    // find also makes off[v] = x_v - x_root (path compression)
+    auto find = [&](auto&& self, int v) -> int {
+        if (par[v] == v) return v;
+        int r = self(self, par[v]);
+        off[v] += off[par[v]];  // par[v] now points at r directly
+        par[v] = r;
+        return r;
+    };
+    while (q--) {
+        int type, a, b;
+        cin >> type >> a >> b;
+        int ra = find(find, a), rb = find(find, b);
+        if (type == 1) {  // the fact x_b - x_a = c
+            ll c;
+            cin >> c;
+            if (ra == rb) {
+                print(off[b] - off[a] == c ? "OK" : "CONFLICT");
+                continue;
+            }
+            // link the roots so that x_b - x_a = c holds
+            ll d = off[a] + c - off[b];  // the required x_rb - x_ra
+            if (siz[ra] < siz[rb]) swap(ra, rb), d = -d;
+            par[rb] = ra, off[rb] = d, siz[ra] += siz[rb];
+            print("OK");
+        } else {  // query x_b - x_a
+            if (ra != rb) print("?");
+            else print(off[b] - off[a]);
+        }
+    }
+}
+\end{code}
+
+The same structure with offsets modulo 2 is the \emph{parity DSU}: it maintains constraints ``$a$ and $b$ are in different
+groups'' and ``in the same group'', detects the first contradiction (an odd cycle), and so checks bipartiteness online as edges
+arrive. With offsets in any group (addition modulo $k$, XOR, permutations composed along the path) the idea is the same.
+
+\begin{trick}[What a DSU cannot do, and the workarounds]
+A DSU cannot split a set. If edges are only deleted, reverse time so that they are inserted. If insertions and deletions mix,
+answer the queries offline with a \emph{DSU with rollback} (union by size without path compression, keeping a stack of changes
+to undo) over a segment tree on the time axis, in $\Oh{m \log m \log n}$ (Chapter~\ref{ch:connectivity}). And when sets carry
+lists that must really be merged, merge the smaller list into the larger one: every element moves $\Oh{\log n}$ times
+(small to large, Chapter~\ref{ch:trees}).
+\end{trick}
+
+\usetemplate{DSU with rollback}{Ctrl+Alt+Y, R}{cpdsurb}
+
+% ======================================================================================================================
+\section[Minimum spanning trees]{Minimum spanning trees \hfill \gold}\label{sec:mst}
+
+A \defn{spanning tree} of a connected graph is a subset of $n - 1$ edges that connects all vertices, and a \defn{minimum
+spanning tree} (MST) is one of minimum total weight. Every MST algorithm is justified by two properties. A \emph{cut} is a
+split of the vertices into two non-empty sides; an edge \emph{crosses} the cut if its ends are on different sides.
+
+\begin{itemize}
+  \item \textbf{Cut property.} For any cut, a lightest edge crossing it belongs to some MST.
+  \item \textbf{Cycle property.} For any cycle, an edge that is strictly heavier than all the others on the cycle belongs to no
+        MST.
+\end{itemize}
+
+\emph{Proof of the cut property (an exchange argument).} Let $e$ be a lightest edge crossing a cut, and $T$ an MST without $e$.
+Adding $e$ to $T$ creates a cycle, which crosses the cut at $e$ and therefore at least once more, at some edge $f$ of $T$
+(Figure~\ref{fig:cutprop}). Replacing $f$ by $e$ gives a spanning tree of weight $w(T) - w(f) + w(e) \le w(T)$, because $e$ is a
+lightest crossing edge: it is also an MST, and it contains $e$. The cycle property follows the same way: removing the heaviest
+edge of a cycle from any spanning tree and reconnecting with another edge of the cycle never increases the weight.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \fill[fgsky!18, rounded corners=10pt] (-0.6, -1.6) rectangle (2.2, 1.6);
+  \fill[fgorange!15, rounded corners=10pt] (3.4, -1.6) rectangle (6.2, 1.6);
+  \node[font=\sffamily\scriptsize, text=fgblue] at (0.8, 1.35) {side $S$};
+  \node[font=\sffamily\scriptsize, text=fgorange!80!black] at (4.8, 1.35) {side $V \setminus S$};
+  \node[vtxs] (a) at (0, 0.6) {}; \node[vtxs] (b) at (1.5, 0.8) {}; \node[vtxs] (c) at (0.6, -0.9) {};
+  \node[vtxs] (d) at (4.2, 0.8) {}; \node[vtxs] (e) at (5.5, 0.3) {}; \node[vtxs] (f) at (4.5, -0.9) {};
+  \draw[ed] (a) -- (b) (a) -- (c) (d) -- (e) (e) -- (f);
+  \draw[ged] (b) -- node[wl, pos=0.25] {$e$: 2} (d);
+  \draw[hed] (c) -- node[wl, pos=0.22] {$f$: 5} (f);
+  \draw[ed] (b) -- node[wl, pos=0.72] {7} (f);
+  \draw[line width=1pt, draw=fgink!60, dashed] (2.8, -1.8) -- (2.8, 1.8);
+  \node[notel, anchor=west, text width=5.6cm] at (6.6, 0) {Three edges cross the cut (dashed line). If a spanning tree uses
+    $f$ but not the lightest crossing edge $e$, swapping $f$ for $e$ keeps it spanning (the cycle through $e$ crosses the cut
+    twice) and does not make it heavier.};
+\end{tikzpicture}
+\caption{The cut property: a lightest edge crossing any cut can always be part of a minimum spanning tree.}
+\label{fig:cutprop}
+\end{figure}
+
+\subsection{Kruskal's algorithm}
+
+\defn{Kruskal's algorithm} sorts the edges by weight and adds each edge whose endpoints are not yet connected, which a DSU checks
+in $\Oh{\alpha(n)}$ (Figure~\ref{fig:kruskal}). Each accepted edge is a lightest edge crossing the cut between its endpoint's
+component and the rest, so it is safe by the cut property; each rejected edge is the heaviest edge of the cycle it would close.
+The running time is dominated by sorting: $\Oh{m \log m}$.
+
+\begin{figure}[htbp]
+\centering
+\newcommand{\krpanel}[3]{%
+\begin{tikzpicture}[x=0.95cm, y=0.95cm]
+  \coordinate (A) at (0, 1); \coordinate (B) at (1.6, 2); \coordinate (C) at (3.2, 1);
+  \coordinate (D) at (0.8, -0.3); \coordinate (E) at (2.4, -0.3);
+  \foreach \ea/\eb in {A/B, B/C, A/D, B/D, B/E, C/E, D/E} \draw[ed] (\ea) -- (\eb);
+  \foreach \ea/\eb in {#1} \draw[ged] (\ea) -- (\eb);
+  \foreach \ea/\eb in {#2} \draw[line width=1.8pt, draw=fgorange] (\ea) -- (\eb);
+  \foreach \ea/\eb in {#3} \draw[line width=1.6pt, draw=fgverm, dashed] (\ea) -- (\eb);
+  \foreach \ea/\eb/\w in {A/B/2, B/C/6, A/D/3, B/D/5, B/E/4, C/E/1, D/E/7}
+    \node[wl, font=\sffamily\tiny] at ($(\ea)!0.5!(\eb)$) {\w};
+  \foreach \vn in {A, B, C, D, E} \node[vtxs] at (\vn) {\vn};
+\end{tikzpicture}}
+\begin{filmstrip}[3]
+  \begin{stepbox}{1. C--E (1): accept}
+    \krpanel{A/A}{C/E}{A/A}
+  \end{stepbox}
+  \begin{stepbox}{2. A--B (2): accept}
+    \krpanel{C/E}{A/B}{A/A}
+  \end{stepbox}
+  \begin{stepbox}{3. A--D (3): accept}
+    \krpanel{C/E, A/B}{A/D}{A/A}
+  \end{stepbox}
+  \begin{stepbox}{4. B--E (4): accept}
+    \krpanel{C/E, A/B, A/D}{B/E}{A/A}
+  \end{stepbox}
+  \begin{stepbox}{5. B--D (5): same set, reject}
+    \krpanel{C/E, A/B, A/D, B/E}{A/A}{B/D}
+  \end{stepbox}
+  \begin{stepbox}{6. B--C (6), D--E (7): reject}
+    \krpanel{C/E, A/B, A/D, B/E}{A/A}{B/C, D/E}
+  \end{stepbox}
+\end{filmstrip}
+\caption{Kruskal's algorithm. Edges are taken in order of weight; an edge is accepted (orange, then green) when it joins two
+different components and rejected (red, dashed) when its endpoints are already connected. The MST has weight
+$1 + 2 + 3 + 4 = 10$.}
+\label{fig:kruskal}
+\end{figure}
+
+\begin{problem}{Road Reparation (CSES)}
+Repairing each road has a cost. Find the minimum total cost of repairing roads so that all cities are connected, or report that
+it is impossible.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    vector<array<ll, 3>> e(m);  // (cost, a, b): sorting orders by cost
+    for (auto& [c, a, b] : e) cin >> a >> b >> c;
+    sort(all(e));
+    DSU d(n + 1);
+    ll total = 0;
+    int used = 0;
+    for (auto [c, a, b] : e)
+        if (d.unite(a, b)) total += c, used++;  // skip edges inside a component
+    if (used == n - 1) print(total);
+    else print("IMPOSSIBLE");
+}
+\end{code}
+
+\usetemplate{Kruskal MST}{Ctrl+Alt+T, K}{cpkruskal}
+
+\subsection{Prim's algorithm}
+
+\defn{Prim's algorithm} grows a single tree from any start vertex, always adding the cheapest edge that leaves the tree; each
+such edge is a lightest edge crossing the cut between the tree and the rest. With a priority queue it runs in $\Oh{m \log n}$,
+essentially Dijkstra with the key $w(u, v)$ instead of $d(u) + w(u, v)$. Its real strength is the dense case: when every pair of
+$n$ points is an edge ($m \approx n^2/2$), the array version below runs in $\Oh{n^2}$ without ever building the edge list, while
+Kruskal would have to sort $n^2/2$ edges.
+
+\begin{problem}{Connecting points}
+Connect $n \le 2000$ points in the plane by a network of segments of minimum total cost, where a segment costs the squared
+distance between its endpoints.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vector<pll> p(n);
+    for (auto& [x, y] : p) cin >> x >> y;
+    auto cost = [&](int i, int j) {  // squared Euclidean distance
+        ll dx = p[i].first - p[j].first, dy = p[i].second - p[j].second;
+        return dx * dx + dy * dy;
+    };
+    // O(n^2) Prim: best[v] = cheapest edge from the tree to v
+    vector<ll> best(n, LLONG_MAX);
+    vector<bool> in(n, false);
+    best[0] = 0;
+    ll total = 0;
+    rep(it, n) {
+        int u = -1;  // the cheapest vertex outside the tree
+        rep(v, n) if (!in[v] && (u == -1 || best[v] < best[u])) u = v;
+        in[u] = true;
+        total += best[u];
+        rep(v, n) if (!in[v]) chmin(best[v], cost(u, v));
+    }
+    print(total);
+}
+\end{code}
+
+\usetemplate{Prim MST (dense graphs)}{Ctrl+Alt+T, Shift+5}{cpprim}
+
+\subsection{Thresholds and the Kruskal reconstruction tree}
+
+The MST also solves \emph{bottleneck} questions. For every pair of vertices, the path between them in an MST minimises the
+largest edge weight among all paths (a \emph{minimax} path). So ``the smallest range $D$ such that every cow can talk to every
+other, relaying messages'' is the largest edge of the MST (USACO Moocast), and ``can $u$ reach $v$ using only edges of weight at
+most $x$?'' depends only on the MST.
+
+For many such queries, the offline recipe is: sort the edges by weight and the queries by threshold, and add edges with a DSU
+while sweeping the threshold upwards. At each query, the DSU contains exactly the edges of weight at most the threshold.
+
+\begin{problem}{Reachability under a weight limit}
+For each of $q$ queries $(v, x)$, count the vertices reachable from $v$ using only edges of weight at most $x$.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, m, q;
+    cin >> n >> m >> q;
+    vector<array<ll, 3>> e(m);  // (weight, a, b)
+    for (auto& [w, a, b] : e) cin >> a >> b >> w;
+    sort(all(e));
+    vector<array<ll, 3>> qs(q);  // (limit, vertex, index)
+    rep(i, q) cin >> qs[i][1] >> qs[i][0], qs[i][2] = i;
+    sort(all(qs));
+    DSU d(n + 1);
+    vi ans(q);
+    int j = 0;
+    for (auto [x, v, i] : qs) {  // queries by increasing limit
+        while (j < m && e[j][0] <= x) d.unite(e[j][1], e[j][2]), j++;
+        ans[i] = d.size(v);  // everything connected with edges <= x
+    }
+    for (ll a : ans) print(a);
+}
+\end{code}
+
+When the queries must be answered \emph{online}, record Kruskal's merges as a tree instead: every accepted edge of weight $w$
+becomes a new node, labelled $w$, whose two children are the roots of the components it joins (Figure~\ref{fig:krt}). This
+\defn{Kruskal reconstruction tree} has the original vertices as leaves, and labels increase towards the root. The vertices
+reachable from $v$ with edges of weight at most $x$ are exactly the leaves below the highest ancestor of $v$ with label at most
+$x$, which binary lifting finds in $\Oh{\log n}$ (Chapter~\ref{ch:trees}); counts, sums and ranks over those leaves become
+subtree queries.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \begin{scope}
+    \node[vtx] (g1) at (0, 1.2) {1}; \node[vtx] (g2) at (1.6, 1.2) {2};
+    \node[vtx] (g3) at (1.6, -0.3) {3}; \node[vtx] (g4) at (0, -0.3) {4};
+    \draw[ged] (g1) -- node[wl] {3} (g2); \draw[ged] (g2) -- node[wl] {1} (g3); \draw[ged] (g3) -- node[wl] {4} (g4);
+    \draw[ed] (g1) -- node[wl] {5} (g4);
+    \node[lbl] at (0.8, -1.1) {graph (MST edges green)};
+  \end{scope}
+  \begin{scope}[xshift=5.2cm, yshift=1.4cm]
+    \node[vtxs, rectangle, rounded corners=2pt, cool] (c) at (0, 0) {4};
+    \node[vtxs, rectangle, rounded corners=2pt, cool] (b) at (-0.9, -0.9) {3};
+    \node[vtxs, rectangle, rounded corners=2pt, cool] (a) at (-0.3, -1.8) {1};
+    \node[vtx] (l1) at (-1.6, -1.8) {1}; \node[vtx] (l2) at (-0.8, -2.7) {2}; \node[vtx] (l3) at (0.2, -2.7) {3};
+    \node[vtx] (l4) at (0.9, -0.9) {4};
+    \draw[ed] (c) -- (b) (c) -- (l4) (b) -- (l1) (b) -- (a) (a) -- (l2) (a) -- (l3);
+    \node[lbl] at (-0.3, -3.5) {Kruskal reconstruction tree};
+  \end{scope}
+  \node[notel, anchor=west, text width=5.0cm] at (7.4, 0.4) {Merges in order: 2--3 (1), 1--2 (3), 3--4 (4); the edge 1--4 (5)
+    is skipped. From leaf 2 with limit $x = 3$, the highest ancestor with label $\le 3$ is the node 3, whose leaves $\{1, 2,
+    3\}$ are exactly what 2 reaches.};
+\end{tikzpicture}
+\caption{A graph and its Kruskal reconstruction tree. Internal nodes (blue squares) are the accepted edges, labelled with their
+weights; labels grow towards the root.}
+\label{fig:krt}
+\end{figure}
+
+\usetemplate{Kruskal reconstruction tree}{Ctrl+Alt+Y, K}{cpkrt}
+
+\begin{trick}[More MST facts worth knowing]
+\begin{itemize}
+  \item \textbf{Bor\r{u}vka's algorithm}: in each round, every component adds its cheapest outgoing edge; the number of
+        components at least halves, so $\Oh{\log n}$ rounds suffice. It shines when the graph is implicit (weights like
+        $a_i \oplus a_j$) and ``the cheapest edge leaving a component'' can be found with a data structure such as a binary
+        trie (Section~\ref{sec:xor}).
+  \item \textbf{Uniqueness}: if all weights are distinct, the MST is unique.
+  \item \textbf{Second-best MST}: add one non-tree edge $(u, v)$ and remove the heaviest edge on the tree path between $u$ and
+        $v$; the best such swap gives the second-best spanning tree (maximum on paths by binary lifting).
+  \item \textbf{Manhattan MST}: for points with the $L_1$ distance, only $\Oh{n}$ candidate edges (the nearest point in each of
+        eight octants) are needed, which brings the MST of $10^5$ points within reach.
+\end{itemize}
+\end{trick}
+
+% ======================================================================================================================
+\section[Prüfer codes]{Prüfer codes and counting trees \hfill \ioi}\label{sec:prufer}
+
+Labelled trees on the vertices $1, \ldots, n$ can be encoded as sequences, which turns questions about trees into questions
+about sequences. The \defn{Prüfer code} of a tree is built by repeatedly removing the \emph{smallest} leaf and writing down its
+neighbour, until two vertices remain (Figure~\ref{fig:prufer}). The result is a sequence of length $n - 2$ over
+$\{1, \ldots, n\}$, and every such sequence arises from exactly one tree. Decoding reverses the process: each vertex $v$ that
+appears $k$ times in the sequence has degree $k + 1$, so the leaves at every step are known; at step $i$, the smallest current
+leaf is attached to the $i$-th entry, which loses one from its remaining degree.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[vtx] (v3) at (0, 0) {3}; \node[vtx] (v4) at (1.8, 0) {4};
+  \node[vtx, cool] (v1) at (-1.3, 0.9) {1}; \node[vtx, cool] (v2) at (-1.3, -0.9) {2};
+  \node[vtx, cool] (v5) at (3.1, 0.9) {5}; \node[vtx] (v6) at (3.1, -0.9) {6};
+  \draw[ed] (v1) -- (v3) (v2) -- (v3) (v3) -- (v4) (v4) -- (v5) (v4) -- (v6);
+  \foreach \vv/\kk/\ang in {v1/1/135, v2/2/225, v3/3/90, v5/4/45}
+    \node[circle, fill=fgverm, text=white, font=\sffamily\tiny\bfseries, inner sep=1pt] at ($(\vv)+(\ang:0.5)$) {\kk};
+  \node[notel, anchor=west, text width=6.8cm] at (4.2, 0) {Remove the smallest leaf, write its neighbour:\\
+    \textcircled{\scriptsize 1} leaf 1, write 3 \quad \textcircled{\scriptsize 2} leaf 2, write 3\\
+    \textcircled{\scriptsize 3} leaf 3 (a leaf now), write 4 \quad \textcircled{\scriptsize 4} leaf 5, write 4\\
+    Two vertices (4, 6) remain: the Prüfer code is $3, 3, 4, 4$. Vertices 3 and 4 have degree 3 and appear twice;
+    leaves never appear.};
+\end{tikzpicture}
+\caption{Computing a Prüfer code. The red numbers give the order in which leaves are removed.}
+\label{fig:prufer}
+\end{figure}
+
+\begin{problem}{Tree from a Prüfer code}
+Reconstruct the tree with a given Prüfer code.
+\solution Keep the current leaves in an ordered set (a vertex is a leaf when its remaining degree is 1). For each entry $v$ of
+the code, the smallest leaf is attached to $v$; remove it, and decrease the remaining degree of $v$, which becomes a leaf when
+it reaches 1. The two vertices left at the end form the last edge. With a set this is $\Oh{n \log n}$; the template does it in
+$\Oh{n}$ with a moving pointer.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vi seq(n - 2);
+    cin >> seq;
+    vi deg(n + 1, 1);  // a vertex appears (degree - 1) times
+    for (int v : seq) deg[v]++;
+    set<int> leaves;
+    rep(v, 1, n + 1) if (deg[v] == 1) leaves.insert(v);
+    for (int v : seq) {  // the smallest leaf was removed, attached to v
+        int leaf = *leaves.begin();
+        leaves.erase(leaves.begin());
+        print(leaf, v);
+        if (--deg[v] == 1) leaves.insert(v);
+    }
+    print(*leaves.begin(), *next(leaves.begin()));  // the last edge
+}
+\end{code}
+
+\usetemplate{Prufer code (tree <-> sequence)}{Ctrl+Alt+U, U}{cpprufer}
+
+The bijection gives two famous counts at once. There are $n^{n-2}$ labelled trees on $n$ vertices (\emph{Cayley's formula}),
+because there are $n^{n-2}$ sequences. And since vertex $i$ appears exactly $d_i - 1$ times, the number of labelled trees in which
+vertex $i$ has degree $d_i$ is the number of arrangements of that multiset,
+\[
+  \binom{n - 2}{d_1 - 1, \; d_2 - 1, \; \ldots, \; d_n - 1} = \frac{(n - 2)!}{\prod_i (d_i - 1)!} ,
+\]
+provided all $d_i \ge 1$ and $\sum_i (d_i - 1) = n - 2$ (otherwise there are none).
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vi d(n);
+    cin >> d;
+    if (n == 1) {  // a single vertex: the only tree has degree 0
+        print(d[0] == 0 ? 1 : 0);
+        return;
+    }
+    // Prufer: vertex i appears d_i - 1 times in a sequence of length n - 2
+    ll total = 0;
+    for (ll x : d) {
+        if (x < 1) {
+            print(0);
+            return;
+        }
+        total += x - 1;
+    }
+    if (total != n - 2) {
+        print(0);
+        return;
+    }
+    vi fact(n, 1);
+    rep(i, 1, n) fact[i] = fact[i - 1] * i % MOD;
+    auto power = [](ll b, ll e) {
+        ll r = 1;
+        for (b %= MOD; e; e >>= 1, b = b * b % MOD)
+            if (e & 1) r = r * b % MOD;
+        return r;
+    };
+    ll ans = fact[n - 2];  // (n - 2)! / prod (d_i - 1)!
+    for (ll x : d) ans = ans * power(fact[x - 1], MOD - 2) % MOD;
+    print(ans);
+}
+\end{code}
+
+\begin{trick}[Counting spanning structures]
+The generalisation of Cayley's formula is the number of spanning forests of the complete graph in which given vertices lie in
+different trees: $k\, n^{n - k - 1}$ forests of $n$ labelled vertices with $k$ trees, where $k$ specified vertices are the
+roots. For arbitrary graphs, the matrix-tree theorem counts spanning trees as a determinant (Chapter~\ref{ch:combinatorics}).
+\end{trick}
+
+% ======================================================================================================================
+\section[Topological order]{Topological order \hfill \gold}\label{sec:topo}
+
+A \defn{topological order} of a directed graph lists its vertices so that every edge points forward, from an earlier vertex to a
+later one (Figure~\ref{fig:toposort}). It exists exactly when the graph has no directed cycle: a cycle can never point forward all
+the way round, and conversely every DAG has a vertex with no incoming edges (follow edges backwards from any vertex; without
+cycles the walk must stop), which can go first.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[vtx] (a) at (0, 1) {0}; \node[vtx] (b) at (0, -0.4) {1}; \node[vtx] (c) at (1.6, 0.3) {2};
+  \node[vtx] (d) at (3.2, 1) {3}; \node[vtx] (e) at (3.2, -0.4) {4}; \node[vtx] (f) at (4.8, 0.3) {5};
+  \draw[ded] (a) -- (c); \draw[ded] (b) -- (c); \draw[ded] (c) -- (d); \draw[ded] (c) -- (e); \draw[ded] (d) -- (f);
+  \draw[ded] (e) -- (f); \draw[ded] (a) -- (d);
+  \begin{scope}[xshift=6.6cm, yshift=0.3cm]
+    \foreach \vv [count=\ii] in {0, 1, 2, 3, 4, 5} \node[vtxs, cool] (t\ii) at (\ii*1.1, 0) {\vv};
+    \foreach \ia/\ib in {1/3, 2/3, 3/4, 3/5, 4/6, 5/6} \draw[ded] (t\ia) to[bend left=38] (t\ib);
+    \draw[ded] (t1) to[bend right=38] (t4);
+    \node[lbl] at (3.85, -1.05) {every edge points to the right};
+  \end{scope}
+\end{tikzpicture}
+\caption{A DAG and one of its topological orders. Kahn's algorithm produces it by repeatedly removing a vertex with no incoming
+edges: first 0 and 1, then 2, then 3 and 4, then 5.}
+\label{fig:toposort}
+\end{figure}
+
+\defn{Kahn's algorithm} does exactly that: keep the in-degrees and a queue of vertices whose in-degree is 0; pop a vertex, append it
+to the order, and decrease the in-degrees of its successors, pushing those that reach 0. If fewer than $n$ vertices come out, the
+remaining ones all have an incoming edge from another remaining vertex, so they contain a cycle. The alternative is DFS: a vertex
+finishes only after everything reachable from it, so the vertices in \emph{decreasing} finishing time form a topological order.
+
+\begin{problem}{Course Schedule (CSES)}
+Find an order in which to take $n$ courses respecting $m$ prerequisites ``course $a$ before course $b$'', or report that none
+exists.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    vvi adj(n + 1);
+    vi indeg(n + 1, 0);
+    rep(i, m) {
+        int a, b;
+        cin >> a >> b;
+        adj[a].push_back(b);
+        indeg[b]++;
+    }
+    queue<int> q;  // courses whose prerequisites are all taken
+    rep(v, 1, n + 1) if (!indeg[v]) q.push(v);
+    vi order;
+    while (!q.empty()) {
+        int u = q.front();
+        q.pop();
+        order.push_back(u);
+        for (int v : adj[u])
+            if (--indeg[v] == 0) q.push(v);
+    }
+    if (sz(order) < n) print("IMPOSSIBLE");  // the rest lie on cycles
+    else print(order);
+}
+\end{code}
+
+\usetemplate{Topological sort (Kahn)}{Ctrl+Alt+T, O}{cptopo}
+
+\begin{recognize}
+Dependencies (``task $a$ before task $b$''), prerequisites, ``is there an order consistent with these comparisons?'', build
+systems, and every DP over a DAG. The lexicographically smallest topological order uses a min-heap instead of the queue; the
+order that places a particular vertex as early as possible is found by running Kahn on the \emph{reversed} graph and taking the
+largest available vertex each time.
+\end{recognize}
+
+\subsection{Dynamic programming along a topological order}
+
+In topological order, every vertex is processed after all its predecessors, so any quantity defined through incoming edges is
+computed in one pass: longest and shortest paths (Section~\ref{sec:dagpaths}), the number of paths, reachability with extra
+conditions (Figure~\ref{fig:gameroutes}).
+
+\begin{problem}{Game Routes (CSES)}
+Count the routes from level 1 to level $n$ in a game whose teleporters form a DAG, modulo $10^9 + 7$.
+\solution The number of routes to $v$ is the sum of the numbers of routes to its predecessors: $\mathit{ways}(v) =
+\sum_{u \to v} \mathit{ways}(u)$, with $\mathit{ways}(1) = 1$, evaluated in topological order.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=1.6cm]
+  \foreach \vn/\xx/\yy/\val in {1/0/0/1, 2/1/0.8/1, 3/1/-0.8/2, 4/2/0.8/3, 5/2/-0.8/2, 6/3/0/5} {
+    \node[vtx] (g\vn) at (\xx, \yy) {\vn};
+    \node[font=\sffamily\scriptsize\bfseries, text=fgblue, above=1pt] at (g\vn.north) {\val};
+  }
+  \draw[ded] (g1) -- (g2); \draw[ded] (g1) -- (g3); \draw[ded] (g2) -- (g3); \draw[ded] (g2) -- (g4);
+  \draw[ded] (g3) -- (g4); \draw[ded] (g3) -- (g5); \draw[ded] (g4) -- (g6); \draw[ded] (g5) -- (g6);
+  \node[notel, anchor=west, text width=5.4cm] at (3.5, 0) {Blue: the number of routes from 1. Each value is the sum over the
+    incoming edges: $\mathit{ways}(4) = \mathit{ways}(2) + \mathit{ways}(3) = 1 + 2$, and $\mathit{ways}(6) = 3 + 2 = 5$.};
+\end{tikzpicture}
+\caption{Counting paths in a DAG by summing over incoming edges in topological order.}
+\label{fig:gameroutes}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    vvi adj(n + 1);
+    vi indeg(n + 1, 0);
+    rep(i, m) {
+        int a, b;
+        cin >> a >> b;
+        adj[a].push_back(b);
+        indeg[b]++;
+    }
+    vi order, st;  // a topological order by Kahn's algorithm
+    rep(v, 1, n + 1) if (!indeg[v]) st.push_back(v);
+    while (!st.empty()) {
+        int u = st.back();
+        st.pop_back();
+        order.push_back(u);
+        for (int v : adj[u])
+            if (--indeg[v] == 0) st.push_back(v);
+    }
+    vi ways(n + 1, 0);  // ways[v]: routes from 1 to v, modulo MOD
+    ways[1] = 1;
+    for (int u : order)
+        for (int v : adj[u]) ways[v] = (ways[v] + ways[u]) % MOD;
+    print(ways[n]);
+}
+\end{code}
+
+\begin{trick}[Cycles? Condense first]
+If the graph has cycles, contract every strongly connected component to a single vertex (Chapter~\ref{ch:connectivity}). The
+result is a DAG, and many questions about walks that may revisit vertices (the most coins collectable, the largest set of
+mutually reachable rooms) become DP on that DAG (CSES Coin Collector).
+\end{trick}
+
+\begin{summary}[Chapter summary]
+\begin{itemize}
+  \item A DSU with union by size and path compression costs $\Oh{\alpha(n)}$ per operation; offsets along the tree maintain
+        differences, parities and other group-valued relations.
+  \item The cut property (a lightest crossing edge is safe) justifies Kruskal ($\Oh{m \log m}$, with a DSU) and Prim
+        ($\Oh{n^2}$ on dense graphs, $\Oh{m \log n}$ with a heap).
+  \item MST paths are minimax paths; threshold queries are answered offline by sorting, or online with a Kruskal reconstruction
+        tree.
+  \item Prüfer codes are a bijection between labelled trees and sequences of length $n - 2$: $n^{n-2}$ trees, and multinomial
+        counts for given degrees.
+  \item A graph has a topological order if and only if it is acyclic; Kahn's algorithm finds one or detects the cycle, and DP
+        along it counts paths and optimises over them.
+\end{itemize}
+\end{summary}
+
+\begin{practice}
+\ppgroup{Union--find and spanning trees}
+\begin{pplist}
+  \item Road Reparation
+  \item Road Construction
+  \item Network Breakdown
+  \item New Roads Queries
+\end{pplist}
+\ppgroup{Topological order and DAGs}
+\begin{pplist}
+  \item Course Schedule
+  \item Longest Flight Route
+  \item Game Routes
+  \item Course Schedule II
+  \item Coin Collector
+\end{pplist}
+\end{practice}

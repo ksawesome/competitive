@@ -1,0 +1,911 @@
+\chapter{Connectivity}\label{ch:connectivity}
+
+Chapter~\ref{ch:graphs} asked whether two vertices are connected. This chapter asks how \emph{robustly} they are connected, and
+what the connections look like at a finer scale. In a directed graph, which vertices can reach each other in both directions?
+In an undirected graph, which single edge or vertex is so important that its failure disconnects the network? Can a route use
+every road exactly once? And what if the graph changes, with roads opening and closing over time? All of these questions are
+answered by variations of one idea, the \emph{low-link} values of a depth-first search, plus a handful of beautiful reductions:
+boolean formulas to strongly connected components (2-SAT), tours to degrees (Euler), and deletions to rollbacks (offline dynamic
+connectivity).
+
+\begin{chapterintro}{\plat\ \ioi}{Chapters~\ref{ch:graphs} and~\ref{ch:dsu}, in particular DFS trees and edge
+classification (Section~\ref{sec:dfs}).}
+  \item find strongly connected components with Tarjan's algorithm, and do DP on the condensation;
+  \item solve 2-SAT through the implication graph;
+  \item find bridges and articulation points with low-link values, and build bridge trees and block-cut trees;
+  \item decide whether Eulerian paths and circuits exist, and construct them with Hierholzer's algorithm;
+  \item handle edge deletions offline with a segment tree on time and a DSU with rollback;
+  \item use Euler's formula for planar graphs, and reason about critical vertices and dominators.
+\end{chapterintro}
+
+% ======================================================================================================================
+\section[Strongly connected components]{Strongly connected components \hfill \plat}\label{sec:scc}
+
+In a directed graph, two vertices are \defn{strongly connected} if each can reach the other. This is an equivalence relation,
+and its classes are the \defn{strongly connected components} (SCCs). Contracting every SCC to a single vertex gives the
+\defn{condensation}, which is always a DAG: a cycle through several components would merge them into one
+(Figure~\ref{fig:scc}). So every directed graph is a DAG of strongly connected pieces, and many questions split into a question
+inside each piece (where everything is mutually reachable) and a DP over the DAG.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \begin{scope}
+    \fill[fgsky!18, rounded corners=8pt] (-0.5, -0.25) rectangle (1.8, 2.05);
+    \fill[fgorange!15, rounded corners=8pt] (2.7, -0.25) rectangle (3.75, 2.05);
+    \fill[fgpink!18, rounded corners=8pt] (4.55, 0.45) rectangle (5.45, 1.55);
+    \node[vtx, cool] (a) at (0, 1) {0}; \node[vtx, cool] (b) at (1.3, 1.6) {1}; \node[vtx, cool] (c) at (1.3, 0.3) {2};
+    \node[vtx, warn] (d) at (3.2, 1.6) {3}; \node[vtx, warn] (e) at (3.2, 0.3) {4};
+    \node[vtx, pur] (f) at (5, 1) {5};
+    \draw[ded] (a) -- (b); \draw[ded] (b) -- (c); \draw[ded] (c) -- (a); \draw[ded] (b) -- (d);
+    \draw[ded] (d) to[bend left=20] (e); \draw[ded] (e) to[bend left=20] (d); \draw[ded] (c) -- (e); \draw[ded] (e) -- (f);
+  \end{scope}
+  \draw[->, line width=1.2pt, draw=fgblue] (5.9, 1) -- (7.0, 1);
+  \begin{scope}[xshift=7.8cm]
+    \node[vtx, cool, minimum size=11mm] (A) at (0, 1) {\scriptsize 0, 1, 2};
+    \node[vtx, warn, minimum size=11mm] (B) at (2, 1) {\scriptsize 3, 4};
+    \node[vtx, pur, minimum size=11mm] (C) at (4, 1) {\scriptsize 5};
+    \draw[ded] (A) -- (B); \draw[ded] (B) -- (C);
+    \node[lbl] at (2, -0.1) {the condensation is a DAG};
+  \end{scope}
+\end{tikzpicture}
+\caption{A directed graph with three strongly connected components (shaded), and its condensation.}
+\label{fig:scc}
+\end{figure}
+
+\paragraph{Tarjan's algorithm.} One DFS finds all SCCs. Every vertex gets a discovery time $\mathit{tin}(v)$ and a
+\defn{low-link} value $\mathit{low}(v)$: the smallest discovery time reachable from $v$'s DFS subtree by following tree edges and
+then \emph{one} edge to a vertex that is still on a stack of ``open'' vertices. Vertices are pushed when they are discovered. When
+DFS finishes a vertex $u$ with $\mathit{low}(u) = \mathit{tin}(u)$, nothing in its subtree can reach an earlier open vertex, so $u$
+is the first vertex of its component that DFS discovered, and the component is exactly the vertices above $u$ on the stack: pop
+them (Figure~\ref{fig:tarjan}). The whole algorithm is one DFS, $\Oh{n + m}$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \fill[fgsky!18, rounded corners=8pt] (-0.55, -1.95) rectangle (2.15, 0.55);
+  \fill[fgorange!15, rounded corners=8pt] (3.05, -1.95) rectangle (5.75, 0.55);
+  \fill[fgpink!18, rounded corners=8pt] (6.65, -1.95) rectangle (7.55, -0.95);
+  \node[vtx] (v1) at (0, 0) {a}; \node[vtx] (v2) at (1.6, 0) {b}; \node[vtx] (v3) at (0.8, -1.4) {c};
+  \node[vtx] (v4) at (3.6, 0) {d}; \node[vtx] (v5) at (5.2, 0) {e}; \node[vtx] (v6) at (4.4, -1.4) {f};
+  \node[vtx] (v7) at (7.1, -1.4) {g};
+  \draw[bded] (v1) -- (v2); \draw[bded] (v2) -- (v3); \draw[ded, draw=fgverm, dashed] (v3) -- (v1);
+  \draw[bded] (v3) -- (v4); \draw[bded] (v4) -- (v5); \draw[bded] (v5) -- (v6);
+  \draw[ded, draw=fgverm, dashed] (v6) -- (v4); \draw[bded] (v6) -- (v7);
+  \foreach \vv/\tl/\pos/\an in {v1/{1/1}/left/west, v2/{2/1}/right/east, v3/{3/1}/left/west,
+      v4/{4/4}/above left/north west, v5/{5/4}/right/east, v6/{6/4}/left/west, v7/{7/7}/below/south}
+    \node[font=\sffamily\scriptsize, text=fgink!70, \pos=0pt] at (\vv.\an) {\tl};
+  \node[font=\sffamily\scriptsize\bfseries, text=fgblue] at (0.8, 0.8) {SCC 3};
+  \node[font=\sffamily\scriptsize\bfseries, text=fgorange!80!black] at (4.4, 0.8) {SCC 2};
+  \node[font=\sffamily\scriptsize\bfseries, text=fgpink!80!black] at (7.1, -0.7) {SCC 1};
+\end{tikzpicture}
+\caption{Tarjan's algorithm on a graph with three SCCs; labels are $\mathit{tin}/\mathit{low}$, blue edges are tree edges and red
+dashed edges go back to open vertices. Vertex $g$ finishes first with $\mathit{low} = \mathit{tin}$ and forms SCC 1; then
+vertex $d$ (popping $f$, $e$, $d$), then vertex $a$. Components come out in reverse topological order of the condensation.}
+\label{fig:tarjan}
+\end{figure}
+
+\begin{problem}{Planets and Kingdoms (CSES)}
+Divide the planets of a directed teleporter network into kingdoms, so that two planets are in the same kingdom exactly when
+each can reach the other.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    vvi adj(n + 1);
+    rep(i, m) {
+        int a, b;
+        cin >> a >> b;
+        adj[a].push_back(b);
+    }
+    // Tarjan: tin = discovery time, low = smallest tin reachable from the
+    // subtree through one edge to a vertex that is still on the stack
+    vi tin(n + 1, 0), low(n + 1, 0), comp(n + 1, 0), st;
+    vector<bool> on(n + 1, false);
+    int timer = 0, k = 0;
+    auto dfs = [&](auto&& self, int u) -> void {
+        tin[u] = low[u] = ++timer;
+        st.push_back(u), on[u] = true;
+        for (int v : adj[u]) {
+            if (!tin[v]) self(self, v), low[u] = min(low[u], low[v]);
+            else if (on[v]) low[u] = min(low[u], tin[v]);
+        }
+        if (low[u] == tin[u]) {  // u is the first vertex of its SCC: pop it
+            k++;
+            int v;
+            do {
+                v = st.back();
+                st.pop_back();
+                on[v] = false, comp[v] = k;
+            } while (v != u);
+        }
+    };
+    rep(v, 1, n + 1) if (!tin[v]) dfs(dfs, v);
+    print(k);
+    print(vi(comp.begin() + 1, comp.end()));
+}
+\end{code}
+
+\usetemplate{SCC (Tarjan)}{Ctrl+Alt+T, C}{cpscc}
+
+\paragraph{Why components come out in reverse topological order.} If there is an edge from component $A$ to component $B$, then
+$B$ is completed before $A$: either DFS entered $B$ first (and $B$, unable to reach $A$, finished before $A$ was even discovered)
+or it entered $A$ first and reached $B$ inside $A$'s subtree. So Tarjan's numbers decrease along edges of the condensation, and
+processing components in \emph{increasing} number visits every component after all its successors. \defn{Kosaraju's algorithm}
+is the alternative: one DFS for finishing times, then DFS on the reversed graph in decreasing finishing time, each tree being an
+SCC. It is easier to prove but does twice the work.
+
+\begin{problem}{Flight Routes Check (CSES)}
+Decide whether every city can reach every other by one-way flights; if not, print two cities $a, b$ with no route from $a$ to
+$b$.
+\solution No SCC algorithm is needed: the graph is strongly connected exactly when vertex 1 reaches every vertex and every vertex
+reaches 1 (search the reversed graph from 1). A vertex that fails either test gives the pair.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    vvi adj(n + 1), radj(n + 1);
+    rep(i, m) {
+        int a, b;
+        cin >> a >> b;
+        adj[a].push_back(b);
+        radj[b].push_back(a);
+    }
+    // strongly connected iff 1 reaches everyone and everyone reaches 1
+    auto reach = [&](const vvi& g) {
+        vector<bool> seen(n + 1, false);
+        vi st{1};
+        seen[1] = true;
+        while (!st.empty()) {
+            int u = st.back();
+            st.pop_back();
+            for (int v : g[u])
+                if (!seen[v]) seen[v] = true, st.push_back(v);
+        }
+        return seen;
+    };
+    vector<bool> fwd = reach(adj), bwd = reach(radj);
+    rep(v, 1, n + 1) {
+        if (!fwd[v]) {  // no route 1 -> v
+            print("NO");
+            print(1, v);
+            return;
+        }
+        if (!bwd[v]) {  // no route v -> 1
+            print("NO");
+            print(v, 1);
+            return;
+        }
+    }
+    print("YES");
+}
+\end{code}
+
+\begin{problem}{Coin Collector (CSES)}
+Each room contains coins, and tunnels are one-way. Starting anywhere and ending anywhere, collect as many coins as possible (a
+room's coins are collected once).
+\solution Inside an SCC, a walk can visit every room and return, so entering a component means collecting all of it. Condense,
+give each component the sum of its coins, and find the heaviest path in the condensation. Tarjan's numbering is already a reverse
+topological order, so one pass in increasing component number computes the best path starting at each component.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    vi coins(n + 1);
+    rep(v, 1, n + 1) cin >> coins[v];
+    vvi adj(n + 1);
+    rep(i, m) {
+        int a, b;
+        cin >> a >> b;
+        adj[a].push_back(b);
+    }
+    vi tin(n + 1, 0), low(n + 1, 0), comp(n + 1, 0), st;
+    vector<bool> on(n + 1, false);
+    int timer = 0, k = 0;
+    auto dfs = [&](auto&& self, int u) -> void {
+        tin[u] = low[u] = ++timer;
+        st.push_back(u), on[u] = true;
+        for (int v : adj[u]) {
+            if (!tin[v]) self(self, v), low[u] = min(low[u], low[v]);
+            else if (on[v]) low[u] = min(low[u], tin[v]);
+        }
+        if (low[u] == tin[u]) {
+            k++;
+            int v;
+            do {
+                v = st.back();
+                st.pop_back();
+                on[v] = false, comp[v] = k;
+            } while (v != u);
+        }
+    };
+    rep(v, 1, n + 1) if (!tin[v]) dfs(dfs, v);
+    // Tarjan numbers SCCs in reverse topological order: an edge between
+    // components goes from a larger number to a smaller one
+    vi total(k + 1, 0), best(k + 1, 0);
+    rep(v, 1, n + 1) total[comp[v]] += coins[v];
+    vvi out(k + 1);
+    rep(u, 1, n + 1) for (int v : adj[u])
+        if (comp[u] != comp[v]) out[comp[u]].push_back(comp[v]);
+    ll ans = 0;
+    rep(c, 1, k + 1) {  // successors (smaller numbers) are already done
+        for (int d : out[c]) chmax(best[c], best[d]);
+        best[c] += total[c];
+        chmax(ans, best[c]);
+    }
+    print(ans);
+}
+\end{code}
+
+\begin{recognize}
+``Mutually reachable'', ``can every vertex reach every other?'', cyclic dependencies, and ``maximise what you collect when you may
+revisit vertices'' (condense, then DP on the DAG). Also the minimum number of edges to add to make a graph strongly connected:
+$\max(\#\text{sources}, \#\text{sinks})$ of the condensation, unless it is already a single component.
+\end{recognize}
+
+% ======================================================================================================================
+\section[2-SAT]{2-SAT \hfill \plat}\label{sec:2sat}
+
+A \defn{2-SAT} instance has boolean variables and clauses of the form $(a \lor b)$, where $a$ and $b$ are variables or negated
+variables (\emph{literals}). General satisfiability is NP-hard, but with two literals per clause it is solvable in linear time.
+The clause $(a \lor b)$ is equivalent to the two implications $\lnot a \Rightarrow b$ and $\lnot b \Rightarrow a$. Build the
+\defn{implication graph} on the $2n$ literals with these edges (Figure~\ref{fig:2sat}). Then:
+
+\begin{itemize}
+  \item if some variable $x$ and its negation $\lnot x$ lie in the same SCC, then $x \Rightarrow \lnot x$ and $\lnot x \Rightarrow
+        x$, and no assignment works;
+  \item otherwise, set $x$ true exactly when the SCC of $x$ comes \emph{after} the SCC of $\lnot x$ in topological order (with
+        Tarjan's numbering: when $\mathit{comp}(x) < \mathit{comp}(\lnot x)$).
+\end{itemize}
+
+\noindent The second rule works because the implication graph is symmetric (an edge $u \to v$ comes with $\lnot v \to \lnot u$):
+choosing, for each variable, the literal later in topological order never creates an implication from a true literal to a false
+one.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \fill[fggreen!15, rounded corners=10pt] (2.3, -0.6) rectangle (6.1, 2.2);
+  \fill[fgverm!10, rounded corners=10pt] (-1.9, -0.6) rectangle (1.9, 2.2);
+  \node[vtx, minimum size=8mm] (na) at (-1.2, 1.5) {$\lnot a$};
+  \node[vtx, minimum size=8mm] (b) at (1.2, 1.5) {$b$};
+  \node[vtx, minimum size=8mm] (nc) at (0, 0) {$\lnot c$};
+  \node[vtx, minimum size=8mm] (a) at (3.0, 1.5) {$a$};
+  \node[vtx, minimum size=8mm] (c) at (5.4, 1.5) {$c$};
+  \node[vtx, minimum size=8mm] (nb) at (4.2, 0) {$\lnot b$};
+  \draw[ded] (na) -- (b); \draw[ded] (b) -- (nc); \draw[ded] (nc) -- (na);
+  \draw[ded] (a) -- (c); \draw[ded] (c) -- (nb); \draw[ded] (nb) -- (a);
+  \draw[hded] (na) to[bend left=35] (a);
+  \node[font=\sffamily\scriptsize\bfseries, text=fgverm] at (0, -0.95) {false side};
+  \node[font=\sffamily\scriptsize\bfseries, text=fggreen!50!black] at (4.2, -0.95) {true side};
+  \node[notel, anchor=west, text width=5.0cm] at (6.5, 0.8) {Clauses $(a \lor b)$, $(\lnot a \lor c)$, $(\lnot b \lor \lnot c)$,
+    $(a \lor a)$. Each clause gives two edges; $(a \lor a)$ gives $\lnot a \to a$ (red). The SCC of $a$ comes later in
+    topological order than that of $\lnot a$, so $a$, $c$ and $\lnot b$ are true.};
+\end{tikzpicture}
+\caption{An implication graph with two SCCs that are mirror images of each other. The edge between them fixes the order, and
+the later component is set true: $a = \text{true}$, $b = \text{false}$, $c = \text{true}$.}
+\label{fig:2sat}
+\end{figure}
+
+\begin{problem}{Giant Pizza (CSES)}
+Each of $n$ family members has two wishes of the form ``topping $x$ on'' or ``topping $x$ off'', and wants at least one of them
+fulfilled. Choose the $m$ toppings to satisfy everyone, or report that it is impossible.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, m;  // n wishes, m toppings
+    cin >> n >> m;
+    // literal 2x: topping x is on, 2x + 1: it is off
+    int N = 2 * m;
+    vvi adj(N);
+    auto lit = [](char sign, int x) { return 2 * (x - 1) + (sign == '-'); };
+    rep(i, n) {
+        char s1, s2;
+        int x1, x2;
+        cin >> s1 >> x1 >> s2 >> x2;
+        int a = lit(s1, x1), b = lit(s2, x2);
+        adj[a ^ 1].push_back(b);  // (a or b): not a implies b,
+        adj[b ^ 1].push_back(a);  // and not b implies a
+    }
+    vi tin(N, 0), low(N, 0), comp(N, 0), st;
+    vector<bool> on(N, false);
+    int timer = 0, k = 0;
+    auto dfs = [&](auto&& self, int u) -> void {
+        tin[u] = low[u] = ++timer;
+        st.push_back(u), on[u] = true;
+        for (int v : adj[u]) {
+            if (!tin[v]) self(self, v), low[u] = min(low[u], low[v]);
+            else if (on[v]) low[u] = min(low[u], tin[v]);
+        }
+        if (low[u] == tin[u]) {
+            k++;
+            int v;
+            do {
+                v = st.back();
+                st.pop_back();
+                on[v] = false, comp[v] = k;
+            } while (v != u);
+        }
+    };
+    rep(v, N) if (!tin[v]) dfs(dfs, v);
+    string ans(m, '?');
+    rep(x, m) {
+        if (comp[2 * x] == comp[2 * x + 1]) {  // x on implies x off and back
+            print("IMPOSSIBLE");
+            return;
+        }
+        // choose the literal whose SCC is later in topological order,
+        // which is the smaller Tarjan number
+        ans[x] = comp[2 * x] < comp[2 * x + 1] ? '+' : '-';
+    }
+    rep(x, m) cout << ans[x] << (x + 1 < m ? ' ' : '\n');
+}
+\end{code}
+
+\usetemplate{2-SAT}{Ctrl+Alt+Y, 2}{cp2sat}
+
+\begin{recognize}
+Every object has exactly two options (on/off, left/right, team A/B, top/bottom), and every constraint talks about at most two
+objects: ``not both'' is $(\lnot a \lor \lnot b)$, ``at least one'' is $(a \lor b)$, ``exactly one'' is both, ``if $a$ then
+$b$'' is $(\lnot a \lor b)$, and ``$a$ must be true'' is $(a \lor a)$. Constraints on three objects at once make the problem
+NP-hard, so look for a way to express every constraint pairwise. ``At most one of these $k$'' is expressible with $\Oh{k}$
+auxiliary prefix variables instead of $\Oh{k^2}$ clauses.
+\end{recognize}
+
+% ======================================================================================================================
+\section[Bridges and articulation points]{Bridges and articulation points \hfill \plat}\label{sec:bridges}
+
+In an undirected graph, a \defn{bridge} is an edge whose removal increases the number of connected components, and an
+\defn{articulation point} (cut vertex) is a vertex whose removal does. Both are found with one DFS and low-link values: here
+$\mathit{low}(v)$ is the smallest discovery time reachable from $v$'s subtree using tree edges downwards and then at most one back
+edge (Figure~\ref{fig:bridges}). Recall that an undirected DFS has only tree and back edges, and back edges go to ancestors.
+
+\begin{itemize}
+  \item A tree edge $u$--$v$ ($v$ the child) is a \textbf{bridge} if and only if $\mathit{low}(v) > \mathit{tin}(u)$: nothing in
+        $v$'s subtree has a back edge to $u$ or above, so removing the edge cuts the subtree off. Back edges are never bridges;
+        they lie on a cycle.
+  \item A non-root vertex $u$ is an \textbf{articulation point} if and only if some child $v$ has $\mathit{low}(v) \ge
+        \mathit{tin}(u)$: $v$'s subtree cannot get above $u$ without $u$. The root is one exactly when it has at least two DFS
+        children.
+\end{itemize}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[vtx] (a) at (0, 0) {a}; \node[vtx] (b) at (1.3, 0.9) {b}; \node[vtx] (c) at (1.3, -0.9) {c};
+  \node[vtx, hot] (d) at (2.8, 0) {d}; \node[vtx, hot] (e) at (4.4, 0) {e};
+  \node[vtx] (f) at (5.8, 0.9) {f}; \node[vtx] (g) at (5.8, -0.9) {g}; \node[vtx] (h) at (7.3, 0) {h};
+  \draw[bed] (a) -- (b); \draw[bed] (b) -- (d); \draw[bed] (d) -- (c); \draw[xed] (c) -- (a);
+  \draw[hed] (d) -- (e);
+  \draw[bed] (e) -- (f); \draw[bed] (f) -- (h); \draw[bed] (h) -- (g); \draw[xed] (g) -- (e); \draw[xed] (f) -- (g);
+  \foreach \vv/\tl/\pos/\an in {a/{1/1}/left/west, b/{2/1}/above/north, c/{4/1}/below/south,
+      d/{3/1}/below right/south east, e/{5/5}/below left/south west, f/{6/5}/above/north, g/{8/5}/below/south,
+      h/{7/5}/right/east}
+    \node[font=\sffamily\scriptsize, text=fgink!70, \pos=0pt] at (\vv.\an) {\tl};
+  \node[notel, anchor=west, text width=4.1cm] at (8.7, 0) {Labels $\mathit{tin}/\mathit{low}$ from a DFS started at $a$ (blue
+    tree edges, grey dashed back edges). $\mathit{low}(e) = 5 > \mathit{tin}(d) = 3$, so $d$--$e$ is a bridge; $d$ and $e$
+    are articulation points.};
+\end{tikzpicture}
+\caption{Bridges and articulation points from low-link values: the red edge is the only bridge, and the red vertices are the
+articulation points.}
+\label{fig:bridges}
+\end{figure}
+
+\begin{problem}{Necessary Roads (CSES)}
+List every road whose removal would disconnect some pair of cities.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    vector<vector<pii>> adj(n + 1);  // (neighbour, edge id)
+    rep(i, m) {
+        int a, b;
+        cin >> a >> b;
+        adj[a].push_back({b, i});
+        adj[b].push_back({a, i});
+    }
+    vi tin(n + 1, 0), low(n + 1, 0);
+    vector<pii> bridges;
+    int timer = 0;
+    auto dfs = [&](auto&& self, int u, int pe) -> void {  // pe: parent edge
+        tin[u] = low[u] = ++timer;
+        for (auto [v, id] : adj[u]) {
+            if (id == pe) continue;  // skip only the edge we came along
+            if (tin[v]) low[u] = min(low[u], tin[v]);  // a back edge
+            else {
+                self(self, v, id);
+                low[u] = min(low[u], low[v]);
+                // nothing below v climbs to u or above: u-v is a bridge
+                if (low[v] > tin[u]) bridges.push_back({u, v});
+            }
+        }
+    };
+    rep(v, 1, n + 1) if (!tin[v]) dfs(dfs, v, -1);
+    print(sz(bridges));
+    for (auto [a, b] : bridges) print(a, b);
+}
+\end{code}
+
+\begin{pitfall}[Parallel edges]
+For bridges, skip the edge you arrived along by its \emph{id}, not by the parent vertex. Otherwise a doubled road $u$--$v$ is
+reported as a bridge, although removing one copy leaves the other. For articulation points, skipping the parent vertex is fine,
+because parallel edges never change whether a vertex separates the graph.
+\end{pitfall}
+
+\begin{problem}{Necessary Cities (CSES)}
+List every city whose removal would disconnect some pair of the remaining cities.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    vvi adj(n + 1);
+    rep(i, m) {
+        int a, b;
+        cin >> a >> b;
+        adj[a].push_back(b);
+        adj[b].push_back(a);
+    }
+    vi tin(n + 1, 0), low(n + 1, 0);
+    vector<bool> cut(n + 1, false);
+    int timer = 0;
+    auto dfs = [&](auto&& self, int u, int p) -> void {
+        tin[u] = low[u] = ++timer;
+        int children = 0;
+        for (int v : adj[u]) {
+            if (v == p) continue;
+            if (tin[v]) low[u] = min(low[u], tin[v]);
+            else {
+                self(self, v, u);
+                low[u] = min(low[u], low[v]);
+                children++;
+                // v's subtree cannot climb above u: removing u cuts it off
+                if (p != 0 && low[v] >= tin[u]) cut[u] = true;
+            }
+        }
+        if (p == 0 && children >= 2) cut[u] = true;  // the root
+    };
+    rep(v, 1, n + 1) if (!tin[v]) dfs(dfs, v, 0);
+    vi cities;
+    rep(v, 1, n + 1) if (cut[v]) cities.push_back(v);
+    print(sz(cities));
+    print(cities);
+}
+\end{code}
+
+\usetemplate{Bridges + articulation points}{Ctrl+Alt+T, Shift+B}{cpbridges}
+
+\subsection{Bridge trees and block-cut trees}
+
+Removing all bridges splits a graph into \defn{2-edge-connected components}: inside one, every two vertices are joined by two
+edge-disjoint paths. Contracting each of them gives the \defn{bridge tree}, whose edges are exactly the bridges. Questions like
+``which edges lie on every path from $a$ to $b$?'' then become ``which edges lie on the tree path between the components of $a$ and
+$b$?'', answered with LCA (Chapter~\ref{ch:trees}).
+
+\defn{Biconnected components} (blocks) are the vertex version: maximal subgraphs without articulation points. Every edge belongs
+to exactly one block, while an articulation point belongs to several. The \defn{block-cut tree} has a node for every block and
+one for every articulation point, joined when the articulation point belongs to the block (Figure~\ref{fig:blockcut}). ``Which
+vertices lie on every path from $a$ to $b$?'' becomes ``which articulation-point nodes lie on the tree path?''.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \fill[fgsky!20, rounded corners=8pt] (-0.5, -1.2) rectangle (1.65, 1.2);
+  \fill[fggreen!15, rounded corners=8pt] (1.0, -1.25) rectangle (3.0, 1.25);
+  \fill[fgpink!20, rounded corners=8pt] (2.25, -1.25) rectangle (4.4, -0.35);
+  \node[vtx] (a) at (0, 0.8) {0}; \node[vtx] (b) at (0, -0.8) {1}; \node[vtx, hot] (c) at (1.3, 0) {2};
+  \node[vtx] (d) at (2.6, 0.8) {3}; \node[vtx, hot] (e) at (2.6, -0.8) {4}; \node[vtx] (f) at (4.0, -0.8) {5};
+  \draw[ed] (a) -- (b) -- (c) -- (a) (c) -- (d) -- (e) -- (c) (e) -- (f);
+  \begin{scope}[xshift=6.2cm]
+    \node[draw=fgblue, fill=fgsky!20, rounded corners=3pt, font=\sffamily\scriptsize, minimum height=6mm] (B1) at (0, 0)
+      {$\{0, 1, 2\}$};
+    \node[vtxs, hot] (C2) at (1.45, 0) {2};
+    \node[draw=fggreen!70!black, fill=fggreen!15, rounded corners=3pt, font=\sffamily\scriptsize, minimum height=6mm]
+      (B2) at (2.9, 0) {$\{2, 3, 4\}$};
+    \node[vtxs, hot] (C4) at (4.35, 0) {4};
+    \node[draw=fgpink!80!black, fill=fgpink!20, rounded corners=3pt, font=\sffamily\scriptsize, minimum height=6mm]
+      (B3) at (5.6, 0) {$\{4, 5\}$};
+    \draw[ed] (B1) -- (C2) -- (B2) -- (C4) -- (B3);
+    \node[lbl] at (2.9, -0.85) {block-cut tree};
+  \end{scope}
+\end{tikzpicture}
+\caption{Three blocks (shaded) that share the articulation points 2 and 4, and the block-cut tree, which alternates between
+block nodes and articulation-point nodes. The single edge 4--5 is a block of its own (and a bridge).}
+\label{fig:blockcut}
+\end{figure}
+
+\usetemplate{2-edge-connected components}{Ctrl+Alt+Y, B}{cp2ecc}
+
+\usetemplate{Biconnected components (blocks)}{Ctrl+Alt+Y, Shift+B}{cpbcc}
+
+% ======================================================================================================================
+\section[Eulerian paths and circuits]{Eulerian paths and circuits \hfill \plat}\label{sec:euler}
+
+An \defn{Eulerian path} uses every edge exactly once; an \defn{Eulerian circuit} also returns to its start. Unlike Hamiltonian
+paths, which visit every \emph{vertex} once and are NP-hard to find, Eulerian paths are decided by degrees alone (plus the
+condition that all edges lie in one connected component), as Table~\ref{tab:euler} shows. The reason is local: every time a walk
+passes through a vertex it uses one edge in and one edge out, so all vertices except the ends must have balanced degrees.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}l P{4.4cm} P{6.6cm}@{}}
+  \toprule
+  & \thd{Circuit exists if and only if} & \thd{Path exists if and only if} \\
+  \midrule
+  undirected & every degree is even & exactly 0 or 2 vertices have odd degree (start at one of them) \\
+  directed & in-degree = out-degree everywhere & one vertex has out $-$ in $= 1$ (the start), one has in $-$ out $= 1$ (the
+    end), all others are balanced \\
+  \bottomrule
+\end{tabular}
+\caption{Existence of Eulerian circuits and paths, assuming all edges are in one (weakly) connected component.}
+\label{tab:euler}
+\end{table}
+
+\defn{Hierholzer's algorithm} constructs the tour in $\Oh{n + m}$. Walk along unused edges from the start until you get stuck; by
+the degree conditions, you can only get stuck at the end vertex. Then back up along the walk: whenever a vertex on it still has
+unused edges, a closed sub-tour starting there can be spliced into the walk at that point (Figure~\ref{fig:hierholzer}). With an
+explicit stack this is a few lines: the top of the stack advances along an unused edge if it has one, and otherwise is popped and
+appended to the output, which is the tour in reverse order.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[vtx, hot] (v1) at (0, 0) {1}; \node[vtx] (v2) at (1.6, 1.0) {2}; \node[vtx] (v3) at (3.2, 0) {3};
+  \node[vtx] (v4) at (1.6, -1.0) {4}; \node[vtx] (v5) at (4.8, 1.0) {5}; \node[vtx] (v6) at (4.8, -1.0) {6};
+  \draw[bed] (v1) -- node[wl] {1} (v2); \draw[bed] (v2) -- node[wl] {2} (v3); \draw[bed] (v3) -- node[wl] {3} (v4);
+  \draw[bed] (v4) -- node[wl] {4} (v1);
+  \draw[ged] (v3) -- node[wl] {a} (v5); \draw[ged] (v5) -- node[wl] {b} (v6); \draw[ged] (v6) -- node[wl] {c} (v3);
+  \node[notel, anchor=west, text width=5.6cm] at (5.6, 0) {The first walk from 1 (blue, edges 1--4) closes without using the
+    triangle at 3. Backing up to 3, which still has unused edges, starts a sub-tour a, b, c (green) that is spliced in:
+    $1, 2, 3, 5, 6, 3, 4, 1$.};
+\end{tikzpicture}
+\caption{Hierholzer's algorithm splices closed sub-tours into the current walk wherever unused edges remain.}
+\label{fig:hierholzer}
+\end{figure}
+
+\begin{problem}{Mail Delivery (CSES)}
+Find a route that starts and ends at post office 1 and uses every street exactly once, or report that none exists.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    vector<vector<pii>> adj(n + 1);  // (neighbour, edge id)
+    vi deg(n + 1, 0);
+    rep(i, m) {
+        int a, b;
+        cin >> a >> b;
+        adj[a].push_back({b, i});
+        adj[b].push_back({a, i});
+        deg[a]++, deg[b]++;
+    }
+    rep(v, 1, n + 1) if (deg[v] % 2) {  // a circuit needs even degrees
+        print("IMPOSSIBLE");
+        return;
+    }
+    // Hierholzer: walk unused edges; a vertex with none left is final
+    vector<bool> used(m, false);
+    vi ptr(n + 1, 0), st{1}, tour;
+    while (!st.empty()) {
+        int u = st.back();
+        while (ptr[u] < sz(adj[u]) && used[adj[u][ptr[u]].second]) ptr[u]++;
+        if (ptr[u] == sz(adj[u])) {
+            tour.push_back(u);
+            st.pop_back();
+        } else {
+            auto [v, id] = adj[u][ptr[u]];
+            used[id] = true;
+            st.push_back(v);
+        }
+    }
+    if (sz(tour) != m + 1) {  // some edges are not connected to city 1
+        print("IMPOSSIBLE");
+        return;
+    }
+    print(tour);
+}
+\end{code}
+
+\begin{problem}{Teleporters Path (CSES)}
+Find a route from level 1 to level $n$ that uses every one-way teleporter exactly once.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    vvi adj(n + 1);
+    vi out(n + 1, 0), in(n + 1, 0);
+    rep(i, m) {
+        int a, b;
+        cin >> a >> b;
+        adj[a].push_back(b);
+        out[a]++, in[b]++;
+    }
+    // a path 1 -> n: out - in is +1 at 1, -1 at n, 0 elsewhere
+    bool ok = out[1] - in[1] == 1 && in[n] - out[n] == 1;
+    rep(v, 2, n) if (in[v] != out[v]) ok = false;
+    if (!ok) {
+        print("IMPOSSIBLE");
+        return;
+    }
+    vi ptr(n + 1, 0), st{1}, path;  // Hierholzer on a directed graph
+    while (!st.empty()) {
+        int u = st.back();
+        if (ptr[u] < sz(adj[u])) st.push_back(adj[u][ptr[u]++]);
+        else path.push_back(u), st.pop_back();
+    }
+    if (sz(path) != m + 1) {  // some edges are unreachable from 1
+        print("IMPOSSIBLE");
+        return;
+    }
+    reverse(all(path));
+    print(path);
+}
+\end{code}
+
+\usetemplate{Eulerian path / circuit (Hierholzer)}{Ctrl+Alt+Y, E}{cpeuler}
+
+\begin{trick}[Euler tours as a modelling tool]
+``Use every transition exactly once'' is an Eulerian path on the graph whose edges are the transitions: de Bruijn sequences
+(Section~\ref{sec:debruijn}), arranging dominoes in a chain, or reconstructing a string from all its length-$k$ substrings. And
+``orient the edges so that every vertex has in-degree equal to out-degree'' is solved by following an Euler circuit after pairing
+up odd vertices with dummy edges.
+\end{trick}
+
+% ======================================================================================================================
+\section[Offline dynamic connectivity]{Offline dynamic connectivity \hfill \ioi}\label{sec:offline-dyncon}
+
+Suppose edges are added \emph{and} removed, and the number of components is wanted after every operation. A DSU cannot delete,
+but offline there is an elegant way around it. Every edge is alive during an interval of time. Build a segment tree over the time
+axis and store each edge in the $\Oh{\log q}$ nodes that exactly cover its interval (Figure~\ref{fig:segtime}). Then walk the
+segment tree depth first with a \defn{DSU with rollback} (union by size, no path compression, and a stack of the changes made):
+entering a node unites its edges, reaching a leaf reads off the answer for that moment, and leaving a node undoes its unions. At
+each leaf, exactly the edges alive at that time have been united. The total cost is $\Oh{q \log q \log n}$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.9cm]
+  \foreach \lv/\cnt in {0/1, 1/2, 2/4, 3/8} {
+    \pgfmathsetmacro{\wdt}{8/\cnt}
+    \foreach \kx in {1,...,\cnt} {
+      \pgfmathsetmacro{\xl}{(\kx - 1)*\wdt}
+      \draw[fgline, line width=0.5pt, fill=white] (\xl + 0.04, -\lv*0.62) rectangle (\xl + \wdt - 0.04, -\lv*0.62 - 0.46);
+    }
+  }
+  \foreach \xl/\wdt/\lv/\cl in {1/1/3/fgorange!45, 2/2/2/fgorange!45, 4/4/1/fgorange!45, 0/2/2/fgsky!55, 5/1/3/fggreen!45,
+      6/2/2/fggreen!45}
+    \fill[\cl] (\xl + 0.06, -\lv*0.62 - 0.02) rectangle (\xl + \wdt - 0.06, -\lv*0.62 - 0.44);
+  \foreach \tv in {0,...,7} \node[lbl] at (\tv + 0.5, -2.62) {\tv};
+  \node[lbl, anchor=east] at (-0.1, -2.62) {time};
+  \draw[ivl=fgorange!80] (1, -3.15) -- (8, -3.15); \node[font=\sffamily\scriptsize, anchor=west] at (8.1, -3.15) {edge $e_1$
+    alive at times 1--7: three nodes};
+  \draw[ivl=fgsky!80] (0, -3.55) -- (2, -3.55); \node[font=\sffamily\scriptsize, anchor=west] at (8.1, -3.55) {edge $e_2$ alive
+    at times 0--1: one node};
+  \draw[ivl=fggreen!70] (5, -3.95) -- (8, -3.95); \node[font=\sffamily\scriptsize, anchor=west] at (8.1, -3.95) {edge $e_3$
+    alive at times 5--7: two nodes};
+\end{tikzpicture}
+\caption{A segment tree on time. Each edge is stored in the $\Oh{\log q}$ nodes that tile its lifetime; a leaf at time $t$ sees
+exactly the edges stored on its root path, which are the edges alive at $t$.}
+\label{fig:segtime}
+\end{figure}
+
+\begin{problem}{Dynamic Connectivity (CSES)}
+A graph starts with $m$ edges; each of $k$ operations adds or removes an edge. Print the number of components initially and after
+every operation.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, m, k;
+    cin >> n >> m >> k;
+    // every edge is alive during an interval of times 0..k; time 0 is the
+    // initial graph, time t is right after operation t
+    map<pii, int> since;  // alive edge -> the time it appeared
+    vector<array<int, 4>> live;  // (from, to, a, b): alive on [from, to]
+    auto norm = [](int a, int b) { return pii(min(a, b), max(a, b)); };
+    rep(i, m) {
+        int a, b;
+        cin >> a >> b;
+        since[norm(a, b)] = 0;
+    }
+    rep(t, 1, k + 1) {
+        int type, a, b;
+        cin >> type >> a >> b;
+        if (type == 1) since[norm(a, b)] = t;
+        else {
+            auto it = since.find(norm(a, b));
+            live.push_back({it->second, t - 1, a, b});
+            since.erase(it);
+        }
+    }
+    for (auto [e, t] : since) live.push_back({t, k, e.first, e.second});
+    // each interval is stored in O(log k) nodes of a segment tree on time
+    int T = k + 1;
+    vector<vector<pii>> node(4 * T);
+    auto add = [&](auto&& self, int v, int l, int r, int ql, int qr, pii e) {
+        if (qr < l || r < ql) return;
+        if (ql <= l && r <= qr) {
+            node[v].push_back(e);
+            return;
+        }
+        int mid = (l + r) / 2;
+        self(self, 2 * v, l, mid, ql, qr, e);
+        self(self, 2 * v + 1, mid + 1, r, ql, qr, e);
+    };
+    for (auto [from, to, a, b] : live) add(add, 1, 0, T - 1, from, to, {a, b});
+    // DSU with rollback: union by size, no path compression
+    vi par(n + 1), siz(n + 1, 1);
+    iota(all(par), 0);
+    int comps = n;
+    vector<pii> history;  // (attached root, new root) for undo
+    auto find = [&](int x) {
+        while (par[x] != x) x = par[x];
+        return x;
+    };
+    vi ans(T);
+    auto walk = [&](auto&& self, int v, int l, int r) -> void {
+        int saved = sz(history);
+        for (auto [a, b] : node[v]) {
+            int ra = find(a), rb = find(b);
+            if (ra == rb) continue;
+            if (siz[ra] < siz[rb]) swap(ra, rb);
+            par[rb] = ra, siz[ra] += siz[rb], comps--;
+            history.push_back({rb, ra});
+        }
+        if (l == r) ans[l] = comps;
+        else {
+            int mid = (l + r) / 2;
+            self(self, 2 * v, l, mid);
+            self(self, 2 * v + 1, mid + 1, r);
+        }
+        while (sz(history) > saved) {  // undo this node's unions
+            auto [rb, ra] = history.back();
+            history.pop_back();
+            par[rb] = rb, siz[ra] -= siz[rb], comps++;
+        }
+    };
+    walk(walk, 1, 0, T - 1);
+    print(ans);
+}
+\end{code}
+
+\usetemplate{Offline dynamic connectivity (edge deletions)}{Ctrl+Alt+Y, Shift+R}{cpofflinecc}
+
+\begin{trick}[The segment tree on time]
+The technique needs only a structure that can \emph{undo} its last operation. A DSU with rollback, a knapsack array that is
+copied before each insertion, a linear basis with snapshots, a stack of any kind: each item lives in $\Oh{\log q}$ nodes, and every
+node's operations are undone on the way back up. It turns ``insertions and deletions, answer queries'' into ``insertions only''
+for any such structure, at the cost of one logarithmic factor.
+\end{trick}
+
+% ======================================================================================================================
+\section[Euler's formula and planar graphs]{Euler's formula and planar graphs \hfill \ioi}\label{sec:planar}
+
+A graph is \emph{planar} if it can be drawn in the plane without crossing edges; such a drawing divides the plane into
+\emph{faces}, including the unbounded outer face. \defn{Euler's formula} says that for a connected planar drawing,
+\[
+  V - E + F = 2 ,
+\]
+and with $C$ connected components, $V - E + F = 1 + C$ (Figure~\ref{fig:euler-formula}). Two consequences are useful. A simple
+planar graph with $V \ge 3$ has $E \le 3V - 6$, so planar graphs are sparse. And counting faces, which is often what a problem
+asks (``how many regions does this drawing create?''), reduces to counting vertices, edges and components, which is frequently
+easier than flood filling the regions: a DSU over the vertices, applied while the edges are drawn, keeps $C$ up to date.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[vtxs] (a) at (0, 0) {}; \node[vtxs] (b) at (2, 0) {}; \node[vtxs] (c) at (4, 0) {};
+  \node[vtxs] (d) at (0, 1.8) {}; \node[vtxs] (e) at (2, 1.8) {}; \node[vtxs] (f) at (4, 1.8) {};
+  \draw[ed] (a) -- (b) -- (c) -- (f) -- (e) -- (d) -- (a) (b) -- (e) (a) -- (e);
+  \node[font=\sffamily\small, text=fgblue] at (0.62, 1.2) {$F_1$};
+  \node[font=\sffamily\small, text=fgblue] at (1.4, 0.55) {$F_2$};
+  \node[font=\sffamily\small, text=fgblue] at (3, 0.9) {$F_3$};
+  \node[font=\sffamily\small, text=fgblue] at (5, 0.9) {$F_4$ (outer)};
+  \node[notel, anchor=west, text width=4.4cm] at (6.1, 0.9) {$V = 6$, $E = 8$, $F = 4$:\\ $6 - 8 + 4 = 2$.};
+\end{tikzpicture}
+\caption{Euler's formula on a small planar graph: three bounded faces and the outer face.}
+\label{fig:euler-formula}
+\end{figure}
+
+% ======================================================================================================================
+\section[Critical vertices and dominators]{Critical vertices, edges and dominators \hfill \ioi}\label{sec:dominators}
+
+A vertex or edge is \emph{critical} for getting from $s$ to $t$ if every route of the relevant kind uses it. Three versions come
+up, and they have completely different answers.
+
+\begin{itemize}
+  \item \textbf{Every path, undirected graph.} The critical vertices are the articulation points on the path between $s$ and $t$
+        in the block-cut tree, and the critical edges are the bridges on the path in the bridge tree.
+  \item \textbf{Every shortest path.} With Dijkstra from $s$ and from $t$ (on the reversed graph), an edge $(u, v, w)$ lies on
+        some shortest path if and only if $d_s(u) + w + d_t(v) = D$. It lies on \emph{all} of them if moreover it carries all of
+        them: $\mathit{ways}_s(u) \cdot \mathit{ways}_t(v) = \mathit{ways}_s(t)$. The counts are huge, so compare them modulo one or
+        two random large primes. A vertex $v$ is critical if and only if $d_s(v) + d_t(v) = D$ and $\mathit{ways}_s(v) \cdot
+        \mathit{ways}_t(v) = \mathit{ways}_s(t)$.
+  \item \textbf{Every path, directed graph.} A vertex $v$ \defn{dominates} $w$ if every path from $s$ to $w$ passes through $v$.
+        The immediate dominators form the \defn{dominator tree} (Figure~\ref{fig:dominator}), and the vertices critical for
+        reaching $t$ are exactly the ancestors of $t$ in it. In a DAG, build it in topological order: the immediate dominator of
+        $w$ is the LCA, in the tree built so far, of all predecessors of $w$. General graphs need the Lengauer--Tarjan algorithm,
+        $\Oh{m\,\alpha(n)}$.
+\end{itemize}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \begin{scope}
+    \node[vtx, hot] (s) at (0, 0) {s}; \node[vtx] (a) at (1.4, 0.8) {a}; \node[vtx] (b) at (1.4, -0.8) {b};
+    \node[vtx] (c) at (2.8, 0) {c}; \node[vtx] (d) at (4.2, 0) {d}; \node[vtx] (t) at (5.6, 0.8) {t};
+    \node[vtx] (e) at (5.6, -0.8) {e};
+    \draw[ded] (s) -- (a); \draw[ded] (s) -- (b); \draw[ded] (a) -- (c); \draw[ded] (b) -- (c); \draw[ded] (c) -- (d);
+    \draw[ded] (d) -- (t); \draw[ded] (d) -- (e); \draw[ded] (e) -- (t);
+    \node[lbl] at (2.8, -1.45) {a DAG from $s$};
+  \end{scope}
+  \begin{scope}[xshift=8.3cm, yshift=1.2cm]
+    \node[vtxs, hot] (S) at (0, 0) {s};
+    \node[vtxs] (A) at (-1.0, -0.8) {a}; \node[vtxs] (B) at (0, -0.8) {b}; \node[vtxs] (C) at (1.0, -0.8) {c};
+    \node[vtxs] (D) at (1.0, -1.6) {d}; \node[vtxs] (T) at (0.5, -2.4) {t}; \node[vtxs] (E) at (1.5, -2.4) {e};
+    \draw[ed] (S) -- (A) (S) -- (B) (S) -- (C) (C) -- (D) (D) -- (T) (D) -- (E);
+    \node[lbl] at (0.2, -3.05) {dominator tree};
+  \end{scope}
+\end{tikzpicture}
+\caption{A DAG and its dominator tree. Every path from $s$ to $t$ passes through $c$ and $d$ (the ancestors of $t$), but neither
+$a$ nor $b$ is unavoidable, so $c$'s immediate dominator is $s$.}
+\label{fig:dominator}
+\end{figure}
+
+\begin{recognize}
+``Which roads, if closed, make the trip impossible (or longer)?'', ``checkpoints every route must pass'', ``which server failures
+cut off a client''. First decide whether the question is about all paths or all \emph{shortest} paths, and whether the graph is
+directed: the three cases above have different answers.
+\end{recognize}
+
+\paragraph{Link-cut trees.} Fully dynamic connectivity in a \emph{forest} (link, cut, path aggregates, online) is solved by the
+\defn{link-cut tree} in amortised $\Oh{\log n}$ per operation. It represents each tree as a set of preferred paths stored in splay
+trees keyed by depth, and an \emph{access} operation makes the path from the root to a vertex preferred. It is powerful but long and
+error-prone; in contests, first look for an offline solution (a segment tree on time, Kruskal order, an Euler tour with a treap),
+which almost always exists.
+
+\begin{summary}[Chapter summary]
+\begin{itemize}
+  \item SCCs: Tarjan's single DFS with low-link values; components come out in reverse topological order of the condensation,
+        ready for DP.
+  \item 2-SAT: clauses become implications; unsatisfiable exactly when $x$ and $\lnot x$ share an SCC; otherwise take the literal
+        whose SCC is later in topological order.
+  \item Bridges: $\mathit{low}(v) > \mathit{tin}(u)$; articulation points: $\mathit{low}(v) \ge \mathit{tin}(u)$ (the root needs
+        two children). Skip the parent edge by id.
+  \item Eulerian paths are decided by degrees and built by Hierholzer's algorithm in linear time.
+  \item Deletions offline: a segment tree on time plus any structure with undo.
+  \item $V - E + F = 1 + C$ for planar drawings; dominator trees answer ``unavoidable vertex'' questions in directed graphs.
+\end{itemize}
+\end{summary}
+
+\begin{practice}
+\ppgroup{Strong connectivity and 2-SAT}
+\begin{pplist}
+  \item Flight Routes Check
+  \item Planets and Kingdoms
+  \item Coin Collector
+  \item Giant Pizza
+\end{pplist}
+\ppgroup{Bridges, cut vertices and Euler tours}
+\begin{pplist}
+  \item Necessary Roads
+  \item Necessary Cities
+  \item Mail Delivery
+  \item Teleporters Path
+  \item De Bruijn Sequence
+  \item Dynamic Connectivity
+\end{pplist}
+\end{practice}

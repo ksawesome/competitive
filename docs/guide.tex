@@ -1,0 +1,32 @@
+\documentclass[11pt, openany]{book}
+\usepackage{cpstyle}
+
+% one card per library template (docs/generated/library_reference.tex)
+\newtcolorbox{libentry}[6]{enhanced, breakable, colback=white, colframe=cpgray!35, boxrule=0.5pt, arc=2pt,
+  fonttitle=\sffamily\bfseries\small, colbacktitle=cplight, coltitle=cpblue, title={#1},
+  left=6pt, right=6pt, top=3pt, bottom=3pt, before skip=5pt, after skip=5pt,
+  before upper={{\sffamily\scriptsize\key{#2}\hspace{0.8em}\texttt{\color{cporange}#3}\hspace{0.8em}%
+    \textcolor{cpteal}{\faThumbtack\ #4}\hspace{0.8em}\textcolor{cpgray}{\faStopwatch\ #5}\hspace{0.8em}%
+    \textcolor{cpgray}{\faFileCode[regular]\ \texttt{#6}}}\par\smallskip}}
+
+\hypersetup{pdftitle={Competitive Programming Setup: User Guide}, pdfauthor={Kshitish Madbhavi}}
+
+\begin{document}
+\frontmatter
+\input{guide/title}
+\tableofcontents
+\mainmatter
+\input{guide/01_overview}
+\input{guide/02_workflow}
+\input{guide/03_template}
+\input{guide/04_testing}
+\input{guide/05_compiler}
+\input{guide/06_library}
+\input{guide/07_maintenance}
+\chapter{Library Reference}\label{ch:reference}
+Every template in \file{library/}, generated from the files themselves by \cc{python tools/cp.py setup}, so this
+chapter is always in sync with what the shortcuts paste. Each card shows the shortcut, the snippet prefix, where
+the code belongs, its complexity and the source file, followed by a description and typical usage.
+The algorithms behind each template are explained in the companion handbook, \emph{ALGORITHMS.pdf}.
+\input{generated/library_reference}
+\end{document}

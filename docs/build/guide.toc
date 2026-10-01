@@ -1,0 +1,65 @@
+\contentsline {chapter}{\numberline {1}Overview}{1}{chapter.1}%
+\contentsline {section}{\numberline {1.1}The big picture}{1}{section.1.1}%
+\contentsline {section}{\numberline {1.2}Quick start in 60 seconds}{1}{section.1.2}%
+\contentsline {section}{\numberline {1.3}What is where}{2}{section.1.3}%
+\contentsline {section}{\numberline {1.4}What was changed outside the folder}{2}{section.1.4}%
+\contentsline {section}{\numberline {1.5}The four shortcuts that were broken before}{3}{section.1.5}%
+\contentsline {section}{\numberline {1.6}How this setup is tied to CPH}{3}{section.1.6}%
+\contentsline {chapter}{\numberline {2}The Daily Workflow}{4}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Solving a problem, step by step}{4}{section.2.1}%
+\contentsline {subsection}{\numberline {2.1.1}1. Fetch}{4}{subsection.2.1.1}%
+\contentsline {subsection}{\numberline {2.1.2}2. Read}{4}{subsection.2.1.2}%
+\contentsline {subsection}{\numberline {2.1.3}3. Code}{5}{subsection.2.1.3}%
+\contentsline {subsection}{\numberline {2.1.4}4. Test}{5}{subsection.2.1.4}%
+\contentsline {subsection}{\numberline {2.1.5}5--7. When a test fails}{5}{subsection.2.1.5}%
+\contentsline {subsection}{\numberline {2.1.6}8. Submit}{5}{subsection.2.1.6}%
+\contentsline {section}{\numberline {2.2}Keyboard shortcuts}{6}{section.2.2}%
+\contentsline {section}{\numberline {2.3}Multi-test problems}{6}{section.2.3}%
+\contentsline {section}{\numberline {2.4}USACO problems}{6}{section.2.4}%
+\contentsline {section}{\numberline {2.5}Quickstart and archiving}{7}{section.2.5}%
+\contentsline {chapter}{\numberline {3}The Template, Line by Line}{8}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Header}{8}{section.3.1}%
+\contentsline {section}{\numberline {3.2}Includes and the debug hook}{8}{section.3.2}%
+\contentsline {section}{\numberline {3.3}Types}{9}{section.3.3}%
+\contentsline {section}{\numberline {3.4}Macros}{9}{section.3.4}%
+\contentsline {section}{\numberline {3.5}Constants}{10}{section.3.5}%
+\contentsline {section}{\numberline {3.6}Helpers}{10}{section.3.6}%
+\contentsline {section}{\numberline {3.7}Automatic USACO file I/O}{11}{section.3.7}%
+\contentsline {section}{\numberline {3.8}solve() and main()}{12}{section.3.8}%
+\contentsline {chapter}{\numberline {4}Testing and Debugging}{13}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Debug printing with dbg()}{13}{section.4.1}%
+\contentsline {section}{\numberline {4.2}F5: CPH's tests with diagnostics}{14}{section.4.2}%
+\contentsline {section}{\numberline {4.3}Ctrl+F5: typing input yourself}{15}{section.4.3}%
+\contentsline {section}{\numberline {4.4}Stress testing}{15}{section.4.4}%
+\contentsline {subsection}{\numberline {4.4.1}How to use it}{15}{subsection.4.4.1}%
+\contentsline {subsection}{\numberline {4.4.2}Problems with several correct answers}{16}{subsection.4.4.2}%
+\contentsline {chapter}{\numberline {5}Compiler Flags and Speed}{17}{chapter.5}%
+\contentsline {section}{\numberline {5.1}What each flag does}{17}{section.5.1}%
+\contentsline {section}{\numberline {5.2}The precompiled header}{17}{section.5.2}%
+\contentsline {section}{\numberline {5.3}The optional UB trap}{18}{section.5.3}%
+\contentsline {section}{\numberline {5.4}Time limits and the checked STL}{18}{section.5.4}%
+\contentsline {chapter}{\numberline {6}The Template Library}{19}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Three ways to insert a template}{19}{section.6.1}%
+\contentsline {section}{\numberline {6.2}Where to paste}{19}{section.6.2}%
+\contentsline {section}{\numberline {6.3}Conventions used everywhere}{20}{section.6.3}%
+\contentsline {section}{\numberline {6.4}Keyboard maps}{20}{section.6.4}%
+\contentsline {section}{\numberline {6.5}Categories}{22}{section.6.5}%
+\contentsline {chapter}{\numberline {7}Maintenance and Troubleshooting}{23}{chapter.7}%
+\contentsline {section}{\numberline {7.1}VS Code tasks}{23}{section.7.1}%
+\contentsline {section}{\numberline {7.2}CP: Setup}{23}{section.7.2}%
+\contentsline {section}{\numberline {7.3}Adding your own template}{23}{section.7.3}%
+\contentsline {section}{\numberline {7.4}Rebuilding these PDFs}{24}{section.7.4}%
+\contentsline {section}{\numberline {7.5}Troubleshooting}{24}{section.7.5}%
+\contentsline {section}{\numberline {7.6}Undoing everything}{25}{section.7.6}%
+\contentsline {chapter}{\numberline {8}Library Reference}{26}{chapter.8}%
+\contentsline {section}{\numberline {8.1}Template}{26}{section.8.1}%
+\contentsline {section}{\numberline {8.2}Basics: input, search, sorting, prefix sums, two pointers}{26}{section.8.2}%
+\contentsline {section}{\numberline {8.3}Graphs}{30}{section.8.3}%
+\contentsline {section}{\numberline {8.4}Trees}{34}{section.8.4}%
+\contentsline {section}{\numberline {8.5}Data structures \& range queries}{37}{section.8.5}%
+\contentsline {section}{\numberline {8.6}Dynamic programming}{41}{section.8.6}%
+\contentsline {section}{\numberline {8.7}Math}{44}{section.8.7}%
+\contentsline {section}{\numberline {8.8}Strings}{50}{section.8.8}%
+\contentsline {section}{\numberline {8.9}Geometry}{52}{section.8.9}%
+\contentsline {section}{\numberline {8.10}Flows \& matching}{53}{section.8.10}%
+\contentsline {section}{\numberline {8.11}Misc}{55}{section.8.11}%

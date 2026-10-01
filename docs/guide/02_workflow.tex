@@ -1,0 +1,169 @@
+\chapter{The Daily Workflow}\label{ch:workflow}
+
+\section{Solving a problem, step by step}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  stp/.style={draw=cpteal, fill=cpteal!7, rounded corners=4pt, thick, text width=3.35cm, minimum height=2.15cm,
+    align=center, font=\sffamily\small},
+  num/.style={circle, fill=cpteal, text=white, font=\sffamily\bfseries\small, inner sep=1.5pt, minimum size=5.5mm},
+  arr/.style={->, very thick, cpteal!70}]
+  \foreach \px/\ti/\tx [count=\k] in {
+      0/Fetch/{Competitive Companion button on the problem page},
+      4.1/Read/{problem text, constraints, sample I/O},
+      8.2/Code/{\texttt{solve()}; paste templates with \key{Ctrl+Alt+T}},
+      12.3/Test/{CPH \emph{Run All} \key{Ctrl+Alt+B}}} {
+    \node[stp] (s\k) at (\px, 0) {\textbf{\ti}\\[2pt]\scriptsize \tx};
+    \node[num] at (s\k.north west) {\k};
+  }
+  \foreach \px/\ti/\tx [count=\k from 5] in {
+      12.3/Explain/{\key{F5}: crash reason, time, memory per test},
+      8.2/Hunt/{\key{Ctrl+Alt+X}: stress test vs a brute force},
+      4.1/Fix/{add the failing input to CPH, fix, rerun},
+      0/Submit/{the file exactly as it is}} {
+    \node[stp] (s\k) at (\px, -3.1) {\textbf{\ti}\\[2pt]\scriptsize \tx};
+    \node[num] at (s\k.north west) {\k};
+  }
+  \draw[arr] (s1) -- (s2); \draw[arr] (s2) -- (s3); \draw[arr] (s3) -- (s4);
+  \draw[arr] (s4) -- node[right, font=\sffamily\scriptsize, text=cpgray] {fails} (s5);
+  \draw[arr] (s5) -- (s6); \draw[arr] (s6) -- (s7);
+  \draw[arr] (s7) -- node[above, font=\sffamily\scriptsize, text=cpgray] {passes} (s8);
+  \draw[arr, cpgreen] (s4.north) to[out=90, in=90, looseness=0.35] node[above, font=\sffamily\scriptsize, text=cpgreen] {all tests pass: go straight to submit} (s1.north);
+\end{tikzpicture}
+\caption{Steps 5--7 are only needed when a test fails and the reason is not obvious.}
+\end{figure}
+
+\subsection{1. Fetch}
+Click the Competitive Companion button in the browser. CPH receives the problem (name, contest, link, samples, limits
+and whether it reads from a file) and creates \file{A\_Problem\_Name.cpp} from \file{template/template.cpp}.
+The file opens with its header already filled in:
+
+\begin{code}
+/**
+ *    author:  Kshitish Madbhavi
+ *    problem: A. Graph
+ *    source:  Codeforces - Baltic Olympiad in Informatics 2020, Day 2 (IOI, Unofficial Mirror Contest, Unrated)
+ *    url:     https://codeforces.com/contest/1387/problem/A
+ *    created: 2026-09-29 20:31:55
+ */
+\end{code}
+
+For a USACO problem the same step also switches on file input and output; you do not touch anything
+(Section~\ref{sec:usaco}).
+
+\subsection{2. Read}
+Look at the constraints before thinking about an algorithm: they tell you the complexity you can afford
+(ALGORITHMS.pdf, Chapter~2 has the full table). Decide whether the input has several test cases. If it starts
+with ``the first line contains $t$'', uncomment \cc{cin >> t;} in \cc{main} (put the cursor on that line and press
+\key{Ctrl+/}).
+
+\subsection{3. Code}
+Write the solution in \cc{solve()}. Three ways to pull in library code, all of which paste at the cursor:
+
+\begin{center}
+\begin{tabularx}{\linewidth}{p{4.3cm}L}
+\toprule
+\thd{Method} & \thd{Example} \\
+\midrule
+Chord shortcut & \key{Ctrl+Alt+T} then \key{J} pastes Dijkstra; \key{Ctrl+Alt+Y} then \key{H} pastes HLD. \\
+Prefix + \key{Tab} & type \texttt{cpdsu} and press \key{Tab}. Every prefix starts with \texttt{cp}, so typing \texttt{cp} lists all of them. \\
+Picker & \key{Ctrl+Alt+T} then \key{Space}: a searchable list of every template. \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Chapter~\ref{ch:library} explains the library and has keyboard maps of every chord.
+
+\subsection{4. Test}
+Press \key{Ctrl+Alt+B} or CPH's \emph{Run All} button. CPH compiles with the flags from Chapter~\ref{ch:compiler}
+(about 0.4--0.9\,s thanks to the precompiled header) and runs every sample. \cc{dbg} output appears in each test's
+\emph{Standard Error} box without affecting the verdict. Add your own tests with CPH's \emph{New Testcase} button;
+edge cases (smallest $n$, largest $n$, all equal values, negative numbers) catch most wrong answers.
+
+\subsection{5--7. When a test fails}
+\begin{itemize}
+  \item \textbf{Wrong answer and you can see why}: fix it and rerun.
+  \item \textbf{Runtime error, or a time you do not understand}: press \key{F5}. The same CPH tests run in the terminal
+        and each failure shows the input, expected output, your output, your stderr and a plain-language crash
+        reason such as ``stack overflow'' (Section~\ref{sec:f5}).
+  \item \textbf{The samples pass but the judge says wrong answer}: write a slow brute force in \file{stress/brute.cpp}
+        and a random input generator in \file{stress/gen.cpp}, then press \key{Ctrl+Alt+X}. The stress tester finds a
+        small input where your answer differs and copies it to the clipboard; paste it into CPH as a new test
+        (Section~\ref{sec:stress}).
+\end{itemize}
+
+\subsection{8. Submit}
+Submit the file unchanged: \cc{dbg} lines compile to nothing on the judge, and USACO file I/O is already on. CPH's
+\emph{Submit} (\key{Ctrl+Alt+S}) sends Codeforces submissions as \emph{GNU G++23 14.2 (64 bit)}. Your code is still
+strictly C++17: that is what CPH and IntelliSense compile it as, and every library template is checked with
+\texttt{-std=c++17 -Wpedantic}. G++23 was kept because it is the newest 64-bit compiler Codeforces offers and
+accepts C++17 code unchanged.
+
+\section{Keyboard shortcuts}
+
+\begin{center}
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{4.4cm}L}
+\toprule
+\thd{Keys} & \thd{Action} \\
+\midrule
+\key{Ctrl+Alt+B} & CPH: compile and run all test cases (CPH's own shortcut). \\
+\key{Ctrl+Alt+S} & CPH: submit to Codeforces. \\
+\key{Ctrl+Alt+T}, \emph{key} & paste a core template (Bronze to Gold level). \\
+\key{Ctrl+Alt+Y}, \emph{key} & paste an advanced template (Platinum and beyond). \\
+\key{Ctrl+Alt+U}, \emph{key} & paste a specialist template (polynomials, matchings, cuts, exotic structures). \\
+\key{Ctrl+Alt+T}, \key{Space} & searchable template picker. \\
+\key{F5} & run the CPH test cases in the terminal with diagnostics. \\
+\key{Ctrl+F5} & run with input you type in the terminal. \\
+\key{Ctrl+Alt+X} & stress test the current file. \\
+\key{Ctrl+Shift+N} & new problem file from the template (asks for a name). \\
+\key{Ctrl+Shift+U} & new USACO problem (asks for the file name, e.g.\ \texttt{moocast}). \\
+\key{Ctrl+Shift+Alt+C} & archive solutions untouched for a day into \file{archive/YYYY-MM/}. \\
+\key{Ctrl+Alt+N} & Code Runner: same as \key{Ctrl+F5}. \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Multi-test problems}
+
+Competitive Companion does not tell CPH whether a problem has several test cases (it always reports
+``single''), so this cannot be detected automatically. The template therefore reads one test by default:
+
+\begin{code}
+int t = 1;
+// cin >> t;
+while (t--) solve();
+\end{code}
+
+For a multi-test problem, uncomment the middle line. Remember that everything \cc{solve()} uses must be reset
+between test cases: declare arrays inside \cc{solve()} (sized by that test's $n$) rather than globally.
+
+\begin{pitfall}[Resetting global state]
+The most common multi-test bug is a global array or counter that keeps values from the previous test.
+Either declare it inside \cc{solve()} or clear exactly the part you used; never \cc{memset} a $10^6$-element
+array $10^5$ times, which is $10^{11}$ operations.
+\end{pitfall}
+
+\section{USACO problems}\label{sec:usaco}
+
+USACO reads from \texttt{name.in} and writes \texttt{name.out}. When Competitive Companion sends a USACO problem it
+tells CPH the file names, and CPH writes them into the template (Section~\ref{sec:fileio} shows exactly how).
+On the USACO judge your program opens the files; locally, CPH and F5 keep feeding it standard input, so the
+samples still run in CPH. There is nothing to uncomment.
+
+For a USACO problem typed in by hand, press \key{Ctrl+Shift+U} and enter the file name (\texttt{moocast}): the new file
+behaves exactly like one created by CPH.
+
+\section{Quickstart and archiving}\label{sec:quickstart}
+
+\begin{itemize}
+  \item \key{Ctrl+Shift+N} asks for a name, turns it into a safe file name (\texttt{B. Two Sum} becomes
+        \file{B\_Two\_Sum.cpp}), fills the template exactly as CPH would and opens the file. Use it for problems
+        without Competitive Companion support. If the file exists it is simply opened.
+  \item \key{Ctrl+Shift+U} does the same for USACO and fills in \texttt{name.in} / \texttt{name.out}.
+  \item \key{Ctrl+Shift+Alt+C} moves every solution in the folder root that has not been modified for a day into
+        \file{archive/YYYY-MM/} (by the month it was last edited), deletes stray \texttt{.exe} / \texttt{.bin} files,
+        and moves each problem's CPH test cases along with it. CPH names a problem's test file after the MD5 hash of
+        the source path, so the test file is renamed for the new path and CPH still finds your tests if you open the
+        archived file. Nothing is ever deleted except build output.
+\end{itemize}

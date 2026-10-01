@@ -1,0 +1,176 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\@writefile{toc}{\contentsline {chapter}{\numberline {19}DP Patterns}{265}{chapter.19}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{ch:dppatterns}{{19}{265}{DP Patterns}{chapter.19}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {19.1}Bitmask DP}{265}{section.19.1}\protected@file@percent }
+\newlabel{sec:bitmaskdp}{{19.1}{265}{Bitmask DP}{section.19.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {19.1}{\ignorespaces The DP of Hamiltonian Flights moves through subsets of cities, one city per step.}}{266}{figure.caption.345}\protected@file@percent }
+\newlabel{fig:hamilton}{{19.1}{266}{The DP of Hamiltonian Flights moves through subsets of cities, one city per step}{figure.caption.345}{}}
+\newlabel{tpl:cptsp}{{19.1}{266}{Bitmask DP}{section*.346}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {19.1.1}Pair-valued states}{266}{subsection.19.1.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {19.1}{\ignorespaces Elevator Rides with weights 4, 8, 6, 1 and capacity 10: the state of the full set, from its four predecessors. Two rides suffice, the last one carrying 9.}}{267}{table.caption.347}\protected@file@percent }
+\newlabel{tab:elevator}{{19.1}{267}{Elevator Rides with weights 4, 8, 6, 1 and capacity 10: the state of the full set, from its four predecessors. Two rides suffice, the last one carrying 9}{table.caption.347}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {19.1.2}Enumerating submasks}{267}{subsection.19.1.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {19.2}Interval DP}{268}{section.19.2}\protected@file@percent }
+\newlabel{sec:intervaldp}{{19.2}{268}{Interval DP}{section.19.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {19.2}{\ignorespaces The difference table of Removal Game; each cell looks at the cell below it and the cell to its left.}}{268}{figure.caption.348}\protected@file@percent }
+\newlabel{fig:removal}{{19.2}{268}{The difference table of Removal Game; each cell looks at the cell below it and the cell to its left}{figure.caption.348}{}}
+\newlabel{tpl:cprangedp}{{19.2}{269}{Interval DP}{section*.349}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {19.3}Digit DP}{269}{section.19.3}\protected@file@percent }
+\newlabel{sec:digitdp}{{19.3}{269}{Digit DP}{section.19.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {19.3}{\ignorespaces Digit DP for Counting Numbers with $x = 3527$. The tight path (red) follows $x$; each dashed branch leaves it with a smaller digit, after which all later digits are free, so its count is a closed formula.}}{269}{figure.caption.350}\protected@file@percent }
+\newlabel{fig:digitdp}{{19.3}{269}{Digit DP for Counting Numbers with $x = 3527$. The tight path (red) follows $x$; each dashed branch leaves it with a smaller digit, after which all later digits are free, so its count is a closed formula}{figure.caption.350}{}}
+\newlabel{tpl:cpdigit}{{19.3}{270}{Digit DP}{section*.351}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {19.4}Boundaries and profiles}{270}{section.19.4}\protected@file@percent }
+\newlabel{sec:profiledp}{{19.4}{270}{Boundaries and profiles}{section.19.4}{}}
+\@writefile{toc}{\contentsline {paragraph}{A two-state boundary.}{270}{paragraph*.352}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {19.4}{\ignorespaces Counting Towers as a two-state machine: the future of a partial tower depends only on the shape of its top row.}}{271}{figure.caption.353}\protected@file@percent }
+\newlabel{fig:towers}{{19.4}{271}{Counting Towers as a two-state machine: the future of a partial tower depends only on the shape of its top row}{figure.caption.353}{}}
+\@writefile{toc}{\contentsline {paragraph}{Broken profiles.}{271}{paragraph*.354}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {19.5}{\ignorespaces The broken profile of Counting Tilings, column 2, row 2 of a $4 \times 6$ grid.}}{272}{figure.caption.355}\protected@file@percent }
+\newlabel{fig:profile}{{19.5}{272}{The broken profile of Counting Tilings, column 2, row 2 of a $4 \times 6$ grid}{figure.caption.355}{}}
+\newlabel{tpl:cpprofile}{{19.4}{272}{Broken profiles}{section*.356}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {19.5}Sums over subsets}{272}{section.19.5}\protected@file@percent }
+\newlabel{sec:sosdp}{{19.5}{272}{Sums over subsets}{section.19.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {19.6}{\ignorespaces The SOS DP for three bits as a butterfly network. In the pass for bit $i$, every mask with bit $i$ set also receives the value of the mask without it (blue). After three passes each mask holds the sum over all its submasks; for example 111 has collected all eight values, along exactly one path each.}}{273}{figure.caption.357}\protected@file@percent }
+\newlabel{fig:sos}{{19.6}{273}{The SOS DP for three bits as a butterfly network. In the pass for bit $i$, every mask with bit $i$ set also receives the value of the mask without it (blue). After three passes each mask holds the sum over all its submasks; for example 111 has collected all eight values, along exactly one path each}{figure.caption.357}{}}
+\newlabel{tpl:cpsos}{{19.5}{273}{Sums over subsets}{section*.358}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {19.5.1}Subset convolution}{273}{subsection.19.5.1}\protected@file@percent }
+\newlabel{tpl:cpsubsetconv}{{19.5.1}{274}{Subset convolution}{section*.359}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {19.6}Scheduling with sorted events}{274}{section.19.6}\protected@file@percent }
+\newlabel{sec:intervalsched}{{19.6}{274}{Scheduling with sorted events}{section.19.6}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {19.7}{\ignorespaces Projects sorted by end day. The project $[5, 7]$ is compatible with the projects that end before day 5, here only the first one (dashed), so taking it gives $dp[1] + 3 = 7$. The best schedule takes the two green projects.}}{275}{figure.caption.360}\protected@file@percent }
+\newlabel{fig:projects}{{19.7}{275}{Projects sorted by end day. The project $[5, 7]$ is compatible with the projects that end before day 5, here only the first one (dashed), so taking it gives $dp[1] + 3 = 7$. The best schedule takes the two green projects}{figure.caption.360}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {19.7}Probability and expectation}{275}{section.19.7}\protected@file@percent }
+\newlabel{sec:probdp}{{19.7}{275}{Probability and expectation}{section.19.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {19.8}{\ignorespaces The distribution of the sum of $n$ dice, rescaled to the average per die. One die is flat, two give a triangle, and ten are already close to a bell curve centred at 3.5.}}{276}{figure.caption.361}\protected@file@percent }
+\newlabel{fig:diceprob}{{19.8}{276}{The distribution of the sum of $n$ dice, rescaled to the average per die. One die is flat, two give a triangle, and ten are already close to a bell curve centred at 3.5}{figure.caption.361}{}}
+\@writefile{toc}{\contentsline {paragraph}{Counting with $P(\max \le x)$.}{276}{paragraph*.362}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {19.9}{\ignorespaces Moving Robots: a heat map of the per-square probabilities whose sum is the answer.}}{277}{figure.caption.363}\protected@file@percent }
+\newlabel{fig:robots}{{19.9}{277}{Moving Robots: a heat map of the per-square probabilities whose sum is the answer}{figure.caption.363}{}}
+\@writefile{toc}{\contentsline {paragraph}{Expected values with loops.}{277}{paragraph*.364}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {19.8}Games}{278}{section.19.8}\protected@file@percent }
+\newlabel{sec:gamedp}{{19.8}{278}{Games}{section.19.8}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {19.10}{\ignorespaces Winning and losing positions of the Stick Game with moves $\{1, 3, 4\}$.}}{278}{figure.caption.365}\protected@file@percent }
+\newlabel{fig:stickgame}{{19.10}{278}{Winning and losing positions of the Stick Game with moves $\{1, 3, 4\}$}{figure.caption.365}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {19.9}Matrix exponentiation}{279}{section.19.9}\protected@file@percent }
+\newlabel{sec:matexp}{{19.9}{279}{Matrix exponentiation}{section.19.9}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {19.11}{\ignorespaces Top: one step of the dice recurrence as a matrix product. Bottom: fast exponentiation squares $T$ repeatedly and multiplies in the powers that match the set bits of $n$.}}{279}{figure.caption.366}\protected@file@percent }
+\newlabel{fig:matpow}{{19.11}{279}{Top: one step of the dice recurrence as a matrix product. Bottom: fast exponentiation squares $T$ repeatedly and multiplies in the powers that match the set bits of $n$}{figure.caption.366}{}}
+\newlabel{tpl:cpmatrix}{{19.9}{280}{Matrix exponentiation}{section*.367}{}}
+\@setckpt{algorithms/18_dp_patterns}{
+\setcounter{page}{281}
+\setcounter{equation}{0}
+\setcounter{enumi}{5}
+\setcounter{enumii}{0}
+\setcounter{enumiii}{0}
+\setcounter{enumiv}{0}
+\setcounter{footnote}{0}
+\setcounter{mpfootnote}{0}
+\setcounter{part}{5}
+\setcounter{chapter}{19}
+\setcounter{section}{9}
+\setcounter{subsection}{0}
+\setcounter{subsubsection}{0}
+\setcounter{paragraph}{0}
+\setcounter{subparagraph}{0}
+\setcounter{figure}{11}
+\setcounter{table}{1}
+\setcounter{parentequation}{0}
+\setcounter{lstnumber}{20}
+\setcounter{tcbbreakpart}{1}
+\setcounter{tcblayer}{0}
+\setcounter{tcolorbox@number}{833}
+\setcounter{tcblisting}{174}
+\setcounter{tcbrastercolumn}{1}
+\setcounter{tcbrasterrow}{1}
+\setcounter{tcbrasternum}{1}
+\setcounter{tcbraster}{5}
+\setcounter{cpsegfig}{0}
+\setcounter{LT@tables}{0}
+\setcounter{LT@chunks}{0}
+\setcounter{nlinenum}{0}
+\setcounter{ALG@line}{11}
+\setcounter{ALG@rem}{0}
+\setcounter{ALG@nested}{0}
+\setcounter{ALG@Lnr}{2}
+\setcounter{ALG@blocknr}{15}
+\setcounter{ALG@storecount}{0}
+\setcounter{ALG@tmpcounter}{0}
+\setcounter{algpx@codeBoxCount}{0}
+\setcounter{algpx@nestedCBoxCount}{0}
+\setcounter{algpx@startedBoxesCount}{0}
+\setcounter{algpx@endedBoxesCount}{0}
+\setcounter{algpx@nestedBoxedStringCount}{0}
+\setcounter{algpx@nestedBoxedStringMaxCount}{0}
+\setcounter{algpx@indentCount}{20}
+\setcounter{algpx@lastIndentEnded}{19}
+\setcounter{algpx@pageCount}{1}
+\setcounter{algpx@tmpCount}{2}
+\setcounter{caption@flags}{2}
+\setcounter{continuedfloat}{0}
+\setcounter{float@type}{16}
+\setcounter{section@level}{0}
+\setcounter{Item}{18}
+\setcounter{Hfootnote}{0}
+\setcounter{bookmark@seq@number}{0}
+\setcounter{algpx@indentEndPage-0@totc}{0}
+\setcounter{algpx@indentEndPage-1@totc}{0}
+\setcounter{algpx@indentEndPage-2@totc}{0}
+\setcounter{algpx@indentEndPage-3@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-2@totc}{3}
+\setcounter{algpx@indentEndCoordIndex-0@totc}{3}
+\setcounter{algpx@indentEndPage-4@totc}{0}
+\setcounter{algpx@indentEndPage-5@totc}{0}
+\setcounter{algpx@indentEndPage-6@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-4@totc}{6}
+\setcounter{algpx@indentEndPage-7@totc}{0}
+\setcounter{algpx@indentEndPage-8@totc}{0}
+\setcounter{algpx@indentEndPage-9@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-8@totc}{9}
+\setcounter{algpx@indentEndPage-10@totc}{0}
+\setcounter{algpx@indentEndPage-11@totc}{0}
+\setcounter{algpx@indentEndPage-12@totc}{0}
+\setcounter{algpx@indentEndPage-13@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-12@totc}{13}
+\setcounter{algpx@indentEndCoordIndex-10@totc}{13}
+\setcounter{algpx@indentEndPage-14@totc}{0}
+\setcounter{algpx@indentEndPage-15@totc}{0}
+\setcounter{algpx@indentEndPage-16@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-15@totc}{16}
+\setcounter{algpx@indentEndPage-17@totc}{0}
+\setcounter{algpx@indentEndPage-18@totc}{1}
+\setcounter{algpx@indentEndPage-19@totc}{1}
+\setcounter{algpx@indentEndCoordIndex-18@totc}{19}
+\setcounter{lstlisting}{0}
+\setcounter{algpx@indentEndPage-0}{0}
+\setcounter{algpx@indentEndPage-1}{0}
+\setcounter{algpx@indentEndPage-2}{0}
+\setcounter{algpx@indentEndPage-3}{0}
+\setcounter{algpx@indentEndCoordIndex-2}{3}
+\setcounter{algpx@indentEndCoordIndex-0}{3}
+\setcounter{algpx@indentEndPage-4}{0}
+\setcounter{algpx@indentEndPage-5}{0}
+\setcounter{algpx@indentEndPage-6}{0}
+\setcounter{algpx@indentEndCoordIndex-4}{6}
+\setcounter{algpx@indentEndPage-7}{0}
+\setcounter{algpx@indentEndPage-8}{0}
+\setcounter{algpx@indentEndPage-9}{0}
+\setcounter{algpx@indentEndCoordIndex-8}{9}
+\setcounter{algpx@indentEndPage-10}{0}
+\setcounter{algpx@indentEndPage-11}{0}
+\setcounter{algpx@indentEndPage-12}{0}
+\setcounter{algpx@indentEndPage-13}{0}
+\setcounter{algpx@indentEndCoordIndex-12}{13}
+\setcounter{algpx@indentEndCoordIndex-10}{13}
+\setcounter{algpx@indentEndPage-14}{0}
+\setcounter{algpx@indentEndPage-15}{0}
+\setcounter{algpx@indentEndPage-16}{0}
+\setcounter{algpx@indentEndCoordIndex-15}{16}
+\setcounter{algpx@indentEndPage-17}{0}
+\setcounter{algpx@indentEndPage-18}{1}
+\setcounter{algpx@indentEndPage-19}{1}
+\setcounter{algpx@indentEndCoordIndex-18}{19}
+}

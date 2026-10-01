@@ -1,0 +1,610 @@
+\chapter{C++ and the STL for Contests}\label{ch:cpp}
+
+C++ is the language of competitive programming for two reasons: it compiles to fast machine code, and its standard library
+(the \defn{STL}) already contains most of the data structures and algorithms you need, implemented and debugged by experts.
+Knowing the STL well is worth as much as knowing a dozen algorithms: every minute you do not spend writing and debugging a
+balanced tree or a heap is a minute spent on the actual problem.
+
+This chapter is a working reference, organised by what you need to do. It explains the parts of C++ you will use every day,
+what each operation costs (measured, where it matters), and the traps that cost people contests.
+
+\begin{chapterintro}{\bronze\ \silver\ \gold}{Chapter~\ref{ch:complexity}. The code assumes your template.}
+  \item read and write data fast, and why the defaults are ten to fifty times slower;
+  \item choose integer and floating-point types that cannot overflow;
+  \item pick the right container for the job, and know the cost of every operation;
+  \item use iterators, binary search, sorting and the rest of \texttt{<algorithm>} fluently;
+  \item write recursive lambdas, use policy-based trees, random numbers, and avoid undefined behaviour.
+\end{chapterintro}
+
+% ======================================================================================================================
+\section[Input and output]{Input and output \hfill \bronze}\label{sec:io}
+
+By default, C++ streams stay synchronised with C's \cc{printf} and \cc{scanf} so that you may mix the two, and \cc{cin}
+flushes \cc{cout} before every read so that prompts appear before input is requested. Both courtesies are expensive, and
+contests need neither. Your template turns them off:
+
+\begin{code}
+ios::sync_with_stdio(false);  // stop synchronising with scanf / printf
+cin.tie(nullptr);             // do not flush cout before every read
+\end{code}
+
+The difference is dramatic. Reading $10^6$ integers takes 0.72\,s with the default settings and 0.08\,s without
+synchronisation; even \cc{scanf} needs 0.27\,s. For output, printing $10^6$ lines with \cc{endl}, which flushes the buffer
+every time, takes almost 2 seconds, while \cc|'\n'| with synchronisation off takes 0.04\,s: forty-seven times faster. Every
+one of those numbers was measured on the same machine as Table~\ref{tab:measured}.
+
+\begin{pitfall}[After turning sync off]
+Never mix \cc{cin}/\cc{cout} with \cc{scanf}/\cc{printf} once synchronisation is off: the two sides buffer separately and
+their output comes out interleaved in the wrong order. Pick one family per program.
+\end{pitfall}
+
+\subsection{Reading patterns}
+
+\begin{code}
+int n;
+cin >> n;
+vi a(n);
+cin >> a;                     // template: reads a whole vector
+string s;
+cin >> s;                     // one word (stops at whitespace)
+string line;
+getline(cin >> ws, line);     // a whole line (ws skips the old newline)
+ll x;
+while (cin >> x) { /* ... */ }  // until the end of input (count not given)
+vector<string> grid(r);       // a grid of characters, one row per word
+cin >> grid;
+\end{code}
+
+The one trap in reading is mixing \cc{>>} with \cc{getline}: after \cc{cin >> n}, the newline that ended the line is still
+in the input, and a plain \cc{getline} returns an empty string. Skipping whitespace with \cc{cin >> ws} first, as above, fixes
+it.
+
+\subsection{Writing patterns}
+
+\begin{code}
+print(a, b, c);               // template: "a b c\n"
+print(v);                     // template: a vector, space separated
+yn(ok);                       // template: YES / NO
+cout << fixed << setprecision(10) << ans << '\n';  // the template sets this
+cout << flush;                // interactive problems: flush after each query
+\end{code}
+
+Floating-point answers are usually checked with an absolute or relative error of $10^{-6}$, so print more digits than
+that: the template's 10 digits after the decimal point are safe. For interactive problems (Chapter~\ref{ch:special}), the
+judge only sees your query after you flush, so there \cc{endl} or an explicit flush is required, not a mistake.
+
+% ======================================================================================================================
+\section[Integer types and overflow]{Integer types and overflow \hfill \bronze}\label{sec:overflow}
+
+Overflow is the most common cause of wrong answers that pass the samples. A signed integer that overflows is
+\emph{undefined behaviour} in C++: in practice it wraps around to a negative number, but the compiler is also allowed to
+assume it never happens and optimise accordingly, which can make the bug appear or vanish between compilers. The defence is to
+know your ranges (Figure~\ref{fig:ranges}) and to estimate the largest value every expression can reach.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.3cm]
+  % a logarithmic ruler: position = log10(value)
+  \draw[->, line width=0.7pt, fgink!70] (0, 0) -- (40.8, 0) node[right, lbl] {value};
+  \foreach \e in {0, 5, 10, 15, 20, 25, 30, 35, 40} {
+    \draw[line width=0.5pt, fgink!70] (\e, 0) -- (\e, 0.1);
+    \node[font=\sffamily\tiny, text=fggray, anchor=south, inner sep=1pt] at (\e, 0.1) {$10^{\e}$};
+  }
+  % type ranges as bars above the ruler (they start above the tick labels)
+  \foreach \v/\y/\c/\t in {9.33/0.75/fgblue/{\texttt{int}: $2.1\cdot10^9$},
+      15.95/1.3/fgorange/{\texttt{double} (exact integers): $2^{53} \approx 9\cdot10^{15}$},
+      18.96/1.85/fggreen/{\texttt{long long}: $9.2\cdot10^{18}$}, 19.27/2.4/fgpink/{\texttt{unsigned long long}: $1.8\cdot10^{19}$},
+      38.23/2.95/fgsky/{\texttt{\_\_int128}: $1.7\cdot10^{38}$}} {
+    \fill[fill=\c!35, draw=\c!80!black, line width=0.4pt] (0, \y-0.16) rectangle (\v, \y+0.16);
+    \node[font=\sffamily\scriptsize, anchor=west] at (\v+0.3, \y) {\t};
+  }
+  % typical contest quantities: numbered markers on the ruler, explained underneath
+  \foreach \v/\k in {5.3/1, 10.6/2, 14.3/3, 18.0/4} {
+    \fill[fgverm] (\v, 0) circle (0.9mm);
+    \node[circle, fill=fgverm, text=white, font=\sffamily\tiny\bfseries, inner sep=0.8pt, minimum size=3.6mm] at (\v, -0.95) {\k};
+    \draw[line width=0.6pt, fgverm] (\v, -0.05) -- (\v, -0.77);
+  }
+  \node[font=\sffamily\scriptsize, text=fgink, anchor=north west, text width=12.4cm] at (0, -1.4) {
+    \textcolor{fgverm}{\textbf{1}} $n = 2\cdot10^5$ elements \quad
+    \textcolor{fgverm}{\textbf{2}} $n^2 = 4\cdot10^{10}$ pairs \quad
+    \textcolor{fgverm}{\textbf{3}} a sum of $n$ values up to $10^9$: $2\cdot10^{14}$ \quad
+    \textcolor{fgverm}{\textbf{4}} a product of two values up to $10^9$: $10^{18}$};
+\end{tikzpicture}
+\caption{Type ranges (bars) against quantities that appear in contests (red ticks), on a logarithmic ruler. A sum of $2\cdot
+10^5$ values up to $10^9$ overflows \texttt{int} by a factor of $10^5$; a product of two such values fits in \texttt{long long}
+with a factor of 9 to spare, but a product of three does not fit anywhere except \texttt{\_\_int128}.}
+\label{fig:ranges}
+\end{figure}
+
+\begin{pitfall}[Overflow happens in the expression, not the variable]
+\cc{long long x = a * b;} still overflows when \cc{a} and \cc{b} are 32-bit \cc{int}s, because the product is computed in
+\cc{int} before it is stored. Write \cc{1LL * a * b} or make the operands 64-bit. Your template's \cc{#define int long long}
+removes most of these bugs, but not the ones in \cc{1 << k} (the literal \cc{1} is still a 32-bit \cc{int}: write
+\cc{1LL << k}), in \cc{__builtin_popcount} (use \cc{__builtin_popcountll}), or in constants like \cc{1e18}, which is a
+\cc{double}.
+\end{pitfall}
+
+\paragraph{When 64 bits are not enough.} A product of two numbers below $9.2 \cdot 10^{18}$ can reach $8.5 \cdot 10^{37}$,
+which fits in GCC's \cc{__int128} (but not on 32-bit judges, and \cc{cin}/\cc{cout} cannot read or print it directly). For
+modular multiplication with a modulus up to $10^{18}$, the portable alternatives are a \cc{long double} trick or splitting
+into 32-bit halves, both in your library (\texttt{cpmodmul} ideas inside \texttt{cppollard} and \texttt{cphash}). To
+\emph{detect} overflow instead, GCC provides \cc{__builtin_mul_overflow(a, b, &res)}, which returns true when the product
+does not fit.
+
+\paragraph{Unsigned arithmetic wraps by design.} \cc{unsigned long long} arithmetic is defined modulo $2^{64}$, which makes
+it perfect for hashing (Chapter~\ref{ch:strings}) and dangerous for everything else: \cc{v.size() - 1} is a huge number when
+the vector is empty, because \cc{size()} is unsigned. The template's \cc{sz(v)} returns a signed value for exactly this
+reason.
+
+\paragraph{Floating point.} A \cc{double} has 53 bits of mantissa: about 15--16 significant decimal digits, and every
+integer up to $2^{53} \approx 9 \cdot 10^{15}$ is exact. \cc{long double} on x86 GCC has 64 bits of mantissa (18--19 digits).
+Floating-point answers are fine for geometry and probability; for anything that must be exact (counts, sums of large
+integers, comparisons of fractions), use integers and cross-multiplication.
+
+\begin{fact}[Powers of two to remember]
+$2^{10} \approx 10^3$, $2^{20} \approx 10^6$, $2^{30} \approx 10^9$, $2^{31} - 1 = 2\,147\,483\,647$, $2^{53} \approx 9 \cdot
+10^{15}$, $2^{60} \approx 10^{18}$, $2^{63} - 1 \approx 9.2\cdot10^{18}$. A number up to $10^{18}$ has 60 bits, so binary
+search over $[0, 10^{18}]$ takes 60 steps.
+\end{fact}
+
+\begin{pitfall}[Division and remainder with negative numbers]
+C++ rounds integer division towards zero: $-7 / 2 = -3$ and $-7 \bmod 2 = -1$. When you need the mathematical floor or a
+non-negative remainder, use the template's \cc{fdiv(a, b)} and \cc{cdiv(a, b)}, and write \cc{((x % m) + m) % m}.
+\end{pitfall}
+
+% ======================================================================================================================
+\section[Choosing a container]{Choosing a container \hfill \silver}\label{sec:containers}
+
+The STL has a container for almost every access pattern, and choosing the right one is most of the work. Figure
+\ref{fig:container-choice} is a decision procedure; Table~\ref{tab:containers} lists what each operation costs.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[q/.style={fq=6.2cm, minimum height=0.9cm}, c/.style={fend=3.1cm, minimum height=0.9cm}]
+  \foreach \t/\ans [count=\k] in {
+      {Only append, and access by position?}/{vector},
+      {Add or remove at both ends?}/{deque},
+      {Repeatedly take the smallest or largest?}/{priority\_queue},
+      {Keep items sorted; find the next larger, or the neighbours of $x$?}/{set / multiset},
+      {Need the $k$-th smallest, or the rank of $x$?}/{ordered\_set (PBDS)},
+      {Look up values by key, order irrelevant?}/{unordered\_map},
+      {Look up by key, and iterate in key order?}/{map},
+      {Fixed-size boolean array with bulk operations?}/{bitset}} {
+    \pgfmathsetmacro{\y}{-1.18*(\k-1)}
+    \node[q] (q\k) at (0, \y) {\t};
+    \node[c] (c\k) at (7.2, \y) {\texttt{\ans}};
+    \draw[farr] (q\k) -- node[fyes, above] {yes} (c\k);
+  }
+  \foreach \k [evaluate=\k as \nk using int(\k+1)] in {1,...,7} \draw[farr] (q\k) -- node[fno, right] {no} (q\nk);
+\end{tikzpicture}
+\caption{Choosing a container: ask the questions from the top and take the first ``yes''. Most problems stop at the first
+question; \texttt{vector} is the right answer far more often than any other container.}
+\label{fig:container-choice}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\caption{STL containers and the cost of their operations ($n$ = number of elements).}\label{tab:containers}
+\small
+\begin{tabularx}{\linewidth}{P{3.1cm}P{2.9cm}P{3.3cm}L}
+\toprule
+\thd{Container} & \thd{Access / search} & \thd{Insert / erase} & \thd{Typical use} \\
+\midrule
+\texttt{vector} & $\Oh{1}$ by index & $\Oh{1}$ amortized at the end & almost everything \\
+\texttt{deque} & $\Oh{1}$ by index & $\Oh{1}$ at both ends & sliding windows, 0-1 BFS \\
+\texttt{stack}, \texttt{queue} & top / front only & $\Oh{1}$ & DFS, BFS, bracket matching \\
+\texttt{priority\_queue} & top in $\Oh{1}$ & $\Oh{\log n}$ & Dijkstra, ``take the best'' \\
+\texttt{set}, \texttt{map} & $\Oh{\log n}$ & $\Oh{\log n}$ & sorted keys, neighbours \\
+\texttt{multiset} & $\Oh{\log n}$ & $\Oh{\log n}$ & sorted with duplicates, medians \\
+\texttt{unordered\_map} & $\Oh{1}$ expected & $\Oh{1}$ expected & counting by key \\
+\texttt{bitset<N>} & $\Oh{1}$ & $\Oh{N/64}$ per bulk op & boolean DP, reachability \\
+\texttt{string} & $\Oh{1}$ by index & $\Oh{1}$ at the end & text; \texttt{substr} copies \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{vector, and resetting between test cases}
+
+\begin{code}
+vi v(n, 0);                            // n zeros
+vvi g(n, vi(m, -1));                   // an n x m grid of -1
+v.push_back(x); v.pop_back(); v.back(); sz(v); v.empty();
+v.assign(n, 0);                        // reset to n zeros, reusing the memory
+v.clear();                             // size 0, capacity kept
+sort(all(v)); reverse(all(v));
+v.erase(unique(all(v)), v.end());      // remove duplicates (sort first)
+v.reserve(n);                          // no reallocations if the size is known
+\end{code}
+
+\cc{vector} stores its elements contiguously, which makes it the fastest container to scan by a wide margin
+(Section~\ref{sec:measured}). In multi-test problems, declare vectors inside \cc{solve()} so that each test starts fresh,
+or reset them with \cc{assign}: a global array cleared with \cc{memset} in every test costs its full size each time, even
+when the test is tiny.
+
+\subsection{Iterators and half-open ranges}
+
+Every STL algorithm works on a \defn{half-open range} $[\mathit{first}, \mathit{last})$: \cc{begin()} points at the first
+element and \cc{end()} points one past the last (Figure~\ref{fig:iterators}). Half-open ranges compose without off-by-one
+errors: $[a, b)$ followed by $[b, c)$ is $[a, c)$, the length is $\mathit{last} - \mathit{first}$, and an empty range has
+$\mathit{first} = \mathit{last}$. The whole of this book uses the same convention for array ranges.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \arr{A}{0}{0}{1,3,3,3,5,8,9}
+  \node[cell, dim, dashed] (A-8) at ($(A-7.east)$) {};
+  \node[lbl, anchor=east] at (-0.2, 0) {sorted \texttt{v}};
+  % above: the two bounds for x = 3; below: begin(), end() and the run of 3s
+  \ptra{A-2}{lower\_bound}{fgverm}
+  \ptra{A-5}{upper\_bound}{fggreen!80!black}
+  \ptrb{A-1}{begin()}{fgblue}
+  \ptrb{A-8}{end()}{fgblue}
+  \draw[mbrace] ($(A-2.south west)+(0,-0.08)$) -- ($(A-4.south east)+(0,-0.08)$);
+  \node[font=\sffamily\scriptsize, text=fgpink!80!black] at ($(A-3.south)+(0,-0.72)$) {the three 3s};
+  \node[notel, anchor=west, text width=5.2cm] at (6.3, -0.35) {\texttt{lower\_bound(x)}: first element $\ge x$.\\
+    \texttt{upper\_bound(x)}: first element $> x$.\\ Between them lie exactly the copies of $x$: here 3 of them, so
+    \texttt{count = upper $-$ lower}. \texttt{end()} is one past the last element and must never be dereferenced.};
+\end{tikzpicture}
+\caption{Iterators on a sorted vector. Both bounds take $\Oh{\log n}$ and return \texttt{end()} when no element qualifies.}
+\label{fig:iterators}
+\end{figure}
+
+\begin{code}
+auto it = lower_bound(all(v), x);      // first element >= x (v sorted)
+int idx = it - v.begin();              // its index; idx == sz(v) means "none"
+auto [lo, hi] = equal_range(all(v), x); // both bounds at once
+bool present = binary_search(all(v), x);
+int cnt = upper_bound(all(v), x) - lower_bound(all(v), x);
+\end{code}
+
+\subsection{set, multiset and map}
+
+\cc{set} and \cc{map} are balanced binary search trees (red-black trees in GCC). Every operation walks one root-to-leaf path,
+so it costs $\Oh{\log n}$, and the elements are always available in sorted order. Their power lies in the neighbour queries:
+\cc{lower_bound} walks down the tree remembering the smallest key that was not too small (Figure~\ref{fig:bst-lower}).
+
+\begin{figure}[htbp]
+\centering
+\begin{forest}
+  cptree, for tree={s sep=3.5mm, l sep=5mm, minimum size=6.8mm}
+  [23, hot
+    [11, hot
+      [5 [2] [8]]
+      [17, good
+        [14, hot] [20]]]
+    [35
+      [29 [26] [32]]
+      [41 [38] [44]]]]
+\end{forest}
+\par\medskip
+{\small
+\begin{tabular}{@{}llllll@{}}
+\multicolumn{6}{@{}l}{\texttt{s.lower\_bound(15)} visits:} \\[2pt]
+\toprule
+node & 23 & 11 & 17 & 14 & \\
+compare & $15 < 23$: left & $15 > 11$: right & $15 < 17$: left & $15 > 14$: right & \\
+best so far & 23 & 23 & \textbf{17} & 17 & $\Rightarrow$ answer 17 \\
+\bottomrule
+\end{tabular}}
+\caption{\texttt{lower\_bound} in a balanced search tree walks one path from the root (orange), remembering the last node
+where it went left. With $n$ keys the path has about $\log_2 n$ nodes.}
+\label{fig:bst-lower}
+\end{figure}
+
+\begin{code}
+set<int> s;
+s.insert(x); s.erase(x); s.count(x);   // count is 0 or 1
+auto it = s.lower_bound(x);            // first element >= x, or s.end()
+if (it != s.begin()) { int below = *prev(it); }  // largest element < x
+*s.begin(); *s.rbegin();               // minimum, maximum
+multiset<int> ms;
+ms.erase(ms.find(x));                  // erase ONE copy (erase(x) erases all!)
+map<string, int> cnt;
+cnt[w]++;                              // a missing key starts at 0
+for (auto& [key, value] : cnt) { }     // in increasing key order
+\end{code}
+
+\begin{pitfall}[Use the member function]
+\cc{lower_bound(all(s), x)} on a \cc{set} compiles, but it is the generic algorithm, which moves an iterator step by step
+and costs $\Oh{n}$. Always call \cc{s.lower_bound(x)}. The same goes for \cc{s.count(x)} versus \cc{count(all(s), x)}.
+\end{pitfall}
+
+\subsection{priority\_queue and the binary heap}
+
+A \cc{priority_queue} is a \defn{binary heap} stored in a vector: the element at index $i$ has its children at $2i + 1$
+and $2i + 2$, and every parent is at least as large as its children (Figure~\ref{fig:heap}). The largest element sits at the
+root, \cc{push} lets a new element rise to its place and \cc{pop} lets the last element sink from the root, each along one
+path of length $\log_2 n$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \begin{scope}
+    \node[vtx, hot] (h0) at (0, 0) {9};
+    \node[vtx] (h1) at (-1.8, -1.05) {7}; \node[vtx] (h2) at (1.8, -1.05) {8};
+    \node[vtx] (h3) at (-2.7, -2.1) {3}; \node[vtx] (h4) at (-0.9, -2.1) {6};
+    \node[vtx] (h5) at (0.9, -2.1) {2}; \node[vtx] (h6) at (2.7, -2.1) {5};
+    \node[vtx] (h7) at (-3.15, -3.15) {1};
+    \draw[ed] (h0) -- (h1) (h0) -- (h2) (h1) -- (h3) (h1) -- (h4) (h2) -- (h5) (h2) -- (h6) (h3) -- (h7);
+    \foreach \i in {0,...,7} \node[font=\sffamily\tiny, text=fggray, anchor=east] at ($(h\i.west)+(-0.02,0)$) {\i};
+  \end{scope}
+  \begin{scope}[xshift=4.6cm, yshift=-1.3cm]
+    \arrs{H}{0}{0}{9/hot, 7/n, 8/n, 3/n, 6/n, 2/n, 5/n, 1/n}
+    \idx{H}{8}
+    \draw[->, line width=0.8pt, fgblue] (H-2.north) to[out=60, in=120] (H-4.north);
+    \draw[->, line width=0.8pt, fgblue] (H-2.north) to[out=55, in=125] (H-5.north);
+    \node[font=\sffamily\scriptsize, text=fgblue] at (2.1, 1.3) {children of $i$: $2i + 1$, $2i + 2$};
+  \end{scope}
+\end{tikzpicture}
+\caption{A max-heap drawn as a tree (left) and stored as an array (right). The tree is complete, so the array has no gaps,
+and no pointers are needed: the parent of index $i$ is $\lfloor (i - 1)/2 \rfloor$.}
+\label{fig:heap}
+\end{figure}
+
+\begin{code}
+priority_queue<int> pq;                // max-heap: top() is the largest
+minpq<pll> q;                          // min-heap of (distance, vertex)
+q.push({d, v});
+auto [dist, u] = q.top(); q.pop();     // pairs compare by first, then by second
+\end{code}
+
+A heap cannot find or delete an arbitrary element. When you need that, either use a \cc{set} (which can) or use
+\emph{lazy deletion}: leave outdated entries in the heap and skip them when they surface, as Dijkstra's algorithm does
+(Chapter~\ref{ch:shortest}).
+
+\subsection{unordered\_map and hash attacks}
+
+\cc{unordered_map} is a hash table: an array of buckets, each holding the keys whose hash falls into it. With a good hash,
+buckets are short and every operation is expected $\Oh{1}$. GCC's hash of an integer is the integer itself, and the bucket is
+the hash modulo a prime from a fixed list, so an adversary who knows that prime can send keys that all land in one bucket
+(Figure~\ref{fig:hashattack}). Every operation then scans the whole chain: $\Oh{n}$ each, $\Oh{n^2}$ in total. On Codeforces,
+where participants hack each other's solutions, this happens routinely.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[b/.style={draw=fgink!60, fill=fgpaper, minimum width=6mm, minimum height=5mm, inner sep=0pt,
+    font=\sffamily\scriptsize}, k/.style={draw=fgverm, fill=fgverm!15, rounded corners=1pt, minimum height=4.5mm, inner sep=2pt,
+    font=\ttfamily\scriptsize}, kg/.style={k, draw=fggreen, fill=fggreen!15}]
+  \node[font=\sffamily\small\bfseries, anchor=west] at (-0.3, 0.75) {keys that are multiples of the bucket count};
+  \foreach \i in {0,...,6} \node[b] (A\i) at (\i*0.65, 0) {\i};
+  \node[k] (a1) at (0, -0.8) {0}; \node[k] (a2) at (0, -1.4) {97}; \node[k] (a3) at (0, -2.0) {194};
+  \node[k] (a4) at (0, -2.6) {291}; \node[font=\small, text=fgverm] at (0, -3.1) {$\vdots$};
+  \draw[line width=0.6pt, fgverm] (A0) -- (a1) -- (a2) -- (a3) -- (a4);
+  \node[lbl, text width=3.8cm, align=left, anchor=west] at (1.1, -1.9) {every key lands in bucket 0: each lookup scans
+    the whole chain, $\Oh{n}$};
+  \begin{scope}[xshift=7.2cm]
+    \node[font=\sffamily\small\bfseries, anchor=west] at (-0.3, 0.75) {the same keys, randomised hash};
+    \foreach \i in {0,...,6} \node[b] (B\i) at (\i*0.65, 0) {\i};
+    \foreach \i/\key in {0/291, 2/0, 3/194, 5/97} {
+      \node[kg] (k\i) at (\i*0.65, -0.8) {\key};
+      \draw[line width=0.6pt, fggreen] (B\i) -- (k\i);
+    }
+    \node[lbl, text width=4.3cm, align=left, anchor=west] at (-0.3, -1.9) {a random seed inside the hash spreads them out:
+      expected $\Oh{1}$, and no one can predict the seed};
+  \end{scope}
+\end{tikzpicture}
+\caption{An anti-hash test against \texttt{unordered\_map} (left) and the fix (right): hash with a random seed, as the
+library's \texttt{custom\_hash} does, so that no fixed input can force collisions.}
+\label{fig:hashattack}
+\end{figure}
+
+\begin{code}
+unordered_map<ll, int, custom_hash> cnt;  // template cphash: seeded splitmix64
+cnt.reserve(1 << 20);                     // pre-size the buckets: 1.6x faster
+\end{code}
+
+\subsection{bitset}
+
+\cc{bitset<N>} is a fixed-size array of $N$ bits packed into 64-bit words. Single bits cost $\Oh{1}$; whole-set operations
+(\cc{&}, \cc{|}, \cc{^}, \cc{~}, shifts, \cc{count()}, \cc{any()}) cost $\Oh{N/64}$ because they process 64 bits per machine
+instruction. GCC adds \cc{_Find_first()} and \cc{_Find_next(i)} to jump between set bits. The size must be a compile-time
+constant; when it depends on the input, round up to the largest possible value.
+
+\begin{code}
+bitset<100001> can;                     // subset sums reachable so far
+can[0] = 1;
+for (int w : weights) can |= can << w;  // N/64 word operations per item
+int count_reachable = can.count();
+for (int i = can._Find_first(); i < 100001; i = can._Find_next(i)) {
+    // i is a reachable sum
+}
+\end{code}
+
+% ======================================================================================================================
+\section[Sorting and comparators]{Sorting and comparators \hfill \silver}\label{sec:sorting-stl}
+
+\cc{std::sort} is an introsort: quicksort that falls back to heapsort on bad inputs, so it is $\Oh{n\log n}$ in the worst
+case, and it sorts $10^6$ integers in about 0.04\,s. It sorts by \cc{operator<} unless you pass a comparator.
+
+\begin{code}
+sort(all(v));                                    // increasing
+sort(all(v), greater<>());                       // decreasing
+sort(all(p), [](const pll& a, const pll& b) {    // by second, then first desc.
+    if (a.second != b.second) return a.second < b.second;
+    return a.first > b.first;
+});
+stable_sort(all(v), cmp);                        // equal elements keep order
+vi ord(n);                                       // sort indices by a key
+iota(all(ord), 0);
+sort(all(ord), [&](int i, int j) { return key[i] < key[j]; });
+\end{code}
+
+\begin{pitfall}[Strict weak ordering]
+A comparator must behave like \cc{<}: \cc{cmp(x, x)} must be false, and if \cc{cmp(a, b)} and \cc{cmp(b, c)} then
+\cc{cmp(a, c)}. Writing \cc{<=} instead of \cc{<} breaks the first rule, and \cc{sort} may then read past the end of the
+array and crash. Your local builds use the checked STL, which detects an invalid comparator and stops with a message.
+\end{pitfall}
+
+\paragraph{Sorting pairs and tuples.} Pairs, tuples and arrays compare lexicographically: first by the first component, ties
+by the second, and so on. That makes ``sort by $a$, then by $b$ decreasing'' a one-liner: sort the pairs
+\cc|{a, -b}|. Sorting
+events as \cc{(time, type)} pairs orders simultaneous events by type for free, which Section~\ref{sec:events} used.
+
+\paragraph{Coordinate compression.} Values up to $10^9$ that only matter through their order can be replaced by their rank
+in $0, \dots, k - 1$, so they can index an array or a Fenwick tree (template \texttt{cpcompress}):
+
+\begin{code}
+vi vals = a;
+sort(all(vals)), vals.erase(unique(all(vals)), vals.end());
+for (auto& x : a) x = lower_bound(all(vals), x) - vals.begin();  // 0 <= x < sz
+\end{code}
+
+% ======================================================================================================================
+\section[The algorithm toolbox]{The algorithm toolbox \hfill \silver}\label{sec:toolbox}
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{>{\ttfamily\raggedright\arraybackslash}p{6.3cm}L}
+\toprule
+\thd{Call} & \thd{What it does} \\
+\midrule
+accumulate(all(v), 0LL) & sum; the \texttt{0LL} makes the sum 64-bit \\
+*max\_element(all(v)), min\_element & largest / smallest element (an iterator) \\
+count(all(v), x), find(all(v), x) & occurrences / first occurrence: $\Oh{n}$ \\
+iota(all(v), 0) & fills $0, 1, 2, \dots$ \\
+partial\_sum, adjacent\_difference & prefix sums and differences, in place \\
+next\_permutation(all(v)) & next arrangement in lexicographic order; \texttt{false} after the last \\
+nth\_element(v.begin() + k, \ldots) & the $k$-th smallest in place, expected $\Oh{n}$ \\
+rotate, reverse, unique, fill & rearrangements, all $\Oh{n}$ \\
+merge, inplace\_merge & merge two sorted ranges in $\Oh{n}$ \\
+gcd(a, b), lcm(a, b) & greatest common divisor, least common multiple \\
+\_\_builtin\_popcountll(x) & number of set bits \\
+\_\_builtin\_ctzll(x), \_\_builtin\_clzll(x) & trailing / leading zero bits ($x > 0$) \\
+\_\_lg(x) & $\lfloor \log_2 x \rfloor$ for $x > 0$ \\
+shuffle(all(v), rng) & random order \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{trick}[nth\_element for medians and top-$k$]
+\cc{nth_element(v.begin(), v.begin() + k, v.end())} puts the element that would be at index $k$ after sorting into position
+$k$, with smaller elements before it and larger after, in expected linear time. It finds a median in one call and is several
+times faster than sorting when you only need the $k$ smallest elements.
+\end{trick}
+
+% ======================================================================================================================
+\section[Modern C++ that saves time]{Modern C++ that saves time \hfill \silver}\label{sec:modern}
+
+C++17 has several features that make contest code shorter and less error-prone. All of them are used throughout this book.
+
+\begin{code}
+for (auto& x : v) x *= 2;              // by reference: modifies the elements
+for (const auto& s : words) { }        // const& avoids copying strings
+auto [a, b] = pr;                      // structured bindings unpack pairs etc.
+for (auto& [key, val] : mp) { }
+array<int, 3> t = {1, 2, 3};           // fixed size, usable as a map key
+v.emplace_back(a, b);                  // construct a pair or struct in place
+if (auto it = mp.find(k); it != mp.end()) { }  // "it" stays local to the if
+\end{code}
+
+\subsection{Lambdas and recursion}
+
+A lambda is a function defined inside another function. \cc{[&]} lets it read and modify every local variable by reference,
+which is why lambdas are the natural way to write helpers inside \cc{solve()}. A lambda cannot call itself by name, so a
+recursive lambda receives itself as its first parameter:
+
+\begin{code}
+auto dfs = [&](auto&& self, int u, int p) -> void {
+    for (int v : adj[u])
+        if (v != p) self(self, v, u);
+};
+dfs(dfs, 0, -1);
+\end{code}
+
+This style is used by the library's inside-\cc{solve()} templates: no global arrays that must be reset between test cases.
+It is also faster than \cc{std::function}, which adds an indirect call and may allocate.
+
+% ======================================================================================================================
+\section[Policy-based data structures]{Policy-based data structures \hfill \gold}\label{sec:pbds}
+
+GCC ships an extension library with a balanced tree that also knows the \emph{size of every subtree}, so it can answer
+``what is the $k$-th smallest element?'' and ``how many elements are smaller than $x$?'' in $\Oh{\log n}$. \cc{std::set}
+cannot do either.
+
+\begin{code}
+ordered_set<int> s;                    // template cposet
+s.insert(5); s.insert(1); s.insert(9);
+*s.find_by_order(1);                   // 5: the element at index 1 (sorted)
+s.order_of_key(6);                     // 2: the number of elements < 6
+\end{code}
+
+The tree is a set, so duplicates are dropped; for a multiset, store pairs \cc|{value, unique_id}|. It is about twice as slow
+as \cc{std::set}, which is still fast enough for $2 \cdot 10^5$ operations, and it replaces a Fenwick tree over compressed
+values in many problems (Josephus Problem II, sliding medians, counting inversions online).
+
+% ======================================================================================================================
+\section[Randomness]{Randomness \hfill \gold}\label{sec:random-stl}
+
+\cc{rand()} is slow, returns only 15 random bits on some compilers, and is predictable. Use a 64-bit Mersenne Twister seeded
+from the clock (template \texttt{cprng}):
+
+\begin{code}
+mt19937_64 rng(chrono::steady_clock::now().time_since_epoch().count());
+ll r = uniform_int_distribution<ll>(lo, hi)(rng);   // uniform in [lo, hi]
+shuffle(all(v), rng);
+\end{code}
+
+Seeding from the clock matters on Codeforces, where other contestants can read your code: with a fixed seed, they can
+construct an input that makes your randomised algorithm take its worst case. Chapter~\ref{ch:special} shows what randomness
+buys: hashing, randomised pivots, random restarts and probabilistic checks.
+
+% ======================================================================================================================
+\section[Undefined behaviour and common bugs]{Undefined behaviour and common bugs \hfill \bronze}\label{sec:ub}
+
+Some mistakes in C++ are not errors the compiler reports but \defn{undefined behaviour}: the program may crash, print
+garbage, or work perfectly on your machine and fail on the judge. The checked STL and the flags in your setup catch many of
+them locally (GUIDE.pdf, Chapter~5); the rest you must avoid by habit.
+
+\begin{itemize}
+  \item \textbf{Out-of-bounds access}: \cc{a[n]} in an array of size $n$, \cc{v[-1]}, \cc{*s.begin()} on an empty set. The
+        checked STL catches it for \cc{vector} and \cc{string} and names the line.
+  \item \textbf{Uninitialised variables}: a local \cc{int sum;} holds garbage, not 0. Global variables start at 0.
+  \item \textbf{Signed overflow}: undefined, not merely wrapping (Section~\ref{sec:overflow}).
+  \item \textbf{Invalid iterators}: an iterator or reference into a \cc{vector} dies when the vector reallocates
+        (\cc{push_back}); erasing from a container while iterating over it with range-for skips or repeats elements.
+  \item \textbf{Missing return}: a non-\cc{void} function that ends without \cc{return}. With optimisation, GCC may turn
+        this into a crash or an infinite loop; \texttt{-Wall} warns.
+  \item \textbf{Bad comparator}: see Section~\ref{sec:sorting-stl}.
+\end{itemize}
+
+And the bugs that are not undefined but equally common: \cc{=} instead of \cc{==} in a condition (\texttt{-Wall} warns),
+integer division where a real number was meant (\cc{1 / 2 == 0}), comparing doubles with \cc{==} instead of
+\cc{fabs(a - b) < 1e-9}, forgetting to reset state between test cases, and reading the input in a different order from the
+statement.
+
+\begin{tip}[Debug output that cannot break the judge]
+Your template's \cc{dbg(x, v, mp)} prints variables with their names to standard error locally, and compiles to nothing on
+the judge. Leave the calls in: they cost nothing when submitted, and they are there when the next bug appears.
+\end{tip}
+
+\begin{summary}[Chapter summary]
+\begin{itemize}
+  \item Fast I/O (sync off, \cc|'\n'|) is worth a factor of 10 to 50; the template sets it up.
+  \item Estimate every expression's largest value; use 64-bit integers, \cc{1LL <<}, and exact integer arithmetic.
+  \item \cc{vector} first; \cc{set}/\cc{map} for sorted neighbours; \cc{priority_queue} for repeated minimums;
+        \cc{unordered_map} with a randomised hash for counting; \cc{bitset} for bulk boolean work.
+  \item Ranges are half-open; call member functions like \cc{s.lower_bound}; comparators must be strict.
+  \item Lambdas with \cc{[&]}, structured bindings and \cc{const&} make contest code short and safe.
+\end{itemize}
+\end{summary}
+
+\begin{practice}
+\ppgroup{Containers in action}
+\begin{pplist}
+  \item Distinct Numbers
+  \item Apartments
+  \item Concert Tickets
+  \item Sum of Two Values
+  \item Playlist
+  \item Towers
+  \item Traffic Lights
+  \item Room Allocation
+  \item Collecting Numbers II
+\end{pplist}
+\ppgroup{Ordered statistics}
+\begin{pplist}
+  \item Josephus Problem II
+  \item Sliding Median
+  \item Sliding Cost
+\end{pplist}
+\end{practice}

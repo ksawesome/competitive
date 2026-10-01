@@ -1,0 +1,98 @@
+\chapter{The Template Library}\label{ch:library}
+
+\file{library/} holds 174 templates plus the full file template, 175 snippets in all, covering the USACO Bronze
+to Platinum syllabus and the advanced topics beyond it. The second edition of the handbook added 45 of them (discrete
+logarithms, polynomial tools, FWHT, Du's sieve and prime counting, Hungarian and blossom matching, Gomory--Hu and
+Stoer--Wagner cuts, the eertree, Lyndon factorization, CDQ, Mo on trees and with updates, persistent treaps, Euler tour
+trees, half-planes, rotating calipers and more). Every one of them:
+
+\begin{itemize}
+  \item compiles on its own as strict C++17 with zero warnings (\texttt{-Wall -Wextra -Wshadow -Wpedantic}), both as
+        written and under \cc{#define int long long};
+  \item was checked against a brute-force implementation on hundreds to thousands of random inputs (and planted bugs
+        were confirmed to be caught);
+  \item avoids every name the template defines (\cc{INF}, \cc{MOD}, \cc{sz}, \cc{all}, \cc{rep}, \cc{dbg},
+        \ldots) and uses no \cc{__int128}, so it also works on 32-bit judges.
+\end{itemize}
+
+\section{Three ways to insert a template}
+
+\begin{enumerate}
+  \item \textbf{Chords.} \key{Ctrl+Alt+T} (core), \key{Ctrl+Alt+Y} (advanced) or \key{Ctrl+Alt+U} (specialist
+        techniques), release, then one key. The code is pasted at the cursor and re-indented to match it. The maps below
+        show every chord.
+  \item \textbf{Prefixes.} Every template has a prefix starting with \texttt{cp}: type it and press \key{Tab}
+        (\texttt{cpdsu}, \texttt{cpseg}, \texttt{cphld}). Typing just \texttt{cp} lists all of them with their descriptions.
+  \item \textbf{Picker.} \key{Ctrl+Alt+T} then \key{Space} opens VS Code's snippet list; type any part of a name.
+\end{enumerate}
+
+\section{Where to paste}
+
+Each template is one of two kinds, shown on its card in Chapter~\ref{ch:reference} and in \file{CHEATSHEET.md}:
+
+\begin{itemize}
+  \item \textbf{above solve()} (\emph{global}): a \cc{struct} or functions, such as \cc{DSU}, \cc{SegTree},
+        \cc{dijkstra}. Put the cursor on an empty line above \cc{void solve()} and paste; then use it inside
+        \cc{solve()}.
+  \item \textbf{inside solve()}: a block of statements that uses variables you already have, such as the DFS or grid
+        BFS. The first line of the card says which variables it needs (\texttt{needs n, adj}). Paste it where those
+        variables exist, then fill in the marked lines.
+\end{itemize}
+
+A few templates build on another one and say so (\texttt{Needs cppoint}, \texttt{Needs cpdinic}, \texttt{Needs cpdsurb}):
+paste the dependency first.
+
+\section{Conventions used everywhere}
+
+\begin{center}
+\begin{tabularx}{\linewidth}{p{4cm}L}
+\toprule
+\thd{Convention} & \thd{Meaning} \\
+\midrule
+0-indexed & vertices $0..n-1$, array positions $0..n-1$. \texttt{cpgraph} converts 1-indexed input for you. \\
+half-open ranges & every range query is on $[l, r)$: \cc{st.query(0, n)} is the whole array, \cc{query(l, l)} is empty. \\
+unreachable & shortest-path templates return \cc{LLONG_MAX} (or the named constant they define) for unreachable vertices. \\
+empty result = impossible & e.g.\ \cc{topo_sort} returns an empty vector on a cycle, \cc{TwoSat::solve} when unsatisfiable. \\
+\texttt{MOD} & modular templates use the template's \cc{MOD}. \\
+edit points & lines to adapt are marked with a comment (\texttt{// transition}, \texttt{// replace with the real check}). \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Keyboard maps}
+
+Orange keys have a template; the short name under the key is its prefix without \texttt{cp}. The complete list with
+descriptions is Chapter~\ref{ch:reference}.
+
+\input{generated/keymaps}
+
+\section{Categories}
+
+\begin{center}
+\begin{tabularx}{\linewidth}{p{3.4cm}L}
+\toprule
+\thd{Folder} & \thd{Contents} \\
+\midrule
+\file{basics/} & input readers, prefix sums, difference arrays, two pointers, sliding window, monotonic stack, binary and
+  ternary search, subsets, permutations, backtracking, argsort, intervals, bit helpers, meet in the middle,
+  coordinate compression \\
+\file{graph/} & DFS, BFS, flood fill, grid BFS, Dijkstra, 0-1 BFS, Bellman--Ford, Floyd--Warshall, topological sort,
+  DSU (+ rollback), Kruskal, Prim, SCC, 2-SAT, bipartite check, bridges and cut vertices, 2-edge-connected components,
+  biconnected components, Euler paths, cycle finding, functional graphs, k-th successor, offline connectivity \\
+\file{tree/} & tree DFS / Euler tour, diameter, LCA, tree DP, rerooting, small-to-large, HLD, centroid decomposition,
+  virtual tree, Kruskal reconstruction tree, tree knapsack \\
+\file{ds/} & segment trees (point, lazy add, lazy assign, custom node with binary search, min + count, dynamic,
+  persistent, beats), Fenwick trees (point, range, 2D), sparse table, ordered set, anti-hack hash, wavelet tree,
+  treap, Mo's algorithm, offline distinct count \\
+\file{dp/} & knapsacks, bitset subset sum, grid paths, LIS, LCS / edit distance, bitmask (TSP), range DP, digit DP,
+  SOS DP, divide-and-conquer and Knuth optimisations, broken profile, LineContainer, Li Chao tree, slope trick \\
+\file{math/} & modular power, Mint, nCr, sieve, factorization, Pollard rho, divisor sieve, totient, M\"obius,
+  floor blocks, Pascal, extended gcd, CRT, matrix power, FFT, NTT, XOR basis, Grundy numbers, inclusion--exclusion \\
+\file{string/} & hashing, KMP, Z-function, trie, binary trie, Aho--Corasick, suffix array + LCP, suffix automaton, Manacher \\
+\file{geometry/} & point primitives, segment intersection, polygons (area, containment, Pick), convex hull, closest
+  pair, rectangles \\
+\file{flow/} & Dinic + min cut, min-cost flow, flows with lower bounds, Hopcroft--Karp \\
+\file{misc/} & random numbers, interactive-problem helpers \\
+\bottomrule
+\end{tabularx}
+\end{center}

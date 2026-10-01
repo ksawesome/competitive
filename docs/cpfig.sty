@@ -1,0 +1,203 @@
+% Figure grammar for the handbook: one palette, three line weights, one arrow tip, fixed font sizes,
+% and high-level macros for the pictures competitive programming needs again and again.
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{cpfig}[2026/09/30 figure grammar for the competitive programming handbook]
+\RequirePackage{tikz}
+\RequirePackage{pgfplots}
+\RequirePackage{forest}
+\usetikzlibrary{arrows.meta, positioning, calc, shapes.geometric, shapes.misc, shapes.multipart, fit, backgrounds,
+  decorations.pathreplacing, decorations.pathmorphing, decorations.markings, patterns, matrix, chains, bending,
+  intersections, through}
+
+% ---------------------------------------------------------------- palette (Okabe-Ito: safe for colour blindness)
+% Roles: blue = structure, sky = frontier / in queue, green = done / correct, orange = candidate / warning,
+% vermilion = active / current, pink = special, gray = neutral. Every highlight also differs in line weight or
+% pattern, so figures stay readable when printed in grayscale.
+\definecolor{fgblue}{HTML}{0072B2}
+\definecolor{fgsky}{HTML}{56B4E9}
+\definecolor{fggreen}{HTML}{009E73}
+\definecolor{fgorange}{HTML}{E69F00}
+\definecolor{fgverm}{HTML}{D55E00}
+\definecolor{fgpink}{HTML}{CC79A7}
+\definecolor{fgyellow}{HTML}{F0E442}
+\definecolor{fgink}{HTML}{1E293B}
+\definecolor{fggray}{HTML}{64748B}
+\definecolor{fgline}{HTML}{94A3B8}
+\definecolor{fgfill}{HTML}{EEF4FB}
+\definecolor{fgpaper}{HTML}{F8FAFC}
+
+% ---------------------------------------------------------------- base vocabulary
+\tikzset{
+  >={Stealth[length=2.2mm, width=1.7mm]},
+  every picture/.append style={line cap=round, line join=round},
+  % line weights
+  fgthin/.style={line width=0.4pt}, fgnormal/.style={line width=0.8pt}, fgbold/.style={line width=1.8pt},
+  % vertices
+  vtx/.style={circle, draw=fgink!85, fill=fgfill, line width=0.8pt, minimum size=6.5mm, inner sep=0pt,
+    font=\sffamily\small},
+  vtxs/.style={vtx, minimum size=5mm, font=\sffamily\scriptsize},
+  vtxl/.style={vtx, minimum size=8mm},
+  % state highlights (fill + border; the border keeps them apart in grayscale)
+  hot/.style={fill=fgverm!18, draw=fgverm, line width=1pt},
+  good/.style={fill=fggreen!18, draw=fggreen, line width=1pt},
+  cool/.style={fill=fgsky!28, draw=fgblue, line width=1pt},
+  pur/.style={fill=fgpink!25, draw=fgpink!80!black, line width=1pt},
+  warn/.style={fill=fgorange!22, draw=fgorange!85!black, line width=1pt},
+  dim/.style={draw=fgline, fill=fgpaper, text=fggray},
+  n/.style={},
+  % edges
+  ed/.style={line width=0.8pt, draw=fgline!80!fgink},
+  ded/.style={ed, ->},
+  hed/.style={line width=1.8pt, draw=fgverm},
+  hded/.style={hed, ->},
+  ged/.style={line width=1.8pt, draw=fggreen},
+  gded/.style={ged, ->},
+  bed/.style={line width=1.8pt, draw=fgblue},
+  bded/.style={bed, ->},
+  ped/.style={line width=1.8pt, draw=fgpink!85!black},
+  pded/.style={ped, ->},
+  xed/.style={line width=0.8pt, draw=fgline, dashed},
+  wl/.style={font=\sffamily\scriptsize, fill=white, inner sep=1pt, text=fgink},
+  % arrays and tables
+  cell/.style={draw=fgline, line width=0.5pt, fill=white, minimum width=7mm, minimum height=7mm, inner sep=0pt,
+    font=\ttfamily\small, anchor=west},
+  cellc/.style={cell, anchor=center},
+  hdr/.style={draw=none, fill=none, font=\sffamily\scriptsize\bfseries, text=fggray},
+  dpm/.style={matrix of nodes, nodes in empty cells, column sep=-0.5pt, row sep=-0.5pt,
+    nodes={cellc, minimum width=#1, minimum height=6mm}}, dpm/.default=7mm,
+  % labels and notes
+  lbl/.style={font=\sffamily\scriptsize, text=fggray},
+  blbl/.style={font=\sffamily\scriptsize\bfseries, text=fgink},
+  note/.style={font=\sffamily\footnotesize, text=fgink!80, align=center},
+  notel/.style={font=\sffamily\footnotesize, text=fgink!80, align=left},
+  title/.style={font=\sffamily\small\bfseries, text=fgink},
+  brace/.style={decorate, decoration={brace, amplitude=5pt, raise=2pt}, line width=0.8pt, fggray},
+  mbrace/.style={decorate, decoration={brace, mirror, amplitude=5pt, raise=2pt}, line width=0.8pt, fggray},
+  seg/.style={draw=fgblue, fill=fgfill, rounded corners=1.5pt, line width=0.7pt, minimum height=6mm, inner sep=1pt,
+    font=\sffamily\scriptsize},
+  segn/.style={seg, minimum height=6.5mm, font=\sffamily\small},
+  % grids
+  gcell/.style={draw=white, line width=0.8pt, fill=fgline!45, inner sep=0pt},
+  gfree/.style={fill=white, draw=fgline!60},
+  % flowcharts
+  fstep/.style={rectangle, rounded corners=3pt, draw=fgblue, fill=fgblue!6, line width=0.8pt, align=center,
+    font=\sffamily\small, inner sep=4pt, text width=#1}, fstep/.default=3.2cm,
+  fq/.style={rectangle, rounded corners=9pt, draw=fgorange!85!black, fill=fgorange!10, line width=0.8pt, align=center,
+    font=\sffamily\small, inner sep=4pt, text width=#1}, fq/.default=3.2cm,
+  fend/.style={rectangle, rounded corners=2pt, draw=fggreen, fill=fggreen!12, line width=1pt, align=center,
+    font=\sffamily\small\bfseries, inner sep=4pt, text width=#1}, fend/.default=3cm,
+  farr/.style={->, line width=0.8pt, draw=fgink!70},
+  fyes/.style={font=\sffamily\scriptsize\bfseries, text=fggreen!80!black, inner sep=1.5pt, fill=white},
+  fno/.style={font=\sffamily\scriptsize\bfseries, text=fgverm, inner sep=1.5pt, fill=white},
+  % intervals on a number line
+  ivl/.style={line width=5pt, line cap=butt, draw=#1}, ivl/.default=fgblue!55,
+}
+
+% ---------------------------------------------------------------- arrays
+% \arr{name}{x}{y}{v1,v2,...}: a row of cells named name-1, name-2, ... (kept from the first edition)
+\newcommand{\arr}[4]{%
+  \edef\arrlist{#4}%
+  \foreach \v [count=\i] in \arrlist {\node[cell] (#1-\i) at ($(#2,#3)+(\i*7mm-7mm,0)$) {\v};}}
+% \arrs{name}{x}{y}{v1/style1, v2/style2, ...}: the same, each cell with its own style (n = none)
+\newcommand{\arrs}[4]{%
+  \edef\arrlist{#4}%
+  \foreach \v/\s [count=\i] in \arrlist {\node[cell, \s] (#1-\i) at ($(#2,#3)+(\i*7mm-7mm,0)$) {\v};}}
+% \idx{name}{count}: 0-based index labels under an array; \idxfrom{name}{count}{first}
+\newcommand{\idx}[2]{\foreach \i in {1,...,#2} {\pgfmathtruncatemacro{\j}{\i-1}\node[lbl, below=0pt of #1-\i] {\j};}}
+\newcommand{\idxfrom}[3]{\foreach \i in {1,...,#2} {\pgfmathtruncatemacro{\j}{\i-1+#3}\node[lbl, below=0pt of #1-\i] {\j};}}
+% pointers: \ptrb{cell}{label}{colour} (arrow from below), \ptra{cell}{label}{colour} (arrow from above)
+\newcommand{\ptrb}[3]{\draw[->, line width=1.1pt, draw=#3] ($(#1.south)+(0,-0.62)$)
+  node[below, font=\sffamily\scriptsize\bfseries, text=#3, inner sep=1.5pt] {#2} -- ($(#1.south)+(0,-0.04)$);}
+\newcommand{\ptra}[3]{\draw[->, line width=1.1pt, draw=#3] ($(#1.north)+(0,0.62)$)
+  node[above, font=\sffamily\scriptsize\bfseries, text=#3, inner sep=1.5pt] {#2} -- ($(#1.north)+(0,0.04)$);}
+% ranges: \spanabove{first}{last}{label}, \spanbelow{first}{last}{label}, \frame{first}{last}{colour}
+\newcommand{\spanabove}[3]{\draw[brace] (#1.north west) -- node[above=6pt, lbl] {#3} (#2.north east);}
+\newcommand{\spanbelow}[3]{\draw[mbrace] (#1.south west) -- node[below=6pt, lbl] {#3} (#2.south east);}
+\newcommand{\cellframe}[3]{\node[draw=#3, line width=1.6pt, rounded corners=2pt, fit=(#1)(#2), inner sep=0.8pt] {};}
+
+% ---------------------------------------------------------------- segment trees
+% \segtreefig{n}{leaf width cm}{level gap cm}{values in heap order 1..2n-1}{hot list}{good list}{dim list}
+% draws a perfect segment tree over n = 2^k leaves, nodes named S1..S(2n-1), each with its range [l, r) above.
+\newcounter{cpsegfig}
+\newcommand{\segtreefig}[7]{%
+  \stepcounter{cpsegfig}%
+  \foreach \k in {#5} {\expandafter\xdef\csname cps@\thecpsegfig @\k\endcsname{hot}}%
+  \foreach \k in {#6} {\expandafter\xdef\csname cps@\thecpsegfig @\k\endcsname{good}}%
+  \foreach \k in {#7} {\expandafter\xdef\csname cps@\thecpsegfig @\k\endcsname{dim}}%
+  \foreach \v [count=\c] in {#4} {\expandafter\xdef\csname cpsv@\thecpsegfig @\c\endcsname{\v}}%
+  \pgfmathtruncatemacro{\cpsegtotal}{2*#1-1}%
+  \foreach \i in {1,...,\cpsegtotal} {%
+    \pgfmathtruncatemacro{\lev}{floor(log2(\i)+0.001)}%
+    \pgfmathtruncatemacro{\pos}{\i-2^\lev}%
+    \pgfmathtruncatemacro{\len}{#1/2^\lev}%
+    \pgfmathsetmacro{\wid}{\len*#2}%
+    \pgfmathsetmacro{\xx}{(\pos+0.5)*\wid}%
+    \pgfmathsetmacro{\yy}{-\lev*#3}%
+    \pgfmathtruncatemacro{\lo}{\pos*\len}%
+    \pgfmathtruncatemacro{\hi}{\lo+\len}%
+    \edef\st{\ifcsname cps@\thecpsegfig @\i\endcsname\csname cps@\thecpsegfig @\i\endcsname\else n\fi}%
+    \node[segn, \st, minimum width=\wid cm-1.2mm] (S\i) at (\xx,\yy) {\csname cpsv@\thecpsegfig @\i\endcsname};
+    \ifnum\len>1 \node[font=\sffamily\tiny, text=fggray, anchor=south, inner sep=1pt] at (S\i.north) {$[\lo,\hi)$};\fi
+    \ifnum\i>1 \pgfmathtruncatemacro{\pp}{\i/2}\draw[ed] (S\pp.south) -- (S\i.north);\fi
+  }}
+
+% ---------------------------------------------------------------- grids
+% \gridfig{rows}{cols}{cell size cm}{name}: cells name-r-c (0-based, row 0 on top), all "wall" coloured;
+% \gridmark{name}{r/c, r/c, ...}{style} restyles cells, \gridtext{name}{r/c/text, ...} writes into them.
+\newcommand{\gridfig}[4]{%
+  \xdef\cpgridsize{#3}%
+  \pgfmathtruncatemacro{\cpgr}{#1-1}\pgfmathtruncatemacro{\cpgc}{#2-1}%
+  \foreach \r in {0,...,\cpgr} \foreach \c in {0,...,\cpgc}
+    \node[gcell, minimum size=#3 cm] (#4-\r-\c) at ({(\c+0.5)*#3}, {-(\r+0.5)*#3}) {};}
+\newcommand{\gridmark}[3]{\foreach \r/\c in {#2} \node[gcell, #3, minimum size=\cpgridsize cm] at (#1-\r-\c) {};}
+\newcommand{\gridtext}[2]{\foreach \r/\c/\t in {#2} \node[font=\sffamily\scriptsize\bfseries, text=fgink] at (#1-\r-\c) {\t};}
+
+% ---------------------------------------------------------------- number lines and intervals
+% \numline{from}{to}{y}{caption}: ticks at every integer; \ivl{a}{b}{y}{colour}{label}: a bar from a to b.
+\newcommand{\numline}[4]{%
+  \draw[->, line width=0.6pt, fgink!70] ({#1-0.3},#3) -- ({#2+0.5},#3) node[right, lbl] {#4};
+  \foreach \t in {#1,...,#2} \draw[line width=0.5pt, fgink!70] (\t,{#3+0.07}) -- (\t,{#3-0.07}) node[below, lbl] {\t};}
+\newcommand{\ivl}[5]{%
+  \draw[ivl=#4] (#1,#3) -- (#2,#3);
+  \draw[line width=0.6pt, draw=fgink!65] (#1,{#3-0.12}) -- (#1,{#3+0.12}) (#2,{#3-0.12}) -- (#2,{#3+0.12});
+  \node[font=\sffamily\scriptsize, text=fgink, above=3pt] at ({(#1+#2)/2},#3) {#5};}
+
+% ---------------------------------------------------------------- legends and swatches
+% \swatch{style}: a small square for captions and running text ("\swatch{hot} current vertex")
+\DeclareRobustCommand{\swatch}[1]{\tikz[baseline=-0.65ex]\node[draw, #1, minimum size=2.4mm, inner sep=0pt]{};}
+\DeclareRobustCommand{\lineswatch}[1]{\tikz[baseline=-0.65ex]\draw[#1] (0,0) -- (0.55,0);}
+% \legendat{(x,y)}{style/text, style/text, ...}: a vertical legend inside a picture
+\newcommand{\legendat}[2]{\begin{scope}[shift={#1}]
+  \foreach \s/\t [count=\k] in {#2} {\node[draw, \s, minimum size=2.6mm, inner sep=0pt] (lg\k) at (0,{-(\k-1)*0.42}) {};
+    \node[lbl, anchor=west] at ($(lg\k.east)+(0.08,0)$) {\t};}\end{scope}}
+
+% ---------------------------------------------------------------- trees (forest)
+\forestset{
+  cptree/.style={for tree={circle, draw=fgink!85, fill=fgfill, line width=0.8pt, minimum size=6.5mm, inner sep=0pt,
+    font=\sffamily\small, s sep=5mm, l sep=6mm, edge={line width=0.8pt, draw=fgline!80!fgink}}},
+  cptrees/.style={for tree={circle, draw=fgink!85, fill=fgfill, line width=0.8pt, minimum size=5mm, inner sep=0pt,
+    font=\sffamily\scriptsize, s sep=3mm, l sep=4mm, edge={line width=0.8pt, draw=fgline!80!fgink}}},
+  rectree/.style={for tree={rectangle, rounded corners=2pt, draw=fgink!70, fill=fgfill, line width=0.6pt,
+    font=\sffamily\scriptsize, inner sep=2.5pt, s sep=3mm, l sep=5mm, edge={line width=0.7pt, draw=fgline!80!fgink}}},
+}
+
+% ---------------------------------------------------------------- filmstrips (step-by-step traces)
+% \begin{filmstrip}[columns] \begin{stepbox}{1. pop 3} <tikzpicture> \end{stepbox} ... \end{filmstrip}
+\newtcolorbox{stepbox}[1]{enhanced, colback=white, colframe=fgline!80, boxrule=0.5pt, arc=2pt, left=3pt, right=3pt,
+  top=3pt, bottom=3pt, fonttitle=\sffamily\scriptsize\bfseries, coltitle=fgink, colbacktitle=fgpaper, title={#1},
+  halign=center, valign=center, toptitle=1pt, bottomtitle=1pt}
+\newenvironment{filmstrip}[1][3]{\begin{tcbraster}[raster columns=#1, raster equal height=rows,
+  raster column skip=2.5mm, raster row skip=2.5mm]}{\end{tcbraster}}
+
+% ---------------------------------------------------------------- plots
+\pgfplotscreateplotcyclelist{okabe}{%
+  {fgblue, mark=*}, {fgverm, mark=square*}, {fggreen, mark=triangle*}, {fgorange!90!black, mark=diamond*},
+  {fgpink!90!black, mark=pentagon*}, {fgsky!90!black, mark=o}, {fgink, mark=x}}
+\pgfplotsset{
+  cpplot/.style={grid=major, grid style={fgline!30, line width=0.3pt}, axis lines=left, axis line style={fgink!70},
+    tick label style={font=\sffamily\scriptsize}, label style={font=\sffamily\small},
+    title style={font=\sffamily\small\bfseries}, legend style={font=\sffamily\scriptsize, draw=fgline!60, fill=white,
+    fill opacity=0.9, text opacity=1, rounded corners=1pt}, legend cell align=left, cycle list name=okabe,
+    every axis plot/.append style={line width=1.2pt, mark size=1.4pt}},
+}
+\endinput

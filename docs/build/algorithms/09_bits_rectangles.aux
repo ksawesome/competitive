@@ -1,0 +1,148 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\@writefile{toc}{\contentsline {chapter}{\numberline {10}Bits and Rectangles}{120}{chapter.10}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{ch:bits}{{10}{120}{Bits and Rectangles}{chapter.10}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {10.1}Binary numbers and two's complement}{120}{section.10.1}\protected@file@percent }
+\newlabel{sec:binary}{{10.1}{120}{Binary numbers and two's complement}{section.10.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {10.1}{\ignorespaces Two's complement on a wheel. Patterns with top bit 0 (blue) mean the same in both readings; patterns with top bit 1 (red) mean $v - 16$ as signed numbers. Signed overflow is the step from 7 to $-8$.}}{121}{figure.caption.155}\protected@file@percent }
+\newlabel{fig:twoscomp}{{10.1}{121}{Two's complement on a wheel. Patterns with top bit 0 (blue) mean the same in both readings; patterns with top bit 1 (red) mean $v - 16$ as signed numbers. Signed overflow is the step from 7 to $-8$}{figure.caption.155}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {10.1}{\ignorespaces The bitwise operators. All of them cost the same as an addition.}}{121}{table.caption.156}\protected@file@percent }
+\newlabel{tab:bitops}{{10.1}{121}{The bitwise operators. All of them cost the same as an addition}{table.caption.156}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {10.2}Bit tricks}{121}{section.10.2}\protected@file@percent }
+\newlabel{sec:bittricks}{{10.2}{121}{Bit tricks}{section.10.2}{}}
+\newlabel{tpl:cpbits}{{10.2}{121}{Bit tricks}{section*.159}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {10.2}{\ignorespaces Everyday bit tricks. The built-ins compile to single instructions on modern processors; the versions without \texttt  {ll} take 32-bit arguments and silently truncate 64-bit ones.}}{122}{table.caption.157}\protected@file@percent }
+\newlabel{tab:bittricks}{{10.2}{122}{Everyday bit tricks. The built-ins compile to single instructions on modern processors; the versions without \texttt {ll} take 32-bit arguments and silently truncate 64-bit ones}{table.caption.157}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {10.2}{\ignorespaces The two fundamental tricks on $x = 88 = 01011000_2$ (bit numbers on top). Its lowest set bit is bit 3, worth 8.}}{122}{figure.caption.158}\protected@file@percent }
+\newlabel{fig:lowbit}{{10.2}{122}{The two fundamental tricks on $x = 88 = 01011000_2$ (bit numbers on top). Its lowest set bit is bit 3, worth 8}{figure.caption.158}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.2.1}Counting bits in closed form}{122}{subsection.10.2.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {10.3}{\ignorespaces The bits of $0, \ldots  , 15$ (one column per number, blue = 1). Bit $b$ alternates between runs of $2^b$ zeros and $2^b$ ones, so the number of ones among $0, \ldots  , n$ is the number of complete periods times $2^b$, plus the ones in the last, partial period.}}{123}{figure.caption.160}\protected@file@percent }
+\newlabel{fig:bitperiods}{{10.3}{123}{The bits of $0, \ldots , 15$ (one column per number, blue = 1). Bit $b$ alternates between runs of $2^b$ zeros and $2^b$ ones, so the number of ones among $0, \ldots , n$ is the number of complete periods times $2^b$, plus the ones in the last, partial period}{figure.caption.160}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {10.3}XOR}{123}{section.10.3}\protected@file@percent }
+\newlabel{sec:xor}{{10.3}{123}{XOR}{section.10.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {10.4}{\ignorespaces Addition is XOR plus twice the AND: $a + b = (a \oplus b) + 2(a \mathbin {\&} b)$.}}{124}{figure.caption.161}\protected@file@percent }
+\newlabel{fig:xoradd}{{10.4}{124}{Addition is XOR plus twice the AND: $a + b = (a \oplus b) + 2(a \mathbin {\&} b)$}{figure.caption.161}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.3.1}Counting one bit at a time}{124}{subsection.10.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.3.2}Maximum XOR with a binary trie}{124}{subsection.10.3.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {10.5}{\ignorespaces A binary trie of the 3-bit numbers 2, 3, 5 and 6. To maximise the XOR with $x$, walk down from the root and take the child with the bit opposite to $x$'s whenever it exists (red path).}}{125}{figure.caption.162}\protected@file@percent }
+\newlabel{fig:xortrie}{{10.5}{125}{A binary trie of the 3-bit numbers 2, 3, 5 and 6. To maximise the XOR with $x$, walk down from the root and take the child with the bit opposite to $x$'s whenever it exists (red path)}{figure.caption.162}{}}
+\newlabel{tpl:cpxortrie}{{10.3.2}{126}{Maximum XOR with a binary trie}{section*.163}{}}
+\newlabel{tpl:cpxorbasis}{{10.3.2}{126}{Maximum XOR with a binary trie}{section*.164}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {10.4}Bitsets}{126}{section.10.4}\protected@file@percent }
+\newlabel{sec:bitset}{{10.4}{126}{Bitsets}{section.10.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {10.6}{\ignorespaces The bitset step of subset-sum DP. Bit $s$ (numbered from the left here) says whether the sum $s$ is reachable; a shift by $x$ moves every sum up by $x$, and the OR merges old and new sums.}}{126}{figure.caption.165}\protected@file@percent }
+\newlabel{fig:bitsetshift}{{10.6}{126}{The bitset step of subset-sum DP. Bit $s$ (numbered from the left here) says whether the sum $s$ is reachable; a shift by $x$ moves every sum up by $x$, and the OR merges old and new sums}{figure.caption.165}{}}
+\newlabel{tpl:cpbitsetsum}{{10.4}{127}{Bitsets}{section*.166}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {10.5}Gray codes and de Bruijn sequences}{127}{section.10.5}\protected@file@percent }
+\newlabel{sec:debruijn}{{10.5}{127}{Gray codes and de Bruijn sequences}{section.10.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.5.1}Gray codes}{127}{subsection.10.5.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {10.7}{\ignorespaces The 3-bit reflected Gray code as a Hamiltonian path on the cube, whose corners are the 3-bit strings and whose edges join strings that differ in one bit. Bit 0 runs left to right, bit 1 bottom to top, bit 2 front to back.}}{127}{figure.caption.167}\protected@file@percent }
+\newlabel{fig:graycube}{{10.7}{127}{The 3-bit reflected Gray code as a Hamiltonian path on the cube, whose corners are the 3-bit strings and whose edges join strings that differ in one bit. Bit 0 runs left to right, bit 1 bottom to top, bit 2 front to back}{figure.caption.167}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.5.2}De Bruijn sequences}{128}{subsection.10.5.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {10.8}{\ignorespaces The de Bruijn graph of order 3: vertices are 2-bit strings, and each 3-bit string is an edge from its first two bits to its last two. The red numbers give an Eulerian circuit; reading the last bit of each edge after the start vertex \texttt  {00} spells the de Bruijn sequence \texttt  {00}\,\texttt  {01011100}.}}{128}{figure.caption.168}\protected@file@percent }
+\newlabel{fig:debruijn}{{10.8}{128}{The de Bruijn graph of order 3: vertices are 2-bit strings, and each 3-bit string is an edge from its first two bits to its last two. The red numbers give an Eulerian circuit; reading the last bit of each edge after the start vertex \texttt {00} spells the de Bruijn sequence \texttt {00}\,\texttt {01011100}}{figure.caption.168}{}}
+\newlabel{tpl:cpdebruijn}{{10.5.2}{129}{De Bruijn sequences}{section*.169}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {10.6}Rectangle geometry}{130}{section.10.6}\protected@file@percent }
+\newlabel{sec:rectangles}{{10.6}{130}{Rectangle geometry}{section.10.6}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {10.9}{\ignorespaces The intersection of two rectangles (orange) is a rectangle whose width and height are the overlaps of the projections; if either overlap is negative, the rectangles do not intersect and the area is 0.}}{130}{figure.caption.170}\protected@file@percent }
+\newlabel{fig:rectinter}{{10.9}{130}{The intersection of two rectangles (orange) is a rectangle whose width and height are the overlaps of the projections; if either overlap is negative, the rectangles do not intersect and the area is 0}{figure.caption.170}{}}
+\newlabel{tpl:cprect}{{10.6}{131}{Rectangle geometry}{section*.171}{}}
+\@writefile{toc}{\contentsline {paragraph}{Unions and coverings.}{131}{paragraph*.172}\protected@file@percent }
+\@setckpt{algorithms/09_bits_rectangles}{
+\setcounter{page}{132}
+\setcounter{equation}{0}
+\setcounter{enumi}{2}
+\setcounter{enumii}{0}
+\setcounter{enumiii}{0}
+\setcounter{enumiv}{0}
+\setcounter{footnote}{0}
+\setcounter{mpfootnote}{0}
+\setcounter{part}{2}
+\setcounter{chapter}{10}
+\setcounter{section}{6}
+\setcounter{subsection}{0}
+\setcounter{subsubsection}{0}
+\setcounter{paragraph}{0}
+\setcounter{subparagraph}{0}
+\setcounter{figure}{9}
+\setcounter{table}{2}
+\setcounter{parentequation}{0}
+\setcounter{lstnumber}{16}
+\setcounter{tcbbreakpart}{1}
+\setcounter{tcblayer}{0}
+\setcounter{tcolorbox@number}{396}
+\setcounter{tcblisting}{77}
+\setcounter{tcbrastercolumn}{1}
+\setcounter{tcbrasterrow}{1}
+\setcounter{tcbrasternum}{1}
+\setcounter{tcbraster}{1}
+\setcounter{cpsegfig}{0}
+\setcounter{LT@tables}{0}
+\setcounter{LT@chunks}{0}
+\setcounter{nlinenum}{0}
+\setcounter{ALG@line}{7}
+\setcounter{ALG@rem}{0}
+\setcounter{ALG@nested}{0}
+\setcounter{ALG@Lnr}{2}
+\setcounter{ALG@blocknr}{15}
+\setcounter{ALG@storecount}{0}
+\setcounter{ALG@tmpcounter}{0}
+\setcounter{algpx@codeBoxCount}{0}
+\setcounter{algpx@nestedCBoxCount}{0}
+\setcounter{algpx@startedBoxesCount}{0}
+\setcounter{algpx@endedBoxesCount}{0}
+\setcounter{algpx@nestedBoxedStringCount}{0}
+\setcounter{algpx@nestedBoxedStringMaxCount}{0}
+\setcounter{algpx@indentCount}{7}
+\setcounter{algpx@lastIndentEnded}{6}
+\setcounter{algpx@pageCount}{0}
+\setcounter{algpx@tmpCount}{0}
+\setcounter{caption@flags}{2}
+\setcounter{continuedfloat}{0}
+\setcounter{float@type}{16}
+\setcounter{section@level}{0}
+\setcounter{Item}{8}
+\setcounter{Hfootnote}{0}
+\setcounter{bookmark@seq@number}{0}
+\setcounter{algpx@indentEndPage-0@totc}{0}
+\setcounter{algpx@indentEndPage-1@totc}{0}
+\setcounter{algpx@indentEndPage-2@totc}{0}
+\setcounter{algpx@indentEndPage-3@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-2@totc}{3}
+\setcounter{algpx@indentEndCoordIndex-0@totc}{3}
+\setcounter{algpx@indentEndPage-4@totc}{0}
+\setcounter{algpx@indentEndPage-5@totc}{0}
+\setcounter{algpx@indentEndPage-6@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-4@totc}{6}
+\setcounter{algpx@indentEndPage-7@totc}{0}
+\setcounter{algpx@indentEndPage-8@totc}{0}
+\setcounter{algpx@indentEndPage-9@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-8@totc}{9}
+\setcounter{algpx@indentEndPage-10@totc}{0}
+\setcounter{algpx@indentEndPage-11@totc}{0}
+\setcounter{algpx@indentEndPage-12@totc}{0}
+\setcounter{algpx@indentEndPage-13@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-12@totc}{13}
+\setcounter{algpx@indentEndCoordIndex-10@totc}{13}
+\setcounter{algpx@indentEndPage-14@totc}{0}
+\setcounter{algpx@indentEndPage-15@totc}{0}
+\setcounter{algpx@indentEndPage-16@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-15@totc}{16}
+\setcounter{algpx@indentEndPage-17@totc}{0}
+\setcounter{algpx@indentEndPage-18@totc}{1}
+\setcounter{algpx@indentEndPage-19@totc}{1}
+\setcounter{algpx@indentEndCoordIndex-18@totc}{19}
+\setcounter{lstlisting}{0}
+\setcounter{algpx@indentEndPage-0}{0}
+\setcounter{algpx@indentEndPage-1}{0}
+\setcounter{algpx@indentEndPage-2}{0}
+\setcounter{algpx@indentEndPage-3}{0}
+\setcounter{algpx@indentEndCoordIndex-2}{3}
+\setcounter{algpx@indentEndCoordIndex-0}{3}
+\setcounter{algpx@indentEndPage-4}{0}
+\setcounter{algpx@indentEndPage-5}{0}
+\setcounter{algpx@indentEndPage-6}{0}
+\setcounter{algpx@indentEndCoordIndex-4}{6}
+}

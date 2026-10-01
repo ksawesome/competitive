@@ -1,0 +1,1307 @@
+\chapter{Tree Techniques}\label{ch:trees}
+
+A tree is a connected graph with $n$ vertices and $n - 1$ edges; equivalently, a graph in which every two vertices are joined
+by exactly one simple path. That uniqueness makes trees the friendliest of graphs. Recursion over subtrees is natural, every
+path decomposes at a lowest common ancestor, and dynamic programming works cleanly because subtrees do not overlap. This
+chapter collects the techniques that turn those facts into algorithms: traversal orders, diameters and farthest vertices,
+flattening a tree with an Euler tour, binary lifting and the many ways to compute lowest common ancestors, DP on trees for one
+root and for all roots at once, merging DP tables and sets efficiently, and deciding whether two trees have the same shape.
+
+\begin{chapterintro}{\silver\ \gold\ \plat}{Chapter~\ref{ch:graphs} (BFS and DFS) and Chapter~\ref{ch:dsu} (DSU).}
+  \item root a tree and compute parents, depths, subtree sizes and orders without deep recursion;
+  \item find diameters and the farthest vertex from every vertex;
+  \item answer subtree and path queries by flattening the tree with an Euler tour;
+  \item compute lowest common ancestors by binary lifting, and offline with Tarjan's algorithm;
+  \item design tree DPs, reroot them to get every root's answer, and merge child tables in $\Oh{n^2}$ total;
+  \item merge sets small to large, and test trees for isomorphism with canonical labels.
+\end{chapterintro}
+
+% ======================================================================================================================
+\section[Rooted trees]{Rooted trees and traversal orders \hfill \silver}\label{sec:rooted}
+
+A few counting facts are used constantly. A tree on $n$ vertices has exactly $n - 1$ edges; removing any edge splits it into two
+trees, and adding any edge creates exactly one cycle. The degrees sum to $2n - 2$, so the average degree is below 2 and every tree
+with at least two vertices has at least two leaves. Most tree problems give the tree as $n - 1$ undirected edges; some give a
+parent array instead.
+
+Choosing a root gives every vertex a \defn{parent} (except the root), \defn{children}, a \defn{depth} (the number of edges to the
+root) and a \defn{subtree} (itself and all its descendants), as in Figure~\ref{fig:rooted}. Every vertex other than the root has
+exactly one parent, so the parent array alone describes the rooted tree, and one traversal computes all of these quantities.
+
+\begin{figure}[htbp]
+\centering
+\begin{minipage}[c]{6cm}\centering
+\begin{forest}
+  cptree, for tree={s sep=7mm}
+  [0, hot
+    [1, cool [3, cool] [4, cool [7, cool]]]
+    [2 [5] [6]]]
+\end{forest}
+\end{minipage}
+\hspace{8mm}
+\begin{minipage}[c]{5.8cm}
+\raggedright\small root 0 has depth 0; $\mathit{parent}(4) = 1$;\\
+$\mathit{children}(1) = \{3, 4\}$;\\
+$\mathit{subtree}(1) = \{1, 3, 4, 7\}$, size 4 (blue);\\
+$\mathit{depth}(7) = 3$; the leaves are 3, 7, 5, 6.\\[4pt]
+BFS order: $0, 1, 2, 3, 4, 5, 6, 7$\\
+DFS order: $0, 1, 3, 4, 7, 2, 5, 6$
+\end{minipage}
+\caption{A rooted tree and its basic quantities. In the DFS order, the subtree of 1 occupies the consecutive positions 1--4.}
+\label{fig:rooted}
+\end{figure}
+
+\subsection{The BFS-order idiom}
+
+Two orders of the vertices are especially useful. In a \emph{BFS order} every parent comes before its children, so reading the
+order backwards processes all children before their parent: exactly what a bottom-up computation needs. Building the order needs no
+queue beyond the order itself, and no recursion:
+
+\begin{code}
+vi order{1}, par(n + 1, 0), depth(n + 1, 0);
+rep(i, n) for (int v : adj[order[i]])  // order grows while it is scanned
+    if (v != par[order[i]]) {
+        par[v] = order[i], depth[v] = depth[order[i]] + 1;
+        order.push_back(v);
+    }
+vi sub(n + 1, 1);  // subtree sizes
+per(i, 1, n) sub[par[order[i]]] += sub[order[i]];  // children first
+\end{code}
+
+Every vertex is appended once, when its parent is scanned, so this is $\Oh{n}$. Skipping the parent is enough to avoid visiting a
+vertex twice, because in a tree no other edge leads back to an already visited vertex. The last loop is the model for bottom-up tree computations in this
+chapter: walk the order backwards and let every vertex hand its value to its parent. The complete program for subtree sizes is the
+worked problem Subordinates (Chapter~\ref{ch:worked}).
+
+\begin{pitfall}[Recursion depth and parent arrays]
+A tree with $2 \cdot 10^5$ vertices may be a single path, and a recursive DFS on it is $2 \cdot 10^5$ calls deep. Most judges
+configure a large stack, but a default 1\,MB stack, as on Windows, overflows somewhere between $10^4$ and $10^5$ frames,
+depending on the frame size. The BFS order and the explicit-stack DFS of Section~\ref{sec:eulertour} avoid the problem entirely. When the input is a parent array,
+check whether the statement guarantees $p_i < i$: if it does, the order $1, 2, \dots, n$ already has parents before children;
+if it does not (as in Company Queries~II below), build the children lists and a BFS order first.
+\end{pitfall}
+
+\subsection{DFS orders}
+
+A DFS visits a vertex, then each child's whole subtree in turn, so it produces three useful sequences (Figure~\ref{fig:dfsorders}).
+The \defn{preorder} lists the vertices when they are entered; every subtree is a contiguous block that starts with its root, which
+is the basis of the Euler tour technique (Section~\ref{sec:eulertour}). The \defn{postorder} lists them when they are left; subtrees
+are again contiguous, now ending with their root, and children always precede parents. The full \defn{Euler tour} writes a vertex
+down every time the walk passes through it, $2n - 1$ entries in all; between the first visits of $u$ and $v$ the walk climbs no
+higher than their lowest common ancestor and does pass through it, so the LCA is the shallowest vertex of that stretch, a range
+minimum query (Section~\ref{sec:lca}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[vtx] (w0) at (1.2, 0) {0};
+  \node[vtx, hot] (w1) at (0.45, -1.05) {1};
+  \node[vtx] (w2) at (1.95, -1.05) {2};
+  \node[vtx, hot] (w3) at (0, -2.1) {3};
+  \node[vtx, hot] (w4) at (0.9, -2.1) {4};
+  \node[vtx] (w5) at (1.95, -2.1) {5};
+  \draw[ed] (w0) -- (w1) (w0) -- (w2) (w1) -- (w3) (w1) -- (w4) (w2) -- (w5);
+  \node[blbl, anchor=east] at (5.3, -0.2) {preorder};
+  \arrs{A}{5.45}{-0.2}{0/n, 1/hot, 3/hot, 4/hot, 2/n, 5/n}
+  \node[blbl, anchor=east] at (5.3, -1.1) {postorder};
+  \arrs{B}{5.45}{-1.1}{3/hot, 4/hot, 1/hot, 5/n, 2/n, 0/n}
+  \node[blbl, anchor=east] at (5.3, -2.0) {Euler tour};
+  \arrs{C}{5.45}{-2.0}{0/n, 1/n, 3/cool, 1/good, 4/cool, 1/n, 0/n, 2/n, 5/n, 2/n, 0/n}
+  \spanbelow{C-3}{C-5}{from the first 3 to the first 4: the shallowest is $1 = \mathrm{lca}(3, 4)$}
+\end{tikzpicture}
+\caption{The three DFS orders of one tree. In preorder and postorder the subtree of 1 (red) is a contiguous block. In the Euler
+tour, the shallowest vertex between the first visits of 3 and 4 is their LCA (green).}
+\label{fig:dfsorders}
+\end{figure}
+
+\usetemplate{Tree DFS (parent, depth, subtree size, Euler tour)}{Ctrl+Alt+T, E}{cptree}
+
+% ======================================================================================================================
+\section[Diameter and farthest vertices]{Diameter and farthest vertices \hfill \gold}\label{sec:diameter}
+
+The \defn{diameter} of a tree is its longest path. Two BFS passes find it: from any vertex, the farthest vertex $a$ is an endpoint
+of some diameter, and the farthest vertex from $a$ is the other endpoint $b$ (the worked problem Tree Diameter).
+
+\emph{Why the first BFS lands on a diameter endpoint.} Let $x$--$y$ be a diameter, let $a$ be the farthest vertex from the start
+$s$, and let $c$ be the vertex of the path $x$--$y$ closest to $s$; every path from $s$ into $x$--$y$ enters it at $c$. Let $w$ be
+the last vertex that the path $s \to a$ shares with the path $s \to c$.
+\begin{itemize}
+  \item If $w \ne c$, the branch to $a$ leaves before reaching $c$. Since $a$ is at least as far from $s$ as $x$ is,
+        $d(w, a) \ge d(w, c) + d(c, x)$, so the path $a \to w \to c \to y$ has length at least $d(c, x) + d(c, y) = d(x, y)$.
+  \item If $w = c$, then $d(c, a) \ge d(c, x)$ and $d(c, a) \ge d(c, y)$ for the same reason. The branch to $a$ leaves $c$ towards
+        at most one of the two ends; walking from $a$ to $c$ and on to the other end gives a path of length at least $d(x, y)$.
+\end{itemize}
+Either way a longest path ends at $a$ (Figure~\ref{fig:diameter}). The argument uses only that the graph is a tree and that the
+edge weights are non-negative; it fails on graphs with cycles and with negative weights.
+
+\begin{figure}[htbp]
+\centering
+\tikzset{dlab/.style={font=\sffamily\scriptsize\bfseries, text=fgblue, inner sep=1pt}}
+% #1: name/style/text/distance/label side for the eight vertices; #2: drawn under the edges
+\newcommand{\diampanel}[2]{\begin{tikzpicture}
+  \foreach \nm/\px/\py in {s/0/0, m/0.9/0, m2/1.7/0.45, a/2.5/0.9, x/1.7/-0.6, p/-0.85/0.5, b/-1.65/1.0, q/-0.85/-0.6}
+    \coordinate (D\nm) at (\px, \py);
+  #2
+  \draw[ed] (Ds) -- (Dm) -- (Dm2) -- (Da) (Dm) -- (Dx) (Ds) -- (Dp) -- (Db) (Ds) -- (Dq);
+  \foreach \nm/\sy/\txt/\dv/\an in {#1} \node[vtxs, \sy, label={[dlab]\an:\dv}] at (D\nm) {\txt};
+\end{tikzpicture}}
+\newcommand{\diampath}{\draw[line width=4.5pt, draw=fgverm, opacity=0.28] (Da) -- (Dm2) -- (Dm) -- (Ds) -- (Dp) -- (Db);}
+\begin{filmstrip}[3]
+  \begin{stepbox}{1. BFS from $s$: farthest is $a$, at 3}
+    \diampanel{s/cool/s/0/above, m/n//1/above, m2/n//2/above, a/hot/a/3/above, x/n//2/below, p/n//1/above,
+      b/n/b/2/above, q/n//1/below}{}
+  \end{stepbox}
+  \begin{stepbox}{2. BFS from $a$: farthest is $b$, at 5}
+    \diampanel{s/n/s/3/above, m/n//2/above, m2/n//1/above, a/cool/a/0/above, x/n//3/below, p/n//4/above,
+      b/hot/b/5/above, q/n//4/below}{\diampath}
+  \end{stepbox}
+  \begin{stepbox}{3. farthest distance $= \max(d_a, d_b)$}
+    \diampanel{s/n/s/3/above, m/n//3/above, m2/n//4/above, a/good/a/5/above, x/n//4/below, p/n//4/above,
+      b/good/b/5/above, q/n//4/below}{\diampath}
+  \end{stepbox}
+\end{filmstrip}
+\caption{The two-BFS diameter algorithm; the numbers are BFS distances. The farthest vertex from $s$ is $a$, the farthest from $a$
+is $b$, and $a$--$b$ (red) is a diameter. Panel~3 is the corollary: the farthest vertex from any vertex is $a$ or $b$.}
+\label{fig:diameter}
+\end{figure}
+
+The same exchange argument proves a stronger fact: for \emph{every} vertex $v$, a farthest vertex from $v$ is one of the two ends
+$a, b$ of a fixed diameter. So after computing distances from $a$ and from $b$, the farthest distance from $v$ is $\max(d_a(v),
+d_b(v))$.
+
+\begin{problem}{Tree Distances I (CSES)}
+For every vertex of a tree, find the largest distance to another vertex.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vvi adj(n + 1);
+    rep(i, n - 1) {
+        int a, b;
+        cin >> a >> b;
+        adj[a].push_back(b);
+        adj[b].push_back(a);
+    }
+    auto bfs = [&](int s) {  // distances from s
+        vi d(n + 1, -1);
+        vi q{s};
+        d[s] = 0;
+        rep(i, sz(q)) for (int v : adj[q[i]])
+            if (d[v] < 0) d[v] = d[q[i]] + 1, q.push_back(v);
+        return d;
+    };
+    // the farthest vertex from anywhere is an end of a diameter (a or b)
+    vi d1 = bfs(1);
+    int a = max_element(all(d1)) - d1.begin();
+    vi da = bfs(a);
+    int b = max_element(all(da)) - da.begin();
+    vi db = bfs(b);
+    vi ans(n);
+    rep(v, 1, n + 1) ans[v - 1] = max(da[v], db[v]);
+    print(ans);
+}
+\end{code}
+
+\usetemplate{Tree diameter}{Ctrl+Alt+T, Shift+D}{cpdiameter}
+
+The \defn{center} of a tree (the middle vertex or middle edge of any diameter) minimises the largest distance to all vertices, and
+it is found by peeling leaves layer by layer until one or two vertices remain (used in Section~\ref{sec:treeiso}). The
+\defn{centroid}, a vertex whose removal leaves components of size at most $n/2$, is a different notion; it drives the
+decompositions of Chapter~\ref{ch:treedecomp}.
+
+% ======================================================================================================================
+\section[The Euler tour technique]{The Euler tour technique \hfill \gold}\label{sec:eulertour}
+
+Number the vertices in the order a DFS enters them: $\mathit{tin}(v)$ is the entry time, and $\mathit{tout}(v)$ the time when the
+DFS leaves $v$, which is one more than the largest entry time in its subtree. Then the subtree of $v$ is exactly the contiguous
+range of positions $[\mathit{tin}(v), \mathit{tout}(v))$ (Figure~\ref{fig:eulertour}). This \defn{Euler tour technique} flattens the
+tree into an array, and every subtree operation becomes a range operation that a Fenwick or segment tree supports. As a bonus, $u$
+is an ancestor of $v$ exactly when $\mathit{tin}(u) \le \mathit{tin}(v) < \mathit{tout}(u)$, an $\Oh{1}$ ancestor test.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{tl/.style={font=\sffamily\scriptsize, text=fgblue, inner sep=1.5pt}}
+  \node[vtx] (v0) at (1.4, 0) {0};
+  \node[vtx, hot] (v1) at (0.5, -1.1) {1};
+  \node[vtx] (v2) at (2.4, -1.1) {2};
+  \node[vtx, hot] (v3) at (0, -2.2) {3};
+  \node[vtx, hot] (v4) at (1.0, -2.2) {4};
+  \node[vtx] (v5) at (2.4, -2.2) {5};
+  \draw[ed] (v0) -- (v1) (v0) -- (v2) (v1) -- (v3) (v1) -- (v4) (v2) -- (v5);
+  \node[tl, anchor=west] at (v0.east) {$[0, 6)$};
+  \node[tl, anchor=east] at (v1.west) {$[1, 4)$};
+  \node[tl, anchor=west] at (v2.east) {$[4, 6)$};
+  \node[tl, anchor=north] at (v3.south) {$[2, 3)$};
+  \node[tl, anchor=north] at (v4.south) {$[3, 4)$};
+  \node[tl, anchor=north] at (v5.south) {$[5, 6)$};
+  \node[blbl, anchor=east] at (5.5, -1.1) {vertex};
+  \arrs{E}{5.7}{-1.1}{0/n, 1/hot, 3/hot, 4/hot, 2/n, 5/n}
+  \idx{E}{6}
+  \node[lbl, anchor=east] at (5.5, -1.63) {position};
+  \spanabove{E-2}{E-4}{subtree of 1}
+\end{tikzpicture}
+\caption{The Euler tour technique. Each vertex shows its range $[\mathit{tin}, \mathit{tout})$; listing the vertices by entry time
+makes every subtree a contiguous block, here positions $[1, 4)$ for the subtree of 1.}
+\label{fig:eulertour}
+\end{figure}
+
+\begin{problem}{Subtree Queries (CSES)}
+Every vertex of a rooted tree has a value. Process updates ``set the value of $s$ to $x$'' and queries ``the sum of the values in
+the subtree of $s$''.
+\solution Flatten with an iterative DFS and keep the values in a Fenwick tree at position $\mathit{tin}(v)$. A subtree sum is the sum
+over positions $[\mathit{tin}(s), \mathit{tout}(s))$, and an update adds the difference at one position.
+\end{problem}
+
+\begin{code}
+void solve() {  // BIT (cpbit) is pasted above solve()
+    int n, q;
+    cin >> n >> q;
+    vi val(n + 1);
+    rep(v, 1, n + 1) cin >> val[v];
+    vvi adj(n + 1);
+    rep(i, n - 1) {
+        int a, b;
+        cin >> a >> b;
+        adj[a].push_back(b);
+        adj[b].push_back(a);
+    }
+    // Euler tour: the subtree of v is the position range [tin[v], tout[v])
+    vi tin(n + 1), tout(n + 1), st{1}, par(n + 1, 0), it(n + 1, 0);
+    int timer = 0;
+    tin[1] = timer++;
+    while (!st.empty()) {  // iterative DFS
+        int u = st.back();
+        if (it[u] < sz(adj[u])) {
+            int v = adj[u][it[u]++];
+            if (v == par[u]) continue;
+            par[v] = u, tin[v] = timer++;
+            st.push_back(v);
+        } else {
+            tout[u] = timer;
+            st.pop_back();
+        }
+    }
+    BIT bit(n);
+    rep(v, 1, n + 1) bit.add(tin[v], val[v]);
+    while (q--) {
+        int type, s;
+        cin >> type >> s;
+        if (type == 1) {
+            ll x;
+            cin >> x;
+            bit.add(tin[s], x - val[s]), val[s] = x;
+        } else print(bit.sum(tin[s], tout[s]));  // the positions of s's subtree
+    }
+}
+\end{code}
+
+\subsection{Paths to the root}
+
+The same flattening handles sums along the path from the root to a vertex, with one twist. The value of $v$ contributes to the path
+sum of every vertex in $v$'s subtree. So add it at position $\mathit{tin}(v)$ and subtract it at $\mathit{tout}(v)$: the prefix sum
+up to $\mathit{tin}(u)$ then contains $v$'s value exactly when $u$ lies in $v$'s subtree, that is, when $v$ is on the path from the
+root to $u$ (Figure~\ref{fig:pathsum}). A path between any $u$ and $w$ follows by inclusion--exclusion: $\mathit{path}(u) +
+\mathit{path}(w) - 2\,\mathit{path}(\ell) + \mathit{val}(\ell)$ with $\ell = \mathrm{lca}(u, w)$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[blbl, anchor=east] at (-0.2, 0.64) {vertex};
+  \foreach \vv/\cl [count=\i] in {0/fgink, 1/fgblue, 3/fgblue, 4/fgblue, 2/fgink, 5/fgink}
+    \node[font=\sffamily\small\bfseries, text=\cl] at ({\i*0.7 - 0.35}, 0.64) {\vv};
+  \node[blbl, anchor=east] at (-0.2, 0) {added};
+  \arrs{P}{0}{0}{0/n, $+x$/good, 0/n, 0/n, $-x$/hot, 0/n, 0/n}
+  \idx{P}{7}
+  \node[blbl, anchor=east] at (-0.2, -1.45) {prefix sum};
+  \arrs{Q}{0}{-1.45}{0/n, $x$/cool, $x$/cool, $x$/cool, 0/n, 0/n, 0/n}
+  \node[notel, anchor=west, text width=5.6cm] at (5.3, -0.7) {Vertex 1 has value $x$. It is added at $\mathit{tin}(1) = 1$
+    and removed at $\mathit{tout}(1) = 4$, so the prefix sums at positions 1, 2 and 3 (the vertices 1, 3, 4 of its subtree)
+    include it, and no other prefix sum does.};
+\end{tikzpicture}
+\caption{Root-path sums with an Euler tour, for the value $x$ of vertex 1 alone in the tree of Figure~\ref{fig:eulertour}. A value
+is added where its subtree's range starts and removed where it ends.}
+\label{fig:pathsum}
+\end{figure}
+
+\begin{problem}{Path Queries (CSES)}
+Every vertex has a value. Process updates of single values and queries for the sum of the values on the path from the root to a
+vertex.
+\end{problem}
+
+\begin{code}
+void solve() {  // BIT (cpbit) is pasted above solve()
+    int n, q;
+    cin >> n >> q;
+    vi val(n + 1);
+    rep(v, 1, n + 1) cin >> val[v];
+    vvi adj(n + 1);
+    rep(i, n - 1) {
+        int a, b;
+        cin >> a >> b;
+        adj[a].push_back(b);
+        adj[b].push_back(a);
+    }
+    vi tin(n + 1), tout(n + 1), st{1}, par(n + 1, 0), it(n + 1, 0);
+    int timer = 0;
+    tin[1] = timer++;
+    while (!st.empty()) {
+        int u = st.back();
+        if (it[u] < sz(adj[u])) {
+            int v = adj[u][it[u]++];
+            if (v == par[u]) continue;
+            par[v] = u, tin[v] = timer++;
+            st.push_back(v);
+        } else {
+            tout[u] = timer;
+            st.pop_back();
+        }
+    }
+    // a value at v counts for every vertex in v's subtree: add it at tin[v]
+    // and remove it at tout[v]; a prefix sum then gives the root path sum
+    BIT bit(n + 1);
+    auto change = [&](int v, ll d) {
+        bit.add(tin[v], d), bit.add(tout[v], -d);
+    };
+    rep(v, 1, n + 1) change(v, val[v]);
+    while (q--) {
+        int type, s;
+        cin >> type >> s;
+        if (type == 1) {
+            ll x;
+            cin >> x;
+            change(s, x - val[s]), val[s] = x;
+        } else print(bit.sum(0, tin[s] + 1));  // positions 0..tin[s]
+    }
+}
+\end{code}
+
+\begin{recognize}
+``Update a vertex, query a subtree'', ``update a subtree, query a vertex'' (a range add and a point query), ``path from the
+root'' sums, and ancestor tests. When both endpoints of a path vary and values change, heavy-light decomposition takes over
+(Chapter~\ref{ch:treedecomp}).
+\end{recognize}
+
+% ======================================================================================================================
+\section[Binary lifting and the LCA]{Binary lifting and the lowest common ancestor \hfill \gold}\label{sec:lca}
+
+The \defn{lowest common ancestor} $\mathrm{lca}(u, v)$ is the deepest vertex that is an ancestor of both. The path between $u$ and
+$v$ climbs from $u$ to the LCA and descends to $v$, so $\mathrm{dist}(u, v) = \mathit{depth}(u) + \mathit{depth}(v) -
+2\,\mathit{depth}(\mathrm{lca})$, and many path questions reduce to it.
+
+\defn{Binary lifting} stores $\mathit{up}[j][v]$, the ancestor $2^j$ levels above $v$, computed level by level with
+$\mathit{up}[j][v] = \mathit{up}[j-1][\,\mathit{up}[j-1][v]\,]$ in $\Oh{n \log n}$. A jump of $k$ levels is then a sum of powers of
+two: one lookup per set bit of $k$ (Figure~\ref{fig:lifting}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{jl/.style={font=\sffamily\scriptsize\bfseries, inner sep=1.5pt, text=fgverm}}
+  \foreach \dd/\sy in {0/n, 1/n, 2/n, 3/good, 4/n, 5/n, 6/n, 7/n, 8/cool}
+    \node[vtxs, \sy] (p\dd) at ({0.35 + 0.7*\dd}, 0.95) {\dd};
+  \foreach \dd in {1,...,8} { \pgfmathtruncatemacro{\uu}{\dd - 1} \draw[ed] (p\uu) -- (p\dd); }
+  \draw[->, line width=1.1pt, draw=fgverm] (p8) to[bend right=45] node[jl, above] {$2^2$} (p4);
+  \draw[->, line width=1.1pt, draw=fgverm] (p4) to[bend right=80] node[jl, above] {$2^0$} (p3);
+  \def\dotcell{$\cdot$}
+  \arrs{U0}{0}{0}{\dotcell/n, 0/n, 1/n, 2/n, 3/hot, 4/n, 5/n, 6/n, 7/cool}
+  \arrs{U1}{0}{-0.7}{\dotcell/n, \dotcell/n, 0/n, 1/n, 2/n, 3/n, 4/n, 5/n, 6/cool}
+  \arrs{U2}{0}{-1.4}{\dotcell/n, \dotcell/n, \dotcell/n, \dotcell/n, 0/n, 1/n, 2/n, 3/n, 4/hot}
+  \arrs{U3}{0}{-2.1}{\dotcell/n, \dotcell/n, \dotcell/n, \dotcell/n, \dotcell/n, \dotcell/n, \dotcell/n, \dotcell/n, 0/cool}
+  \foreach \jj in {0, 1, 2, 3}
+    \node[blbl, anchor=east] at ({-0.15}, {-0.7*\jj}) {$\mathit{up}[\jj][v]$};
+  \node[notel, anchor=west, text width=5.4cm] at (6.9, -0.55) {Row $j$ holds the ancestor $2^j$ levels up (a dot: none), and
+    is built from row $j - 1$, e.g.\ $\mathit{up}[2][8] = \mathit{up}[1][\mathit{up}[1][8]] = \mathit{up}[1][6] = 4$. Column 8
+    (blue) is everything vertex 8 stores. Climbing $k = 5 = 4 + 1$ levels takes one lookup per set bit (red):
+    $\mathit{up}[2][8] = 4$, then $\mathit{up}[0][4] = 3$.};
+\end{tikzpicture}
+\caption{Binary lifting on a path of 9 vertices rooted at 0. With $\lceil \log_2 n \rceil$ rows in the table, any ancestor is at
+most that many lookups away.}
+\label{fig:lifting}
+\end{figure}
+
+\begin{problem}{Company Queries I (CSES)}
+Given the boss of every employee, answer queries: who is the $k$-th boss above employee $x$ (or $-1$ if there is none)?
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, q;
+    cin >> n >> q;
+    const int LOG = 18;  // 2^18 > 2 * 10^5
+    // up[j][v] = the boss 2^j levels above v, 0 if there is none
+    vector<vi> up(LOG, vi(n + 1, 0));
+    rep(v, 2, n + 1) cin >> up[0][v];
+    rep(j, 1, LOG) rep(v, 1, n + 1) up[j][v] = up[j - 1][up[j - 1][v]];
+    while (q--) {
+        int x, k;
+        cin >> x >> k;
+        // k is a sum of powers of two: one jump per set bit
+        for (int j = 0; j < LOG && x; j++)
+            if (k >> j & 1) x = up[j][x];
+        print(x ? x : -1);
+    }
+}
+\end{code}
+
+The table has $\lceil \log_2 n \rceil$ rows of $n + 1$ entries, $18 \times 2 \cdot 10^5$ numbers here; with \cc{#define int long long}
+that is about 29\,MB, fine for a 256\,MB limit but worth a thought at $n = 10^6$, where an \cc{int32_t} table halves it. Keeping
+the level $j$ as the \emph{outer} index makes the construction loop scan memory sequentially. Nothing in the construction needs a
+tree: the same table answers ``where am I after $k$ steps'' in any \emph{functional graph}, where every vertex has one successor
+(Planets Queries~I, Chapter~\ref{ch:worked}).
+
+\usetemplate{K-th successor (binary lifting)}{Ctrl+Alt+T, .}{cpjump}
+
+For the LCA, first lift the deeper vertex to the depth of the other. If they now coincide, that vertex is the LCA. Otherwise, for
+$j$ from the largest down, jump both vertices by $2^j$ whenever that keeps them \emph{different}; this is binary search by jumps
+(Section~\ref{sec:predicate}) on the predicate ``the ancestors at this height differ''. At the end they are the two children of the
+LCA just below it, and the LCA is their common parent (Figure~\ref{fig:lcasteps}).
+
+\begin{figure}[htbp]
+\centering
+\begin{minipage}[c]{5cm}\centering
+\begin{forest}
+  cptree, for tree={s sep=6mm, l sep=4mm}
+  [1, good [2, warn [4, warn [7 [10, cool]]] [5]] [3, warn [6, warn [8 [9, cool]]]]]
+\end{forest}
+\end{minipage}
+\hspace{8mm}
+\begin{minipage}[c]{6.6cm}
+\raggedright\small $\mathrm{lca}(10, 9)$, both at depth 4, so no levelling is needed (blue).\\[3pt]
+$j = 2$: jumping 4 levels reaches 1 from both: equal, skip.\\
+$j = 1$: jumping 2 levels gives 4 and 6: different, take it.\\
+$j = 0$: jumping 1 level gives 2 and 3: different, take it.\\[3pt]
+The two vertices (orange) are now children of the LCA, so $\mathrm{lca}(10, 9) = \mathit{parent}(2) = 1$ (green).
+\end{minipage}
+\caption{Computing an LCA by binary lifting: bring both vertices to the same depth, then take the largest jumps that keep them
+apart.}
+\label{fig:lcasteps}
+\end{figure}
+
+\begin{pseudo}{LCA by binary lifting}
+\begin{algorithmic}[1]
+\If{$\mathit{depth}(a) < \mathit{depth}(b)$} \State swap $a$ and $b$ \EndIf
+\For{$j \gets 0$ \textbf{to} $L - 1$} \Comment{climb $\mathit{depth}(a) - \mathit{depth}(b)$ levels}
+  \If{bit $j$ of $\mathit{depth}(a) - \mathit{depth}(b)$ is set} \State $a \gets \mathit{up}[j][a]$ \EndIf
+\EndFor
+\If{$a = b$} \State \Return $a$ \EndIf
+\For{$j \gets L - 1$ \textbf{down to} $0$}
+  \If{$\mathit{up}[j][a] \ne \mathit{up}[j][b]$} \State $a \gets \mathit{up}[j][a]$; $b \gets \mathit{up}[j][b]$ \EndIf
+\EndFor
+\State \Return $\mathit{up}[0][a]$
+\end{algorithmic}
+\end{pseudo}
+
+\emph{Why it is correct.} After levelling, let $h$ be the number of levels between $a$ (or $b$) and their LCA. The ancestors of $a$
+and $b$ that are $t$ levels up are different for $t < h$ and equal for $t \ge h$, a monotone predicate in $t$. The downward loop
+builds the largest $t$ with different ancestors, $t = h - 1$, bit by bit from the top, exactly like binary search by jumps; one more
+step up reaches the LCA. For the root, $\mathit{up}[j]$ points at the root itself, so an overshooting jump lands on equal vertices
+and is simply not taken. Each query costs $2\lceil \log_2 n\rceil$ lookups.
+
+\begin{problem}{Company Queries II (CSES)}
+Answer queries: the lowest common boss of employees $a$ and $b$.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, q;
+    cin >> n >> q;
+    const int LOG = 18;
+    vector<vi> up(LOG, vi(n + 1, 1));  // above the root: the root itself
+    vvi kids(n + 1);
+    rep(v, 2, n + 1) cin >> up[0][v], kids[up[0][v]].push_back(v);
+    vi depth(n + 1, 0), order{1};  // depths in BFS order from the root
+    rep(i, n) for (int c : kids[order[i]]) {
+        depth[c] = depth[order[i]] + 1;
+        order.push_back(c);
+    }
+    rep(j, 1, LOG) rep(v, 1, n + 1) up[j][v] = up[j - 1][up[j - 1][v]];
+    auto lca = [&](int a, int b) {
+        if (depth[a] < depth[b]) swap(a, b);
+        int diff = depth[a] - depth[b];
+        rep(j, LOG) if (diff >> j & 1) a = up[j][a];  // same depth now
+        if (a == b) return a;
+        per(j, LOG) if (up[j][a] != up[j][b]) a = up[j][a], b = up[j][b];
+        return up[0][a];  // largest jumps that keep them apart, then one more
+    };
+    while (q--) {
+        int a, b;
+        cin >> a >> b;
+        print(lca(a, b));
+    }
+}
+\end{code}
+
+\usetemplate{LCA (binary lifting)}{Ctrl+Alt+T, L}{cplca}
+
+\begin{trick}[Other ways to get an LCA]
+\begin{itemize}
+  \item \textbf{Euler tour + sparse table}: write down a vertex every time the DFS passes through it (length $2n - 1$); the LCA of
+        $u$ and $v$ is the shallowest vertex between their first occurrences, a range minimum: $\Oh{n \log n}$ preprocessing and
+        $\Oh{1}$ per query (Chapter~\ref{ch:static}).
+  \item \textbf{Heavy-light decomposition}: $\Oh{\log n}$ per query with $\Oh{n}$ memory and a tiny constant
+        (Chapter~\ref{ch:treedecomp}).
+  \item \textbf{Offline}: Tarjan's algorithm, next.
+  \item \textbf{Path aggregates}: store the maximum (or sum, or minimum) of the $2^j$ edges above $v$ next to $\mathit{up}[j][v]$,
+        and combine them during the jumps: maximum edge on a path in $\Oh{\log n}$.
+\end{itemize}
+\end{trick}
+
+\begin{trick}[Jump pointers with one pointer per vertex]
+When vertices arrive one at a time as new leaves, and memory is tight, a single extra pointer per vertex still gives
+$\Oh{\log n}$ ancestor queries. Each vertex stores its parent and one \emph{jump}, set when the vertex is added:
+\begin{code}
+void add_leaf(int v, int p) {  // the root has par = jump = itself
+    par[v] = p, depth[v] = depth[p] + 1;
+    int j = jump[p];
+    jump[v] = depth[p] - depth[j] == depth[j] - depth[jump[j]] ? jump[j] : p;
+}
+int ancestor_at_depth(int v, int d) {  // requires d <= depth[v]
+    while (depth[v] > d) v = depth[jump[v]] >= d ? jump[v] : par[v];
+    return v;
+}
+\end{code}
+The jump lengths follow the skew-binary number system, so any climb takes at most about $2\log_2 n$ steps (41 on a path of $10^6$
+vertices, measured). For the LCA, level the two vertices, then move both by their jumps when the jumps differ and by their
+parents otherwise; at equal depths the jumps have equal lengths.
+\end{trick}
+
+\usetemplate{Jump pointers (one pointer per vertex)}{Ctrl+Alt+U, J}{cpjumpptr}
+
+% ======================================================================================================================
+\section[Offline LCA]{Offline LCA: Tarjan's algorithm \hfill \plat}\label{sec:offlinelca}
+
+When all queries are known in advance, one DFS with a DSU answers them in nearly linear time. When the DFS \emph{finishes} a vertex,
+it merges that vertex's set into its parent's set, and the parent becomes the \emph{anchor} of the merged set. At the moment the DFS
+finishes $u$, the finished vertices are grouped into sets, one for every open ancestor of $u$, each containing that ancestor's
+finished part of the tree (Figure~\ref{fig:tarjanlca}). So for a query $(u, w)$ in which $w$ is already finished, the anchor of $w$'s
+set is exactly the deepest open ancestor of $w$, and that is $\mathrm{lca}(u, w)$. Every query is answered when its later endpoint
+finishes.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \fill[fgsky!22, rounded corners=8pt] (-2.85, -2.45) rectangle (-0.45, -0.55);
+  \fill[fggreen!16, rounded corners=8pt] (0.5, -2.45) rectangle (1.5, -1.55);
+  \node[vtx, warn] (r) at (0, 0) {1};
+  \node[vtx] (a) at (-1.5, -1.0) {2}; \node[vtx, warn] (b) at (1.0, -1.0) {3};
+  \node[vtx] (c) at (-2.3, -2.0) {4}; \node[vtx] (d) at (-0.9, -2.0) {5}; \node[vtx, hot] (e) at (2.3, -2.0) {6};
+  \node[vtx] (f) at (1.0, -2.0) {7};
+  \draw[ed] (r) -- (a) (r) -- (b) (a) -- (c) (a) -- (d) (b) -- (f) (b) -- (e);
+  \node[font=\sffamily\scriptsize\bfseries, text=fgblue] at (-1.65, -2.7) {set anchored at 1};
+  \node[font=\sffamily\scriptsize\bfseries, text=fggreen!70!black] at (1.0, -2.7) {anchored at 3};
+  \legendat{(3.4, 0.1)}{hot/finishing now, warn/open: on the DFS stack, n/finished}
+  \node[notel, anchor=north west, text width=5.6cm] at (3.3, -1.25) {Queries answered now:
+    $\mathrm{lca}(6, 5) = 1$, the anchor of the set of 5, and $\mathrm{lca}(6, 7) = 3$, the anchor of the set of 7.};
+\end{tikzpicture}
+\caption{Tarjan's offline LCA in the middle of the DFS. Every finished vertex belongs to a set (shaded) that hangs from an open
+ancestor, its anchor; for a finished $w$, the anchor of $w$'s set is its LCA with the vertex being finished.}
+\label{fig:tarjanlca}
+\end{figure}
+
+\begin{problem}{Distance Queries (CSES)}
+Answer queries for the distance between two vertices of a tree.
+\end{problem}
+
+\begin{code}
+void solve() {  // DSU (cpdsu) is pasted above solve()
+    int n, q;
+    cin >> n >> q;
+    vvi adj(n + 1);
+    rep(i, n - 1) {
+        int a, b;
+        cin >> a >> b;
+        adj[a].push_back(b);
+        adj[b].push_back(a);
+    }
+    vector<vector<pii>> ask(n + 1);  // (other vertex, query index)
+    rep(i, q) {
+        int a, b;
+        cin >> a >> b;
+        ask[a].push_back({b, i});
+        ask[b].push_back({a, i});
+    }
+    // Tarjan's offline LCA: a finished vertex joins its parent's set, whose
+    // anchor is the parent. For a query (u, w) answered when u finishes and
+    // w is already finished, the anchor of w's set is lca(u, w).
+    DSU d(n + 1);
+    vi anchor(n + 1), depth(n + 1, 0), par(n + 1, 0), it(n + 1, 0), ans(q);
+    iota(all(anchor), 0);
+    vector<bool> done(n + 1, false);
+    vi st{1};
+    while (!st.empty()) {  // iterative DFS
+        int u = st.back();
+        if (it[u] < sz(adj[u])) {
+            int v = adj[u][it[u]++];
+            if (v == par[u]) continue;
+            par[v] = u, depth[v] = depth[u] + 1;
+            st.push_back(v);
+            continue;
+        }
+        done[u] = true;
+        for (auto [w, i] : ask[u]) {
+            if (!done[w]) continue;
+            int l = anchor[d.find(w)];  // lca(u, w)
+            ans[i] = depth[u] + depth[w] - 2 * depth[l];
+        }
+        st.pop_back();
+        if (par[u]) d.unite(u, par[u]), anchor[d.find(u)] = par[u];
+    }
+    for (ll a : ans) print(a);
+}
+\end{code}
+
+\usetemplate{Offline LCA (Tarjan)}{Ctrl+Alt+U, Shift+L}{cpofflinelca}
+
+\emph{Complexity and when to use it.} Each vertex is pushed and popped once, each query is looked at twice (once from each
+endpoint; only the second look answers it), and the DSU operations cost $\Oh{\alpha(n)}$ each: $\Oh{(n + q)\,\alpha(n)}$ in
+total, with arrays only. That makes it the fastest LCA method in practice when all queries are known in advance, and it needs
+$\Oh{n + q}$ memory instead of $\Oh{n \log n}$. A query $(u, u)$ is answered with $\mathrm{lca} = u$, since $u$'s own set is
+anchored at $u$ when it finishes. When queries arrive online, or depend on earlier answers, use binary lifting or the Euler tour
+with a sparse table instead.
+
+% ======================================================================================================================
+\section[DP on trees]{DP on trees \hfill \gold}\label{sec:treedp}
+
+Most optimisation and counting problems on trees are solved by computing a small table for every subtree from its children's tables,
+children first. The state is almost always ``the vertex, plus a little information about the vertex itself'' (chosen or not, matched
+or not, its colour), and the transition combines the children independently, because their subtrees do not interact except through
+the parent.
+
+\paragraph{A first example: maximum-weight independent set.} Choose vertices of maximum total weight so that no two chosen vertices
+are adjacent. For each vertex keep two numbers: $\mathit{in}(v)$, the best total in $v$'s subtree when $v$ is chosen, and
+$\mathit{out}(v)$, the best when it is not. A chosen vertex forces its children out; an unchosen vertex leaves each child free:
+\[
+  \mathit{in}(v) = w(v) + \sum_{c} \mathit{out}(c), \qquad \mathit{out}(v) = \sum_{c} \max\bigl(\mathit{in}(c), \mathit{out}(c)\bigr),
+\]
+summing over the children $c$ of $v$. The answer is $\max(\mathit{in}(r), \mathit{out}(r))$ at the root $r$. Every vertex and every
+edge is handled once, so the DP is $\Oh{n}$. Counting versions have the same shape with products in place of sums: the number of
+independent sets satisfies $\mathit{in}(v) = \prod_c \mathit{out}(c)$ and $\mathit{out}(v) = \prod_c (\mathit{in}(c) +
+\mathit{out}(c))$, because the children's choices are independent.
+
+\paragraph{The recipe.} Root the tree anywhere. Ask what a parent needs to know about a child's subtree to extend a solution (is the
+child chosen, matched, coloured red?) and make that the state. Write the step that folds one child into its parent; it must not
+depend on the order of the children. Process the vertices children first, in reverse BFS order, and read the answer at the root.
+
+\begin{problem}{Tree Matching (CSES)}
+Find a maximum matching in a tree: as many edges as possible, no two sharing a vertex.
+\solution For every vertex $v$ keep two values: $\mathit{free}(v)$, the best matching in $v$'s subtree when $v$ itself stays
+unmatched, and $\mathit{best}(v)$, the best when $v$ may be matched. Then $\mathit{free}(v) = \sum_c \mathit{best}(c)$ over the
+children, and matching $v$ with a child $c$ changes the total by $\mathit{free}(c) + 1 - \mathit{best}(c)$; the best such gain
+gives $\mathit{best}(v)$ (Figure~\ref{fig:treematching}). A greedy algorithm, bottom-up, that matches each vertex with its parent
+whenever both are still free, is also optimal, by an exchange argument.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{fb/.style={font=\sffamily\scriptsize, text=fgblue, inner sep=2pt}}
+  \node[vtx] (m1) at (1.5, 0) {1};
+  \node[vtx] (m2) at (0.3, -1.1) {2}; \node[vtx] (m3) at (2.7, -1.1) {3};
+  \node[vtx] (m4) at (-0.3, -2.2) {4}; \node[vtx] (m5) at (0.9, -2.2) {5}; \node[vtx] (m6) at (2.7, -2.2) {6};
+  \node[vtx] (m7) at (2.7, -3.3) {7};
+  \draw[ed] (m2) -- (m5);
+  \draw[hed] (m1) -- (m3) (m2) -- (m4) (m6) -- (m7);
+  \draw[ed] (m1) -- (m2) (m3) -- (m6);
+  \node[fb, anchor=west] at (m1.east) {$(2, 3)$};
+  \node[fb, anchor=east] at (m2.west) {$(0, 1)$};
+  \node[fb, anchor=west] at (m3.east) {$(1, 1)$};
+  \node[fb, anchor=north] at (m4.south) {$(0, 0)$};
+  \node[fb, anchor=north] at (m5.south) {$(0, 0)$};
+  \node[fb, anchor=west] at (m6.east) {$(0, 1)$};
+  \node[fb, anchor=west] at (m7.east) {$(0, 0)$};
+  \node[notel, anchor=west, text width=6.4cm] at (4.3, -1.5) {Each vertex shows $(\mathit{free}, \mathit{best})$. At 3:
+    $\mathit{free}(3) = \mathit{best}(6) = 1$, and matching 3 with 6 would gain $\mathit{free}(6) + 1 - \mathit{best}(6) = 0$,
+    so $\mathit{best}(3) = 1$. At the root: $\mathit{free}(1) = 1 + 1 = 2$, and matching 1 with 3 gains $1 + 1 - 1 = 1$, so the
+    maximum matching has $3$ edges (red).};
+\end{tikzpicture}
+\caption{The tree-matching DP on a small tree, and a maximum matching read back from it.}
+\label{fig:treematching}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vvi adj(n + 1);
+    rep(i, n - 1) {
+        int a, b;
+        cin >> a >> b;
+        adj[a].push_back(b);
+        adj[b].push_back(a);
+    }
+    vi order{1}, par(n + 1, 0);
+    rep(i, n) for (int v : adj[order[i]])
+        if (v != par[order[i]]) par[v] = order[i], order.push_back(v);
+    // free[v]: best matching in v's subtree with v left unmatched;
+    // best[v]: best matching in v's subtree with v allowed to be matched
+    vi freeV(n + 1, 0), best(n + 1, 0);
+    per(i, n) {  // children before parents
+        int v = order[i];
+        ll gain = 0;  // the most we gain by matching v with one child
+        for (int c : adj[v]) {
+            if (c == par[v]) continue;
+            freeV[v] += best[c];
+            chmax(gain, freeV[c] + 1 - best[c]);
+        }
+        best[v] = freeV[v] + gain;
+    }
+    print(best[1]);
+}
+\end{code}
+
+\usetemplate{Tree DP (subtree DP, iterative)}{Ctrl+Alt+T, ;}{cptreedp}
+
+\begin{recognize}
+An optimum or a count over choices of vertices or edges of a tree: matchings, independent sets, dominating sets, colourings, ``choose
+$k$ vertices'', ``count subtrees with a property''. Write the state for a vertex, decide what a child must tell its parent, and
+process vertices in reverse BFS order to avoid deep recursion.
+\end{recognize}
+
+% ======================================================================================================================
+\section[Rerooting]{DP for every root: rerooting \hfill \gold}\label{sec:rerooting}
+
+Some problems want the answer for \emph{every} choice of root, such as the sum of distances from each vertex to all others. Running
+the DP from every root costs $\Oh{n^2}$. \defn{Rerooting} computes all answers in two passes. The first pass roots the tree at one
+vertex and computes subtree values. The second pass moves the root across each edge, from a parent $p$ to its child $v$, and updates
+the answer in $\Oh{1}$ from $p$'s answer: only the edge $p$--$v$ changes sides (Figure~\ref{fig:reroot}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \fill[fgsky!18, rounded corners=8pt] (0.6, -0.55) rectangle (3.4, -2.75);
+  \fill[fgverm!9, rounded corners=8pt] (-1.9, 0.42) rectangle (0.42, -1.38);
+  \node[vtx, hot] (p) at (0, 0) {$p$}; \node[vtx, cool] (v) at (2.0, -1.0) {$v$};
+  \node[vtx] (x1) at (-1.4, -1.0) {}; \node[vtx] (x2) at (-0.5, -1.0) {};
+  \node[vtx] (y1) at (1.3, -2.1) {}; \node[vtx] (y2) at (2.7, -2.1) {};
+  \draw[ed] (p) -- (v) (p) -- (x1) (p) -- (x2) (v) -- (y1) (v) -- (y2);
+  \node[font=\sffamily\scriptsize, text=fgblue] at (2.0, -3.05) {$\mathit{sub}(v)$ vertices, each 1 closer};
+  \node[font=\sffamily\scriptsize, text=fgverm] at (-0.95, -1.6) {$n - \mathit{sub}(v)$ vertices,};
+  \node[font=\sffamily\scriptsize, text=fgverm] at (-0.95, -1.95) {each 1 farther};
+  \node[notel, anchor=west, text width=5.6cm] at (3.9, -1.0) {Moving the root from $p$ to $v$: every vertex in $v$'s subtree
+    gets one step closer, all the others one step farther, so\\[3pt]
+    \hspace*{1em}$\mathit{ans}(v) = \mathit{ans}(p) - \mathit{sub}(v) + (n - \mathit{sub}(v))$.};
+\end{tikzpicture}
+\caption{Rerooting the sum of distances across one edge.}
+\label{fig:reroot}
+\end{figure}
+
+\begin{problem}{Tree Distances II (CSES)}
+For every vertex, find the sum of its distances to all other vertices.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vvi adj(n + 1);
+    rep(i, n - 1) {
+        int a, b;
+        cin >> a >> b;
+        adj[a].push_back(b);
+        adj[b].push_back(a);
+    }
+    // BFS order from vertex 1: parents always come before children
+    vi order{1}, par(n + 1, 0), depth(n + 1, 0);
+    rep(i, n) for (int v : adj[order[i]]) {
+        if (v == par[order[i]]) continue;
+        par[v] = order[i], depth[v] = depth[order[i]] + 1;
+        order.push_back(v);
+    }
+    vi sub(n + 1, 1);  // subtree sizes, children first
+    per(i, 1, n) sub[par[order[i]]] += sub[order[i]];
+    vi ans(n + 1, 0);
+    rep(v, 1, n + 1) ans[1] += depth[v];  // the sum of distances from 1
+    // moving the root from p to its child v: sub[v] vertices get 1 closer,
+    // the other n - sub[v] get 1 farther
+    rep(i, 1, n) {
+        int v = order[i];
+        ans[v] = ans[par[v]] - sub[v] + (n - sub[v]);
+    }
+    print(vi(ans.begin() + 1, ans.end()));
+}
+\end{code}
+
+\usetemplate{Rerooting (DP for every root)}{Ctrl+Alt+T, '}{cpreroot}
+
+\subsection{When the combine cannot be undone}
+
+The update above subtracts $v$'s contribution from $p$'s answer. That works for sums but not for maxima: knowing that the longest
+path from $p$ has length 5 says nothing about the longest one once the branch into $v$ is removed. The standard fix is to keep the
+\emph{two} best values over the children, so that the best value avoiding any single child is always at hand
+(Figure~\ref{fig:reroot2}).
+
+For the farthest distance from every vertex (Tree Distances~I again, now without the diameter argument), let
+$\mathit{down}_1(v) \ge \mathit{down}_2(v)$ be the two longest downward paths from $v$ that start with different children, and let
+$\mathit{up}(v)$ be the longest path from $v$ whose first step goes to its parent. For a child $v$ of $p$,
+\[
+  \mathit{up}(v) = 1 + \max\bigl(\mathit{up}(p),\ \text{the best downward path from $p$ that does not start with $v$}\bigr),
+\]
+where the second term is $\mathit{down}_2(p)$ if $\mathit{down}_1(p)$ goes through $v$, and $\mathit{down}_1(p)$ otherwise. The
+farthest distance from $v$ is $\max(\mathit{down}_1(v), \mathit{up}(v))$: one pass children first for the downward values, one pass
+parents first for the upward values.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[vtx] (g) at (0, 1.25) {};
+  \node[vtx, hot] (p) at (0, 0) {$p$};
+  \node[vtx, cool] (v) at (-1.7, -1.2) {$v$};
+  \node[vtx] (c2) at (0, -1.2) {};
+  \node[vtx] (c3) at (1.7, -1.2) {};
+  \draw[ed, dashed] (g) -- ++(0, 0.75);
+  \draw[ed] (g) -- (p) (p) -- (v) (p) -- (c2) (p) -- (c3);
+  \foreach \nd/\hh in {v/1.5, c2/1.0, c3/0.7}
+    \draw[draw=fgline, fill=fgfill, line width=0.6pt] (\nd.south) -- ++(-0.45, -\hh) -- ++(0.9, 0) -- cycle;
+  \node[wl, text=fgblue] at ($(p)!0.5!(v)$) {5};
+  \node[wl] at ($(p)!0.5!(c2)$) {3};
+  \node[wl] at ($(p)!0.5!(c3)$) {2};
+  \node[font=\sffamily\scriptsize, text=fgink, anchor=west] at ($(p)!0.5!(g)+(0.2, 0)$) {$\mathit{up}(p) = 3$};
+  \node[font=\sffamily\scriptsize, text=fgblue] at (-1.7, -3.3) {$\mathit{down}_1(p) = 5$};
+  \node[font=\sffamily\scriptsize, text=fgink] at (0, -2.8) {$\mathit{down}_2(p) = 3$};
+  \node[notel, anchor=west, text width=6.2cm] at (2.9, -0.6) {The numbers on the edges are the longest downward paths from $p$
+    through each child. The best one, 5, goes through $v$, so for $v$ the best path from $p$ that avoids $v$ is
+    $\max(\mathit{up}(p), \mathit{down}_2(p)) = 3$ and $\mathit{up}(v) = 4$. For every other child it is
+    $\max(\mathit{up}(p), \mathit{down}_1(p)) = 5$, giving $\mathit{up} = 6$.};
+\end{tikzpicture}
+\caption{Rerooting with a maximum: keeping the two best child values answers ``the best value without this child'' in $\Oh{1}$.}
+\label{fig:reroot2}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vvi adj(n + 1);
+    rep(i, n - 1) {
+        int a, b;
+        cin >> a >> b;
+        adj[a].push_back(b);
+        adj[b].push_back(a);
+    }
+    vi order{1}, par(n + 1, 0);
+    rep(i, n) for (int v : adj[order[i]])
+        if (v != par[order[i]]) par[v] = order[i], order.push_back(v);
+    // down1[v] >= down2[v]: the two longest downward paths from v that start
+    // with different children; up[v]: the longest path from v whose first
+    // step goes to v's parent
+    vi down1(n + 1, 0), down2(n + 1, 0), up(n + 1, 0);
+    per(i, 1, n) {  // children first
+        int v = order[i], p = par[v], len = down1[v] + 1;
+        if (len > down1[p]) down2[p] = down1[p], down1[p] = len;
+        else chmax(down2[p], len);
+    }
+    rep(i, 1, n) {  // parents first
+        int v = order[i], p = par[v];
+        // the longest path from p that does not go down into v
+        int other = down1[p] == down1[v] + 1 ? down2[p] : down1[p];
+        up[v] = 1 + max(up[p], other);
+    }
+    vi ans(n);
+    rep(v, 1, n + 1) ans[v - 1] = max(down1[v], up[v]);
+    print(ans);
+}
+\end{code}
+
+When two children tie for the best value, $\mathit{down}_2(p) = \mathit{down}_1(p)$, so the test \cc{down1[p] == down1[v] + 1}
+picks the right value either way.
+
+\begin{trick}[Sum over all pairs: count what each edge separates]
+The sum of the distances over all pairs of vertices needs no rerooting at all. The edge from $v$ to its parent lies on the path
+between two vertices exactly when one of them is in $v$'s subtree and the other is not, so it contributes
+$\mathit{sub}(v)\,(n - \mathit{sub}(v))$, and the total is $\sum_{v \ne r} \mathit{sub}(v)\,(n - \mathit{sub}(v))$, computed in
+$\Oh{n}$. The same ``count the pairs an edge separates'' argument gives expected distances between random vertices, and, with the
+edges sorted by weight and a DSU, the sum over all pairs of the heaviest edge on their path: an edge that joins components of
+sizes $a$ and $b$ is the heaviest edge for exactly $a \cdot b$ pairs (Section~\ref{sec:contribution}).
+\end{trick}
+
+\begin{trick}[Designing a rerooting DP]
+Write the answer for a fixed root as ``merge, over the children, of $\mathit{lift}$(child's value)''. If $\mathit{merge}$ is
+associative with an identity, the generic template computes it for every root: the value of the ``rest of the tree'' seen from a
+child is the merge of the parent's upward value and the siblings' values, which prefix and suffix merges provide without any
+inverse. For the farthest vertex, $\mathit{merge} = \max$ and $\mathit{lift}(x) = x + 1$; for sums of distances, carry (sum, count)
+pairs. Only invertible merges, like sums, allow the ``subtract the child'' shortcut used above.
+\end{trick}
+
+% ======================================================================================================================
+\section[Merging child tables]{Merging child tables: the tree knapsack \hfill \plat}\label{sec:treeknap}
+
+When the DP state contains a \emph{count} (``choose exactly $j$ vertices in the subtree''), merging a child into its parent is a
+knapsack-style convolution, $\mathit{new}[a + b] = \max(\mathit{old}[a] + \mathit{child}[b])$. Done over full-size arrays this looks
+like $\Oh{n^3}$. But if each table is only as long as its subtree, the total work is $\Oh{n^2}$.
+
+\emph{Why.} Merging two tables of sizes $s_1$ and $s_2$ costs $s_1 s_2$, one unit for every pair of vertices with one vertex in each
+part. Every pair of vertices is merged in this way exactly once, at their LCA, when their two branches are combined
+(Figure~\ref{fig:treeknap}). There are $\binom{n}{2}$ pairs, hence $\Oh{n^2}$. If the tables are capped at $k$ entries, the same
+counting gives $\Oh{nk}$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \fill[fgsky!18, rounded corners=8pt] (-2.6, -1.55) rectangle (-0.35, -3.2);
+  \fill[fgorange!15, rounded corners=8pt] (0.35, -1.55) rectangle (2.6, -3.2);
+  \node[vtx, hot] (l) at (0, -0.6) {$v$};
+  \node[vtx] (a) at (-1.5, -1.95) {1}; \node[vtx] (b) at (1.5, -1.95) {4};
+  \node[vtx] (a1) at (-2.1, -2.8) {2}; \node[vtx, hot] (a2) at (-0.9, -2.8) {3};
+  \node[vtx, hot] (b1) at (0.9, -2.8) {5}; \node[vtx] (b2) at (2.1, -2.8) {6};
+  \draw[ed] (l) -- (a) (l) -- (b) (a) -- (a1) (a) -- (a2) (b) -- (b1) (b) -- (b2);
+  \draw[line width=0.8pt, draw=fgverm, dashed] (a2) to[bend right=30] (b1);
+  \node[font=\sffamily\scriptsize, text=fgverm] at (0, -3.6) {the pair $(3, 5)$ is paid for here, at $v$};
+  \foreach \ii/\rw in {0/1, 1/2, 2/3} {
+    \node[font=\sffamily\scriptsize\bfseries, text=fgblue] at (3.55, {-1.2 - 0.6*\ii}) {\rw};
+    \foreach \jj in {0, 1, 2}
+      \node[cellc, minimum width=6mm, minimum height=6mm] at ({4.0 + 0.6*\jj}, {-1.2 - 0.6*\ii}) {};
+  }
+  \foreach \jj/\cn in {0/4, 1/5, 2/6}
+    \node[font=\sffamily\scriptsize\bfseries, text=fgorange!85!black] at ({4.0 + 0.6*\jj}, -0.68) {\cn};
+  \node[cellc, minimum width=6mm, minimum height=6mm, fill=fgverm!25, draw=fgverm] at (4.6, -2.4) {};
+  \node[lbl] at (4.6, -3.0) {merge loop: $3 \times 3$};
+  \node[notel, anchor=west, text width=4.6cm] at (6.1, -1.8) {Merging the blue table into the orange one is a double loop over
+    their sizes: one cell per pair of vertices, one from each side. The pair $(3, 5)$ is counted in this merge only, at its LCA
+    $v$; over the whole run every pair is counted once.};
+\end{tikzpicture}
+\caption{Why merging subtree tables costs $\Oh{n^2}$ in total: the work of all merges together is at most one unit per pair of
+vertices.}
+\label{fig:treeknap}
+\end{figure}
+
+\begin{problem}{Choosing $k$ connected vertices}
+Every vertex of a tree rooted at 1 has a weight (possibly negative). Choose exactly $k$ vertices such that the parent of every
+chosen vertex other than the root is also chosen, with maximum total weight.
+\solution $f_v[j]$ is the best weight of $j$ chosen vertices in $v$'s subtree forming such a closed set (so $v$ is chosen when
+$j \ge 1$). Merge the children one by one with the knapsack convolution; a child may contribute only if $v$ itself is chosen.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, k;
+    cin >> n >> k;
+    vi w(n + 1), par(n + 1, 0);
+    rep(v, 1, n + 1) cin >> w[v];
+    vvi child(n + 1);
+    rep(v, 2, n + 1) {
+        cin >> par[v];
+        child[par[v]].push_back(v);
+    }
+    // f[v][j]: best weight choosing j vertices of v's subtree, closed under
+    // parents (so v itself is chosen whenever j >= 1); arrays grow with size
+    const ll NEG = LLONG_MIN / 4;
+    vector<vi> f(n + 1);
+    auto dfs = [&](auto&& self, int v) -> void {
+        f[v] = {0, w[v]};
+        for (int c : child[v]) {
+            self(self, c);
+            vi merged(min<int>(k, sz(f[v]) + sz(f[c]) - 2) + 1, NEG);
+            rep(a, sz(f[v])) rep(b, sz(f[c])) {  // every pair of sizes once
+                if (a + b >= sz(merged) || (a == 0 && b > 0)) continue;
+                if (f[v][a] == NEG || f[c][b] == NEG) continue;
+                chmax(merged[a + b], f[v][a] + f[c][b]);
+            }
+            f[v] = merged;
+            f[c].clear();
+        }
+    };
+    dfs(dfs, 1);
+    print(k < sz(f[1]) ? f[1][k] : NEG);
+}
+\end{code}
+
+\usetemplate{Tree knapsack (merging child DPs)}{Ctrl+Alt+Y, Shift+K}{cptreeknap}
+
+Two details of the code matter. The merged table is only as long as the two tables together (capped at $k + 1$ entries), which is
+what the counting argument needs; allocating $k + 1$ entries at every vertex would make every merge cost $\Theta(k^2)$, and
+$\Theta(nk^2)$ in total. And a child's part may be non-empty only if $v$ itself is chosen ($a \ge 1$), which is how ``closed under
+parents'' enters the merge.
+
+\emph{Why the cap gives $\Oh{nk}$.} Call a part \emph{small} if it has fewer than $k$ vertices and \emph{big} otherwise. A merge of
+a small part into a big one costs at most $k$ times the small part's size, and each vertex is on the small side of such a merge at
+most once, since afterwards it belongs to a big part: $\Oh{nk}$ in total. Merges of two big parts cost $\Oh{k^2}$ each, and there
+are fewer than $n / k$ of them, because each one reduces the number of disjoint big parts: $\Oh{nk}$ again. Merges of two small
+parts are paid one unit per pair, and the pairs involved lie inside disjoint regions of fewer than $2k$ vertices each, so they
+total at most $\sum 2k \cdot s_i = \Oh{nk}$.
+
+% ======================================================================================================================
+\section[Small-to-large merging]{Small-to-large merging \hfill \plat}\label{sec:smalltolarge}
+
+To compute, for every vertex, something about the \emph{set} of values in its subtree (the number of distinct colours, the most
+frequent value), give each vertex a set and merge the children's sets into the parent, always inserting the elements of the
+\emph{smaller} set into the \emph{larger} one. An element is moved only when the set it belongs to at least doubles in size, so each
+element moves $\Oh{\log n}$ times: $\Oh{n \log n}$ insertions in total, and $\Oh{n \log^2 n}$ time with \cc{std::set}. Swapping two
+\cc{set}s is $\Oh{1}$, which is what makes ``keep the larger set'' free (Figure~\ref{fig:smalltolarge}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[vtx, hot] (p) at (1.45, 0) {$p$};
+  \node[draw=fgblue, fill=fgsky!18, rounded corners=6pt, minimum width=2.6cm, minimum height=0.8cm, line width=0.8pt]
+    (L) at (0.3, -1.5) {};
+  \node[draw=fgorange!85!black, fill=fgorange!15, rounded corners=6pt, minimum width=1.3cm, minimum height=0.8cm,
+    line width=0.8pt] (S) at (3.0, -1.5) {};
+  \foreach \xx in {-0.7, -0.2, 0.3, 0.8, 1.3} \fill[fgblue] (\xx, -1.5) circle (2.3pt);
+  \foreach \xx in {2.75, 3.25} \fill[fgorange!85!black] (\xx, -1.5) circle (2.3pt);
+  \draw[ed] (p) -- (L.north) (p) -- (S.north);
+  \node[font=\sffamily\scriptsize\bfseries, text=fgblue, anchor=east] at (L.west) {larger: kept};
+  \node[font=\sffamily\scriptsize\bfseries, text=fgorange!85!black, anchor=west] at (S.east) {smaller: moved};
+  \draw[->, line width=1.1pt, draw=fgverm] (S.south) to[bend left=30]
+    node[below, font=\sffamily\scriptsize, text=fgverm] {insert its 2 elements} (L.south);
+  \foreach \kk/\ww/\tx in {0/0.3/start, 1/0.6/1 move, 2/1.2/2 moves, 3/2.4/3 moves} {
+    \node[lbl, anchor=east] at (7.3, {0.1 - 0.55*\kk}) {\tx};
+    \draw[draw=fgblue, fill=fgsky!18, line width=0.6pt, rounded corners=1.5pt] (7.45, {-0.1 - 0.55*\kk})
+      rectangle ++(\ww, 0.4);
+    \fill[fgverm] (7.6, {0.1 - 0.55*\kk}) circle (2.3pt);
+    \node[lbl, anchor=west] at ({7.5 + \ww}, {0.1 - 0.55*\kk}) {size $\ge 2^{\kk}$};
+  }
+  \node[notel, anchor=north west, text width=4.9cm] at (6.0, -1.95) {The red element only ever moves into a set at least as
+    large as its own, so each move at least doubles its set: at most $\log_2 n$ moves.};
+\end{tikzpicture}
+\caption{Small-to-large merging. Left: the parent keeps the larger child set (an $\Oh{1}$ swap) and inserts the elements of the
+smaller one. Right: why each element moves $\Oh{\log n}$ times.}
+\label{fig:smalltolarge}
+\end{figure}
+
+\begin{problem}{Distinct Colors (CSES)}
+For every vertex of a tree, count the distinct colours in its subtree.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vi color(n + 1);
+    rep(v, 1, n + 1) cin >> color[v];
+    vvi adj(n + 1);
+    rep(i, n - 1) {
+        int a, b;
+        cin >> a >> b;
+        adj[a].push_back(b);
+        adj[b].push_back(a);
+    }
+    vi order{1}, par(n + 1, 0);
+    rep(i, n) for (int v : adj[order[i]])
+        if (v != par[order[i]]) par[v] = order[i], order.push_back(v);
+    vector<set<ll>> s(n + 1);
+    vi ans(n + 1);
+    per(i, n) {  // children first; then give the parent the bigger set
+        int v = order[i];
+        s[v].insert(color[v]);
+        ans[v] = sz(s[v]);
+        int p = par[v];
+        if (!p) continue;
+        if (sz(s[p]) < sz(s[v])) swap(s[p], s[v]);  // O(1) swap of sets
+        for (ll x : s[v]) s[p].insert(x);  // insert the smaller into the larger
+        s[v].clear();
+    }
+    print(vi(ans.begin() + 1, ans.end()));
+}
+\end{code}
+
+\usetemplate{Small-to-large merging}{Ctrl+Alt+Y, M}{cpsmall2large}
+
+The same pattern handles richer questions. For ``the most frequent colour in every subtree'', merge \cc{map<colour, count>}
+tables small to large and keep, next to each table, its largest count and the sum of the colours that reach it; an insertion
+updates both in $\Oh{1}$ after the map lookup. For queries ``how many vertices of $v$'s subtree lie at depth $d$'', merge
+\cc{map<depth, count>}. The one rule is that the parent must \emph{adopt} the larger container, by \cc{swap} or by keeping an
+index to it, and never copy it: copying the larger side costs its full size and destroys the bound.
+
+\begin{trick}[DSU on tree (Sack)]
+The same $\Oh{n \log n}$ bound holds with plain arrays instead of sets: process the heavy child (the one with the largest subtree)
+last and keep its counts; then add the vertices of the light subtrees one by one, answer, and, if the current vertex is itself a
+light child, erase everything on the way back. Each vertex is re-added once for every light edge above it, which is $\Oh{\log n}$
+times (Chapter~\ref{ch:treedecomp}). It is faster and lighter on memory than merging sets, at the cost of more code.
+\end{trick}
+
+% ======================================================================================================================
+\section[Tree isomorphism]{Tree isomorphism and hashing \hfill \plat}\label{sec:treeiso}
+
+Two rooted trees are \emph{isomorphic} if one can be relabelled into the other while keeping the root, that is, if they have the
+same shape up to reordering children. The \defn{AHU algorithm} decides it with canonical labels: process the vertices children first,
+and give every vertex the label of the \emph{sorted} list of its children's labels, using a dictionary that assigns a new small
+integer to every new list (Figure~\ref{fig:ahu}). Leaves get the label of the empty list. Two subtrees get the same label exactly when
+they are isomorphic, by induction on height, so the trees are isomorphic exactly when the roots' labels are equal. With a shared
+dictionary, all trees of a test file can be compared by their root labels, in $\Oh{n \log n}$ total.
+
+\begin{figure}[htbp]
+\centering
+\begin{minipage}[c]{3.4cm}\centering
+\begin{forest}
+  cptree, for tree={s sep=6mm}
+  [{3}, hot [{2}, cool [{0}] [{0}]] [{1}, warn [{0}]]]
+\end{forest}
+\end{minipage}
+\hspace{6mm}
+\begin{minipage}[c]{3.4cm}\centering
+\begin{forest}
+  cptree, for tree={s sep=6mm}
+  [{3}, hot [{1}, warn [{0}]] [{2}, cool [{0}] [{0}]]]
+\end{forest}
+\end{minipage}
+\hspace{6mm}
+\begin{minipage}[c]{5cm}
+\raggedright\small Labels: $() \to 0$, $(0) \to 1$, $(0, 0) \to 2$, $(1, 2) \to 3$. Both roots get the label of the sorted
+list $(1, 2)$, so the trees are isomorphic although they are drawn differently.
+\end{minipage}
+\caption{AHU canonical labels. Each vertex shows the label of the sorted multiset of its children's labels.}
+\label{fig:ahu}
+\end{figure}
+
+\begin{problem}{Tree Isomorphism I (CSES)}
+Decide whether two trees rooted at vertex 1 are isomorphic.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int t;
+    cin >> t;
+    map<vi, int> id;  // canonical id of each multiset of child ids (AHU)
+    auto read_ids = [&](int n) {
+        vvi adj(n + 1);
+        rep(i, n - 1) {
+            int a, b;
+            cin >> a >> b;
+            adj[a].push_back(b);
+            adj[b].push_back(a);
+        }
+        vi order{1}, par(n + 1, 0), code(n + 1);
+        rep(i, n) for (int v : adj[order[i]])
+            if (v != par[order[i]]) par[v] = order[i], order.push_back(v);
+        vvi kids(n + 1);
+        per(i, n) {  // children first
+            int v = order[i];
+            sort(all(kids[v]));
+            auto [it, fresh] = id.insert({kids[v], sz(id)});
+            code[v] = it->second;
+            if (par[v]) kids[par[v]].push_back(code[v]);
+        }
+        return code[1];  // equal ids <=> isomorphic rooted trees
+    };
+    while (t--) {
+        int n;
+        cin >> n;
+        int a = read_ids(n), b = read_ids(n);
+        yn(a == b);
+    }
+}
+\end{code}
+
+\emph{Complexity.} A vertex with $d$ children sorts $d$ labels and looks up a list of length $d$ in the dictionary, which costs
+$\Oh{d \log n}$ with \cc{map<vi, int>}. The $d$ values sum to $n - 1$, so one tree costs $\Oh{n \log n}$. The labels are small
+integers (at most the number of distinct subtree shapes seen so far), so they can index arrays directly afterwards.
+
+\paragraph{Unrooted trees.} An isomorphism of unrooted trees maps centers to centers, and a tree has one center or two adjacent ones.
+So root the first tree at one of its centers and compare its label with the second tree rooted at each of its (at most two) centers.
+Centers are found by peeling leaves layer by layer: every round removes all current leaves, and the one or two vertices that remain
+last are the centers, because peeling shortens every longest path by exactly 2.
+
+\begin{problem}{Tree Isomorphism II (CSES)}
+Decide whether two unrooted trees are isomorphic.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int t;
+    cin >> t;
+    map<vi, int> id;
+    auto rooted_id = [&](const vvi& adj, int root) {
+        int n = sz(adj) - 1;
+        vi order{root}, par(n + 1, 0), code(n + 1);
+        rep(i, n) for (int v : adj[order[i]])
+            if (v != par[order[i]]) par[v] = order[i], order.push_back(v);
+        vvi kids(n + 1);
+        per(i, n) {
+            int v = order[i];
+            sort(all(kids[v]));
+            auto [it, fresh] = id.insert({kids[v], sz(id)});
+            code[v] = it->second;
+            if (par[v]) kids[par[v]].push_back(code[v]);
+        }
+        return code[root];
+    };
+    auto centers = [](const vvi& adj) {  // peel leaves layer by layer
+        int n = sz(adj) - 1, left = n;
+        vi deg(n + 1), layer;
+        rep(v, 1, n + 1) {
+            deg[v] = sz(adj[v]);
+            if (deg[v] <= 1) layer.push_back(v);
+        }
+        while (left > 2) {
+            left -= sz(layer);
+            vi next;
+            for (int v : layer)
+                for (int u : adj[v])
+                    if (--deg[u] == 1) next.push_back(u);
+            layer = next;
+        }
+        return layer;  // one or two centers
+    };
+    while (t--) {
+        int n;
+        cin >> n;
+        vvi g[2];
+        rep(k, 2) {
+            g[k].assign(n + 1, {});
+            rep(i, n - 1) {
+                int a, b;
+                cin >> a >> b;
+                g[k][a].push_back(b);
+                g[k][b].push_back(a);
+            }
+        }
+        // root the first tree at a center, compare with every center of the
+        // second: an isomorphism maps centers to centers
+        int a = rooted_id(g[0], centers(g[0])[0]);
+        bool same = false;
+        for (int c : centers(g[1])) same = same || rooted_id(g[1], c) == a;
+        yn(same);
+    }
+}
+\end{code}
+
+\usetemplate{Tree isomorphism (canonical IDs, AHU)}{Ctrl+Alt+U, H}{cptreehash}
+
+\begin{pitfall}[Hashing trees]
+A popular shortcut hashes a vertex as, for example, $1 + \sum_c h(c)^2$ modulo a prime or with random polynomial evaluation. Such
+hashes are fast and work well for counting distinct subtree shapes, but fixed, well-known hash functions have known collisions that
+anti-hash tests exploit. Use the exact AHU labels when a wrong answer is fatal, or a hash with random parameters chosen at run time
+(Section~\ref{sec:random-stl}).
+\end{pitfall}
+
+\begin{summary}[Chapter summary]
+\begin{itemize}
+  \item BFS order read backwards processes children before parents without recursion; preorder and postorder make subtrees
+        contiguous; the full Euler tour turns LCA into a range minimum.
+  \item Two BFS passes find a diameter, and the farthest vertex from anywhere is one of its ends.
+  \item Euler tours turn subtree and root-path queries into range queries on a Fenwick tree.
+  \item Binary lifting jumps $k$ levels and finds LCAs in $\Oh{\log n}$; jump pointers do it with one pointer per vertex; Tarjan's
+        DSU algorithm answers LCAs offline in $\Oh{(n + q)\,\alpha(n)}$.
+  \item Tree DP combines children bottom-up; rerooting gives every root's answer in two passes, subtracting a child for sums and
+        keeping the two best children for maxima.
+  \item Sums over all pairs of vertices are often sums over edges: each edge separates $\mathit{sub}(v)\,(n - \mathit{sub}(v))$
+        pairs.
+  \item Merging tables sized by subtrees costs $\Oh{n^2}$ in total (pairs meet once at their LCA); merging sets small to large costs
+        $\Oh{n \log n}$ moves.
+  \item AHU canonical labels decide rooted isomorphism; for unrooted trees, root at the centers.
+\end{itemize}
+\end{summary}
+
+\begin{practice}
+\ppgroup{Traversals, distances and queries}
+\begin{pplist}
+  \item Subordinates
+  \item Tree Diameter
+  \item Tree Distances I
+  \item Tree Distances II
+  \item Subtree Queries
+  \item Path Queries
+\end{pplist}
+\ppgroup{Ancestors, DP and structure}
+\begin{pplist}
+  \item Company Queries I
+  \item Company Queries II
+  \item Distance Queries
+  \item Tree Matching
+  \item Distinct Colors
+  \item Tree Isomorphism I
+  \item Tree Isomorphism II
+\end{pplist}
+\end{practice}

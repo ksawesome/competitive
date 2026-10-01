@@ -1,0 +1,607 @@
+\chapter{Choosing a Data Structure}\label{ch:ds-basics}
+
+A \defn{data structure} is a way of organising data so that the operations an algorithm needs are fast. Choosing the right
+one is often the entire solution: the same idea runs in $\Oh{n^2}$ with a plain array and in $\Oh{n \log n}$ with a heap, and
+the heap version is only three lines longer. The previous chapter showed how to use the STL containers; this chapter is about
+the thinking behind them: which operations each structure makes cheap, which it makes expensive, and how simple structures
+(stacks, queues, heaps, sets) combine into solutions for problems that look nothing like textbook exercises.
+
+\begin{chapterintro}{\bronze\ \silver\ \gold}{Chapters~\ref{ch:complexity} and~\ref{ch:cpp}.}
+  \item compare structures by the cost of each operation, and pick one from the operations you need;
+  \item use stacks for nesting and ``nearest'' questions, including the monotonic stack;
+  \item use queues and deques for arrival order and sliding windows;
+  \item use heaps for repeated minimums, scheduling and running medians;
+  \item maintain sets of values and sets of intervals, and simulate deletions with array-based linked lists;
+  \item augment simple structures (a stack with its minimum, a queue made of two stacks).
+\end{chapterintro}
+
+% ======================================================================================================================
+\section[Operations decide]{Operations decide \hfill \bronze}\label{sec:ops-decide}
+
+Before choosing a structure, list the operations your algorithm performs, with how often it performs each: ``$n$ inserts,
+$q$ queries for the smallest element, occasional deletions''. Then pick the structure that makes the \emph{frequent}
+operations cheap. Figure~\ref{fig:ds-costs} compares five ways of storing a changing set of numbers.
+
+\begin{figure}[htbp]
+\centering
+\newcommand{\cf}[1]{\cellcolor{fggreen!22}#1}
+\newcommand{\cl}[1]{\cellcolor{fgorange!22}#1}
+\newcommand{\cs}[1]{\cellcolor{fgverm!22}#1}
+\newcommand{\cx}{\cellcolor{fgline!25}\textcolor{fggray}{---}}
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{l*{6}{c}}
+\toprule
+\thd{Structure} & \thd{insert} & \thd{delete $x$} & \thd{find $x$} & \thd{minimum} & \thd{$k$-th smallest} & \thd{sorted scan} \\
+\midrule
+unsorted array & \cf{$1$} & \cs{$n$} & \cs{$n$} & \cs{$n$} & \cs{$n$} & \cl{$n \log n$} \\
+sorted array & \cs{$n$} & \cs{$n$} & \cl{$\log n$} & \cf{$1$} & \cf{$1$} & \cf{$n$} \\
+balanced tree (\texttt{set}) & \cl{$\log n$} & \cl{$\log n$} & \cl{$\log n$} & \cf{$1$} & \cs{$n$}\,$^*$ & \cf{$n$} \\
+hash table & \cf{$1$}\,$^\dagger$ & \cf{$1$}\,$^\dagger$ & \cf{$1$}\,$^\dagger$ & \cs{$n$} & \cs{$n$} & \cl{$n \log n$} \\
+binary heap & \cl{$\log n$} & \cx & \cx & \cf{$1$} & \cx & \cx \\
+\bottomrule
+\end{tabular}
+\par\smallskip
+{\footnotesize $^*$ $\log n$ with the policy-based \texttt{ordered\_set} \quad $^\dagger$ expected \quad --- not supported}
+\caption{The cost of each operation, in $\mathcal{O}$-notation, for five ways to store a dynamic set (green: constant,
+orange: logarithmic or $n \log n$, red: linear). No structure is best at everything; the balanced tree is the only one with
+no red cell among the everyday operations, which is why \texttt{set} is the default for ``sorted and changing''.}
+\label{fig:ds-costs}
+\end{figure}
+
+The table explains several habits of experienced competitors. When the data does not change after it is read, a
+\emph{sorted array} beats every tree: sort once, then binary search. When you only ever need the smallest element, a
+\emph{heap} beats a \cc{set} by a large constant factor. When order does not matter at all, a \emph{hash table} is fastest.
+And when you need several operations that no single structure provides, you combine structures, as the rest of this chapter
+shows repeatedly.
+
+% ======================================================================================================================
+\section[Stacks]{Stacks \hfill \bronze}\label{sec:stacks}
+
+A \defn{stack} is a sequence where you can only add and remove at one end, the \emph{top}: the last element pushed is the
+first popped (LIFO, last in, first out). Stacks model anything with \emph{nesting}: brackets, function calls, undo history,
+the path of a depth-first search.
+
+\begin{problem}{Balanced brackets}
+Given a string of \texttt{()[]\{\}}, decide whether every bracket is closed by a matching bracket of the same type in the
+right order.
+\solution Scan the string. Push every opening bracket; for a closing bracket, the top of the stack must be the matching
+opening bracket, which you pop. The string is balanced if no check fails and the stack is empty at the end
+(Figure~\ref{fig:brackets}). Each character is pushed and popped at most once: $\Oh{n}$.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[st/.style={cellc, minimum width=6mm, minimum height=5mm, font=\ttfamily\small}]
+  % brackets are encoded as letters (p = paren, s = square, c = curly; capitals close them) because \foreach cannot hold
+  % a bare "(" or "[" in its list
+  \def\brp{(}\def\brP{)}\def\brs{[}\def\brS{]}\def\brc{\{}\def\brC{\}}
+  \foreach \ch/\stack [count=\k] in {p/{p}, s/{p,s}, S/{p}, c/{p,c}, p/{p,c,p}, P/{p,c}, C/{p}, P/{}} {
+    \pgfmathsetmacro{\x}{(\k-1)*1.35}
+    \node[font=\ttfamily\normalsize\bfseries, text=fgblue] at (\x, 0.55) {\csname br\ch\endcsname};
+    \draw[line width=0.6pt, fgink!60] (\x-0.4, -2.1) -- (\x+0.4, -2.1);
+    \if\relax\detokenize\expandafter{\stack}\relax\else
+      \foreach \s [count=\h] in \stack \node[st, fill=fgfill] at (\x, {-2.1+0.25+(\h-1)*0.5}) {\csname br\s\endcsname};
+    \fi
+  }
+  \node[lbl, anchor=east] at (-0.5, 0.55) {read};
+  \node[lbl, anchor=east] at (-0.5, -1.2) {stack after};
+  \node[font=\sffamily\scriptsize\bfseries, text=fggreen!80!black, anchor=north] at (9.45, -2.2) {empty: balanced};
+\end{tikzpicture}
+\caption{Matching \texttt{([]\{()\})} with a stack. Each column shows the stack after reading the character above it; a
+closing bracket always meets its partner on top, and the stack ends empty.}
+\label{fig:brackets}
+\end{figure}
+
+The same scan evaluates arithmetic expressions (a stack of numbers and a stack of operators), checks that tags in an HTML-like
+format are properly nested, and computes the depth of the deepest nesting. Recursion itself is a stack: every function call
+pushes a frame and every return pops one, which is why a very deep recursion can run out of stack memory
+(Section~\ref{sec:memory}) and why an explicit stack is the standard fix.
+
+\subsection{The monotonic stack}
+
+A stack whose contents are kept sorted, by popping everything that would break the order before each push, answers
+``nearest'' questions in linear time. It is one of the most useful patterns in this book.
+
+\begin{problem}{Nearest Smaller Values (CSES)}
+For every position of an array, find the nearest position to its left with a smaller value (print its 1-indexed position,
+or 0 if there is none). Limits: $n \le 2 \cdot 10^5$.
+\end{problem}
+
+Scan from left to right and keep a stack of candidate positions. When $a_i$ arrives, every candidate whose value is
+$\ge a_i$ can never be the answer for any later position: $a_i$ is both closer and at least as small. So pop them all; what
+remains on top is the answer for $i$; then push $i$. The stack's values increase from bottom to top at all times
+(Figure~\ref{fig:monostack}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  % bars of a = 2 5 1 4 8 3 2 5 at x = i; height 0.32 cm per unit
+  \foreach \v [count=\i from 0] in {2,5,1,4,8,3,2,5} {
+    \fill[fgblue!25, draw=fgblue, line width=0.5pt] ({\i*1.1}, 0) rectangle ++(0.7, {\v*0.32});
+    \node[font=\sffamily\small] at ({\i*1.1+0.35}, {\v*0.32+0.22}) {\v};
+    \node[lbl] at ({\i*1.1+0.35}, -0.25) {\the\numexpr\i+1\relax};
+  }
+  % arcs below the axis, from each element to its nearest smaller element on the left
+  \foreach \i/\j in {1/0, 3/2, 4/3, 5/2, 6/2, 7/6} {
+    \pgfmathsetmacro{\depth}{0.25 + 0.17*(\i-\j)}
+    \draw[->, line width=0.8pt, fgverm] ({\i*1.1+0.35}, -0.48) .. controls ({\i*1.1+0.35}, {-0.48-\depth})
+      and ({\j*1.1+0.35}, {-0.48-\depth}) .. ({\j*1.1+0.35}, -0.52);
+  }
+  % answers and stack contents
+  \node[lbl, anchor=east] at (-0.15, -1.55) {answer};
+  \node[lbl, anchor=east] at (-0.15, -2.05) {stack (values)};
+  \foreach \ans/\st [count=\i from 0] in {0/{2}, 1/{2 5}, 0/{1}, 3/{1 4}, 4/{1 4 8}, 3/{1 3}, 3/{1 2}, 7/{1 2 5}} {
+    \node[font=\sffamily\small\bfseries, text=fgverm] at ({\i*1.1+0.35}, -1.55) {\ans};
+    \node[font=\ttfamily\scriptsize] at ({\i*1.1+0.35}, -2.05) {\st};
+  }
+\end{tikzpicture}
+\caption{Nearest smaller values of $2, 5, 1, 4, 8, 3, 2, 5$ (positions under the bars). Each arrow points to the answer.
+The stack, bottom to top, only ever holds increasing values: when 3 arrives, 8 and 4 are popped for good, because 3 hides
+them from everything to its right.}
+\label{fig:monostack}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vi a(n), ans(n);
+    cin >> a;
+    vi st;  // indices; their values increase from the bottom to the top
+    rep(i, n) {
+        while (!st.empty() && a[st.back()] >= a[i])
+            st.pop_back();  // can never be an answer again
+        ans[i] = st.empty() ? 0 : st.back() + 1;  // 1-indexed, 0 if none
+        st.push_back(i);
+    }
+    print(ans);
+}
+\end{code}
+
+The inner \cc{while} can pop many elements at once, but every index is pushed once and popped at most once, so the whole
+scan is $\Oh{n}$ (the potential argument of Section~\ref{sec:amortized}). Running the same scan from the right gives the
+nearest smaller element on the right; flipping the comparison gives nearest larger. Together they give each element's
+``reign'', the maximal window where it is the minimum, which is exactly what the contribution technique of
+Section~\ref{sec:contribution} needed. The largest rectangle in a histogram, the number of visible buildings, and the
+next warmer day are all one monotonic stack each.
+
+\usetemplate{Monotonic stack (next greater / previous smaller)}{Ctrl+Alt+T, 7}{cpmonostack}
+
+% ======================================================================================================================
+\section[Queues and deques]{Queues and deques \hfill \silver}\label{sec:queues}
+
+A \defn{queue} removes elements in the order they arrived (FIFO, first in, first out). Queues model waiting lines and,
+above all, \emph{breadth-first processing}: BFS visits vertices in the order they were discovered, which is why it finds
+shortest paths in unweighted graphs (Chapter~\ref{ch:graphs}). A \defn{deque} (double-ended queue) allows pushing and popping
+at both ends in $\Oh{1}$.
+
+\subsection{The sliding window maximum}
+
+\begin{problem}{Window maximum}
+For every window of $k$ consecutive elements, print its maximum ($n \le 2\cdot10^5$).
+\end{problem}
+
+Recomputing each window costs $\Oh{nk}$. The deque version keeps the indices of the elements that could still become a
+window maximum, with their values decreasing from front to back. When $a_i$ arrives, every element at the back that is
+$\le a_i$ can never be a maximum again (it is older and not larger), so pop it; then push $i$. If the front has slid out of
+the window, pop it from the front. The front is now the maximum of the window (Table~\ref{tab:deque-trace}). Like the
+monotonic stack, every index enters and leaves once: $\Oh{n}$ in total.
+
+\begin{table}[htbp]
+\centering
+\caption{The monotonic deque on $1, 3, -1, -3, 5, 3, 6, 7$ with $k = 3$. Values are shown instead of indices.}
+\label{tab:deque-trace}
+\small
+\begin{tabular}{c r l l r}
+\toprule
+\thd{$i$} & \thd{$a_i$} & \thd{what happens} & \thd{deque (front to back)} & \thd{window max} \\
+\midrule
+0 & 1 & push & 1 & \\
+1 & 3 & pop 1 (smaller), push & 3 & \\
+2 & $-1$ & push & 3, $-1$ & 3 \\
+3 & $-3$ & push & 3, $-1$, $-3$ & 3 \\
+4 & 5 & pop $-3$, $-1$, 3, push & 5 & 5 \\
+5 & 3 & push & 5, 3 & 5 \\
+6 & 6 & pop 3, 5, push & 6 & 6 \\
+7 & 7 & pop 6, push & 7 & 7 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{code}
+void solve() {
+    int n, k;
+    cin >> n >> k;
+    vi a(n);
+    cin >> a;
+    deque<int> dq;  // indices in the window; values decrease front to back
+    vi out;
+    rep(i, n) {
+        while (!dq.empty() && a[dq.back()] <= a[i])
+            dq.pop_back();  // dominated by a[i]
+        dq.push_back(i);
+        if (dq.front() <= i - k) dq.pop_front();  // slid out of the window
+        if (i >= k - 1) out.push_back(a[dq.front()]);
+    }
+    print(out);
+}
+\end{code}
+
+\begin{recognize}
+``For every window of length $k$'' or ``for every $i$, the best $j$ in $[i - k, i)$'': a monotonic deque. It also speeds
+up dynamic programming with transitions from a sliding range, $dp_i = \min_{i-k \le j < i} dp_j + c_i$, from $\Oh{nk}$ to
+$\Oh{n}$ (Chapter~\ref{ch:dpopt}).
+\end{recognize}
+
+\usetemplate{Sliding window min / max (monotonic deque)}{Ctrl+Alt+T, 6}{cpwindow}
+
+% ======================================================================================================================
+\section[Heaps]{Heaps \hfill \silver}\label{sec:heaps}
+
+A \defn{heap} always knows its smallest (or largest) element. Inserting and removing the top cost $\Oh{\log n}$ each, and
+nothing else is supported. That narrow interface is exactly what many algorithms need: Dijkstra's algorithm, Prim's
+algorithm, event simulations and scheduling all repeat ``take the best remaining item, then add a few new items''.
+
+\subsection{How a heap works}
+
+A binary heap is a complete binary tree stored in an array (Section~\ref{sec:containers}) where every parent is at least as
+large as its children (for a max-heap). To insert, put the new element in the first free slot at the bottom and let it
+\emph{sift up}: while it is larger than its parent, swap them (Figure~\ref{fig:siftup}). To remove the top, move the last
+element to the root and let it \emph{sift down}: while it is smaller than its larger child, swap them. Both walk one path
+of the tree, so both cost $\Oh{\log n}$.
+
+\begin{figure}[htbp]
+\centering
+\newcommand{\heapfig}[2]{% values of indices 0..8, index to highlight
+  \begin{tikzpicture}[hv/.style={vtxs, minimum size=5.4mm}]
+    \foreach \v [count=\i from 0] in {#1} {
+      \pgfmathsetmacro{\lev}{int(floor(log2(\i+1)+0.001))}
+      \pgfmathsetmacro{\pos}{int(\i+1-2^\lev)}
+      \pgfmathsetmacro{\wid}{4.2/2^\lev}
+      \pgfmathsetmacro{\xx}{(\pos+0.5)*\wid-2.1}
+      \edef\st{\ifnum\i=#2 hot\else n\fi}
+      \node[hv, \st] (n\i) at (\xx, -\lev*0.72) {\v};
+    }
+    \foreach \c/\p in {1/0, 2/0, 3/1, 4/1, 5/2, 6/2, 7/3, 8/3} \draw[ed] (n\p) -- (n\c);
+  \end{tikzpicture}}
+\begin{filmstrip}[2]
+  \begin{stepbox}{1. put 10 in the first free slot}\heapfig{9,7,8,3,6,2,5,1,10}{8}\end{stepbox}
+  \begin{stepbox}{2. $10 > 3$: swap with its parent}\heapfig{9,7,8,10,6,2,5,1,3}{3}\end{stepbox}
+  \begin{stepbox}{3. $10 > 7$: swap again}\heapfig{9,10,8,7,6,2,5,1,3}{1}\end{stepbox}
+  \begin{stepbox}{4. $10 > 9$: swap; it is the new root}\heapfig{10,9,8,7,6,2,5,1,3}{0}\end{stepbox}
+\end{filmstrip}
+\caption{Inserting 10 into a max-heap. The new element rises along one path from the bottom to the root; everything off that
+path is untouched, so the cost is the height of the tree, $\Oh{\log n}$.}
+\label{fig:siftup}
+\end{figure}
+
+\begin{fact}[Building a heap is linear]
+Inserting $n$ elements one by one costs $\Oh{n \log n}$, but \cc{make_heap} (or constructing a \cc{priority_queue} from a
+whole vector) builds a heap in $\Oh{n}$ by sifting down from the bottom level up: half the nodes are leaves and never move,
+a quarter move at most one level, an eighth at most two, and $\sum_h h \cdot n / 2^{h+1} = \Oh{n}$.
+\end{fact}
+
+\subsection{Scheduling with a heap}
+
+\begin{problem}{Room Allocation (CSES)}
+A hotel has $n$ guests; guest $i$ stays from day $a_i$ to day $b_i$. Two guests can share a room if one leaves strictly
+before the other arrives. Find the minimum number of rooms and a valid assignment. Limits: $n \le 2 \cdot 10^5$.
+\solution Process guests by arrival. Keep a min-heap of the occupied rooms keyed by their guest's departure day. For a new
+guest, look at the room that frees up earliest: if its guest left before today, reuse it; otherwise open a new room. Reusing
+the earliest-freed room is never worse (an exchange argument), and a new room is opened only when every existing room is
+occupied today, so the number of rooms equals the maximum number of guests present at once, which is a lower bound.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vector<array<ll, 3>> c(n);  // (arrival, departure, index)
+    rep(i, n) cin >> c[i][0] >> c[i][1], c[i][2] = i;
+    sort(all(c));
+    minpq<pll> busy;  // (departure day, room) of the occupied rooms
+    vi room(n);
+    int rooms = 0;
+    for (auto [a, b, i] : c) {
+        if (!busy.empty() && busy.top().first < a) {  // earliest leaver gone
+            room[i] = busy.top().second;
+            busy.pop();
+        } else room[i] = ++rooms;
+        busy.push({b, room[i]});
+    }
+    print(rooms);
+    print(room);
+}
+\end{code}
+
+\subsection{The running median with two heaps}
+
+\begin{problem}{Running median}
+Numbers arrive one at a time. After each one, print the median of the numbers so far (the lower median when the count is
+even).
+\solution Keep the smaller half in a max-heap \texttt{low} and the larger half in a min-heap \texttt{high}, with
+\texttt{low} holding the same number of elements or one more. The median is then the top of \texttt{low}
+(Figure~\ref{fig:twoheaps}). Insert a new number into the half it belongs to, then move one top element across if the sizes
+drifted apart. Every step costs $\Oh{\log n}$.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \foreach \v [count=\i from 0] in {1,3,5,7,8,9,10,15} {
+    \edef\st{\ifnum\i<4 cool\else warn\fi}
+    \node[vtx, \st] (v\i) at (\i*1.05, 0) {\v};
+  }
+  \draw[line width=1.4pt, fgverm, dashed] (3.675, -0.75) -- (3.675, 0.75);
+  \draw[brace] ($(v0.north west)+(0,0.12)$) -- ($(v3.north east)+(0,0.12)$) node[midway, above=7pt, font=\sffamily\scriptsize,
+    text=fgblue] {\texttt{low}: max-heap, top 7};
+  \draw[brace] ($(v4.north west)+(0,0.12)$) -- ($(v7.north east)+(0,0.12)$) node[midway, above=7pt, font=\sffamily\scriptsize,
+    text=fgorange!80!black] {\texttt{high}: min-heap, top 8};
+  \node[font=\sffamily\scriptsize\bfseries, text=fgverm] at (3.675, -1.05) {median = top of \texttt{low} = 7};
+  \node[notel, anchor=west, text width=4.3cm] at (8.6, 0) {After the stream $5, 15, 1, 3, 8, 7, 9, 10$ the printed medians
+    were $5, 5, 5, 3, 5, 5, 7, 7$.};
+\end{tikzpicture}
+\caption{Two heaps split the numbers at the median. Only the two tops are ever inspected, and they sit on either side of the
+split, so the median is always at hand.}
+\label{fig:twoheaps}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    priority_queue<ll> low;  // the smaller half, largest on top
+    minpq<ll> high;          // the larger half, smallest on top
+    vi med;
+    rep(i, n) {
+        ll x;
+        cin >> x;
+        if (low.empty() || x <= low.top()) low.push(x);
+        else high.push(x);
+        // keep the sizes equal, or low one larger
+        if (sz(low) > sz(high) + 1) high.push(low.top()), low.pop();
+        else if (sz(high) > sz(low)) low.push(high.top()), high.pop();
+        med.push_back(low.top());  // the lower median
+    }
+    print(med);
+}
+\end{code}
+
+\begin{trick}[Deleting from a heap anyway]
+When elements must also leave (a sliding median, where the oldest element expires), keep a second heap of ``deleted but
+not yet removed'' values. Whenever the tops of the real heap and the deletion heap are equal, pop both. The heap then behaves
+as if it supported deletion, at the same asymptotic cost. For the sliding median, a \cc{multiset} with an iterator to the
+median is often simpler.
+\end{trick}
+
+% ======================================================================================================================
+\section[Ordered sets and interval sets]{Ordered sets and interval sets \hfill \silver}\label{sec:ordered-sets}
+
+A \cc{set} is the structure for questions about \emph{order} in a changing collection: the smallest element, the successor
+of $x$, the element closest to $x$. It shines when the values are huge (coordinates up to $10^9$) and the collection
+changes.
+
+\begin{problem}{Closest occupied seat}
+People take and leave seats in a row of length $10^9$. When a person arrives at seat $x$, report the distance to the nearest
+occupied seat.
+\solution Keep the occupied seats in a \cc{set}. For an arrival at $x$, \cc{s.lower_bound(x)} is the nearest occupied seat
+at or to the right of $x$, and its predecessor (if any) is the nearest on the left. Each operation is $\Oh{\log n}$, and the
+row's length never matters.
+\end{problem}
+
+\subsection{Sets of intervals}
+
+Many problems maintain a collection of disjoint intervals: painted segments of a line, free blocks of memory, booked time
+slots. Store them in a \cc{map} from left end to right end. To insert $[l, r]$, find the first interval that could overlap it
+with \cc{lower_bound}, merge every overlapping interval into $[l, r]$ while erasing it, then insert the union
+(Figure~\ref{fig:intervalset}). Every interval is inserted once and erased at most once, so $n$ insertions cost
+$\Oh{n \log n}$ in total, however much merging happens.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.72cm]
+  \numline{0}{17}{0}{}
+  \node[lbl, anchor=east] at (-0.5, 1.75) {before};
+  \ivl{1}{3}{1.75}{fgblue!50}{} \ivl{5}{7}{1.75}{fgverm!50}{} \ivl{9}{12}{1.75}{fgverm!50}{} \ivl{15}{16}{1.75}{fgblue!50}{}
+  \node[lbl, anchor=east] at (-0.5, 1.15) {insert};
+  \ivl{6}{10}{1.15}{fggreen!60}{}
+  \node[lbl, anchor=east] at (-0.5, 0.55) {after};
+  \ivl{1}{3}{0.55}{fgblue!50}{} \ivl{5}{12}{0.55}{fggreen!60}{} \ivl{15}{16}{0.55}{fgblue!50}{}
+\end{tikzpicture}
+\caption{Inserting $[6, 10]$ into a set of disjoint intervals. It overlaps $[5, 7]$ and $[9, 12]$ (red), which are erased and
+replaced, together with it, by their union $[5, 12]$. The overlapping intervals are consecutive in the \texttt{map}, so one
+\texttt{lower\_bound} and a short walk find them all.}
+\label{fig:intervalset}
+\end{figure}
+
+The same structure, with each interval carrying a value, handles ``assign value $v$ to the range $[l, r]$'' operations: split
+the intervals at $l$ and $r$, erase everything in between, insert one new interval. When the data is random this runs fast
+and is known as the \emph{Chtholly tree}; with adversarial data, prefer a segment tree with lazy assignment
+(Chapter~\ref{ch:segtree}).
+
+% ======================================================================================================================
+\section[Hash maps for counting]{Hash maps for counting \hfill \silver}\label{sec:hashmaps}
+
+A hash table answers ``have I seen this key, and how often?'' in expected $\Oh{1}$. It is the natural structure for
+frequency counting, for detecting duplicates, and for the classic ``two sum'' pattern: to find two elements with sum $x$, scan
+the array and, for each $a_i$, ask whether $x - a_i$ was seen before. The prefix-sum version of the same idea counts
+subarrays with a given sum (Section~\ref{sec:pigeonhole} and Chapter~\ref{ch:prefix}).
+
+Two warnings from Chapter~\ref{ch:cpp} apply. Hash tables have a large constant factor, so when the keys are small integers,
+an array indexed by the key is faster still. And a predictable hash can be attacked; use the randomised \cc{custom_hash}
+from the library whenever others can see your code.
+
+% ======================================================================================================================
+\section[Augmenting simple structures]{Augmenting simple structures \hfill \gold}\label{sec:augment}
+
+A structure can often store a little extra information per element that makes a new query cheap. This \defn{augmentation}
+is one of the most powerful ideas in data structure design: segment trees, order-statistic trees and link-cut trees are all
+augmented versions of simpler structures.
+
+\paragraph{A stack with its minimum.} Store with each element the minimum of the stack from the bottom up to it. The minimum
+of the whole stack is then the value stored with the top, in $\Oh{1}$, and popping never invalidates the stored minimums
+below, because they only depend on what lies beneath.
+
+\paragraph{A queue made of two stacks.} A queue can be built from two stacks: push onto an \texttt{in} stack; pop from an
+\texttt{out} stack, and when \texttt{out} is empty, pour all of \texttt{in} into it, which reverses the order so that the
+oldest element ends on top (Figure~\ref{fig:twostacks}). Each element is moved once, so every operation is $\Oh{1}$
+amortized. Combined with the stack-with-minimum, this gives a \emph{queue with minimum}: a sliding window minimum that
+works even when the window does not move one step at a time.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[st/.style={cellc, minimum width=14mm, minimum height=5.5mm, font=\ttfamily\small}]
+  \newcommand{\stk}[4]{% x, title, list of "value/min", colour
+    \begin{scope}[xshift=#1 cm]
+      \draw[line width=0.7pt, fgink!70] (-0.8, 1.8) -- (-0.8, 0) -- (0.8, 0) -- (0.8, 1.8);
+      \if\relax\detokenize{#3}\relax\else  % an empty stack draws no cells
+        \foreach \v/\m [count=\h] in {#3} \node[st, fill=#4] at (0, {0.3+(\h-1)*0.55}) {\v\,\textcolor{fggray}{\scriptsize(\m)}};
+      \fi
+      \node[font=\sffamily\scriptsize\bfseries] at (0, -0.35) {#2};
+    \end{scope}}
+  \node[font=\sffamily\small\bfseries, anchor=west] at (-1.2, 2.45) {after push 4, 2, 5};
+  \stk{0}{in}{4/4, 2/2, 5/2}{fgfill}
+  \stk{2.1}{out}{}{fgfill}
+  \draw[->, line width=1pt, fgblue] (3.4, 0.9) -- (4.8, 0.9) node[midway, above, font=\sffamily\scriptsize, text=fgblue] {pop};
+  \node[font=\sffamily\small\bfseries, anchor=west] at (5.2, 2.45) {pop: pour \texttt{in} into \texttt{out}, pop the top};
+  \stk{6.3}{in}{}{fgfill}
+  \stk{8.4}{out}{5/5, 2/2}{fggreen!15}
+  \node[notel, anchor=west, text width=3.4cm] at (9.6, 0.9) {4 was removed (the oldest). The queue is now 2, 5; its minimum
+    is the smaller of the two top labels: 2.};
+\end{tikzpicture}
+\caption{A queue with minimum built from two stacks. Each entry stores its value and, in grey, the minimum of its stack from
+the bottom up to it. Pouring reverses the order, so the oldest element is popped first.}
+\label{fig:twostacks}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int q;
+    cin >> q;
+    vector<pll> in, out;  // stacks of (value, minimum of the stack up to here)
+    auto push = [](vector<pll>& st, ll x) {
+        st.push_back({x, st.empty() ? x : min(x, st.back().second)});
+    };
+    while (q--) {
+        int type;
+        cin >> type;
+        if (type == 1) {  // push x at the back
+            ll x;
+            cin >> x;
+            push(in, x);
+        } else if (type == 2) {  // pop the front
+            if (out.empty())  // pour "in" into "out": the oldest ends on top
+                while (!in.empty()) push(out, in.back().first), in.pop_back();
+            out.pop_back();
+        } else {  // minimum of the whole queue
+            ll m = LLONG_MAX;
+            if (!in.empty()) chmin(m, in.back().second);
+            if (!out.empty()) chmin(m, out.back().second);
+            print(m);
+        }
+    }
+}
+\end{code}
+
+The same trick works for any \emph{associative} operation, not just the minimum: gcd, bitwise AND, even matrix products or
+function composition. It is the simplest way to answer ``aggregate of a sliding window'' when the operation has no inverse, so
+prefix sums cannot help.
+
+% ======================================================================================================================
+\section[Linked lists in arrays]{Linked lists in arrays \hfill \silver}\label{sec:linked}
+
+\cc{std::list} is rarely worth using: it is slow to traverse and gives no random access. But the \emph{idea} of a linked list,
+two arrays \cc{nxt[i]} and \cc{prv[i]} holding each element's neighbours, is the standard way to simulate deletions from a
+sequence. Removing element $i$ is two assignments, \cc{nxt[prv[i]] = nxt[i]} and \cc{prv[nxt[i]] = prv[i]}, in $\Oh{1}$, and
+the neighbours of any remaining element are available immediately.
+
+\begin{problem}{Josephus Problem I (CSES)}
+Children $1, \dots, n$ stand in a circle. Starting from child 1, every second child is removed until none remain. Print the
+order of removal. Limits: $n \le 2\cdot10^5$.
+\solution Keep a circular linked list in the array \cc{nxt}. The child after the current one is removed by linking the
+current child to the next-but-one, then we skip ahead by one (Figure~\ref{fig:josephus}). Each removal is $\Oh{1}$, so the
+whole simulation is $\Oh{n}$, where erasing from a \cc{vector} would cost $\Oh{n^2}$.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \foreach \k in {1,...,7} {
+    \pgfmathsetmacro{\ang}{90 - (\k-1)*360/7}
+    \edef\st{\ifnum\k=2 dim\else\ifnum\k=4 dim\else\ifnum\k=6 dim\else n\fi\fi\fi}
+    \node[vtx, \st] (c\k) at (\ang:1.6) {\k};
+  }
+  \draw[->, line width=0.9pt, fgblue] (c1) to[bend left=38] (c3);
+  \draw[->, line width=0.9pt, fgblue] (c3) to[bend left=38] (c5);
+  \draw[->, line width=0.9pt, fgblue] (c5) to[bend left=38] (c7);
+  \draw[->, line width=0.9pt, fgblue] (c7) to[bend left=20] (c1);
+  \foreach \k in {2, 4, 6} \draw[line width=1.2pt, fgverm] ($(c\k)+(-0.2,-0.2)$) -- ($(c\k)+(0.2,0.2)$)
+    ($(c\k)+(-0.2,0.2)$) -- ($(c\k)+(0.2,-0.2)$);
+  \node[notel, anchor=west, text width=5.8cm] at (2.6, 0) {After three removals (2, 4, 6, crossed out) the links skip
+    them: \texttt{nxt[1] = 3}, \texttt{nxt[3] = 5}, \texttt{nxt[5] = 7}, \texttt{nxt[7] = 1}. The next child removed is
+    \texttt{nxt[7] = 1}, and the full order for $n = 7$ is $2, 4, 6, 1, 5, 3, 7$.};
+\end{tikzpicture}
+\caption{The Josephus circle as a linked list in an array. Removing a child only redirects one link.}
+\label{fig:josephus}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vi nxt(n + 1);
+    rep(i, 1, n + 1) nxt[i] = i % n + 1;  // a circular linked list in an array
+    vi order;
+    int cur = 1;  // the child just before the next one to be removed
+    rep(k, n) {
+        int victim = nxt[cur];
+        order.push_back(victim);
+        nxt[cur] = nxt[victim];  // unlink the victim in O(1)
+        cur = nxt[cur];          // skip one child
+    }
+    print(order);
+}
+\end{code}
+
+Removing every $k$-th child instead of every second one needs ``find the $k$-th remaining child'', which a linked list
+cannot do quickly; that is Josephus Problem II, solved with an order-statistic tree or a Fenwick tree in $\Oh{n \log n}$.
+
+\begin{trick}[Deleting in reverse]
+Many ``delete elements one by one and answer after each deletion'' problems become ``add elements one by one'' when processed
+backwards, and adding is usually easier: a DSU can merge but not split, a sorted structure can gain neighbours cheaply, a
+maximum can only grow (Section~\ref{sec:reverse}).
+\end{trick}
+
+\begin{summary}[Chapter summary]
+\begin{itemize}
+  \item List the operations and their frequencies first; the structure follows from them.
+  \item Stacks handle nesting; the monotonic stack answers every ``nearest smaller / larger'' question in $\Oh{n}$.
+  \item Queues give arrival order; the monotonic deque gives every sliding-window extreme in $\Oh{n}$.
+  \item Heaps repeatedly give the best item; two heaps give a running median; lazy deletion adds removal.
+  \item Ordered sets answer neighbour queries on huge coordinates; a \texttt{map} of intervals keeps disjoint ranges.
+  \item Augment structures with extra information (a minimum per stack entry), and simulate deletions with
+        \texttt{nxt}/\texttt{prv} arrays.
+\end{itemize}
+\end{summary}
+
+\begin{practice}
+\ppgroup{Stacks, queues and heaps}
+\begin{pplist}
+  \item Nearest Smaller Values
+  \item Room Allocation
+  \item Movie Festival II
+  \item Towers
+  \item Traffic Lights
+  \item Maximum Subarray Sum II
+\end{pplist}
+\ppgroup{Ordered sets and simulation}
+\begin{pplist}
+  \item Concert Tickets
+  \item Playlist
+  \item Josephus Problem I
+  \item Josephus Problem II
+  \item Sliding Median
+  \item Sliding Cost
+\end{pplist}
+\end{practice}

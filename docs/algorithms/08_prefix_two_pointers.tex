@@ -1,0 +1,772 @@
+\chapter{Prefix Sums, Two Pointers and Sliding Windows}\label{ch:prefix}
+
+A surprising number of problems ask about \emph{subarrays}: their sums, their distinct values, their medians, the longest
+or shortest one with some property. An array of $n$ elements has about $n^2/2$ subarrays, so looking at each is quadratic.
+This chapter collects the techniques that bring such questions down to linear or near-linear time: prefix sums, which answer
+any range sum in constant time; difference arrays, their inverse; the hash-map trick for counting subarrays with a given
+sum; two pointers, which slide a window across the array while touching every element only twice; and the stacks and
+multisets that maintain more complex information about a sliding window. Together they solve a large fraction of all Silver
+problems and appear as building blocks inside countless harder ones.
+
+\begin{chapterintro}{\bronze\ \silver\ \gold}{Chapters~\ref{ch:complexity}, \ref{ch:ds-basics} and~\ref{ch:sorting}.}
+  \item answer range-sum queries in one and two dimensions in constant time;
+  \item apply many range updates offline with difference arrays, including rectangles and arithmetic progressions;
+  \item count subarrays with a given sum, remainder or balance using prefix sums and a hash map;
+  \item recognise when two pointers apply, and prove that they run in linear time;
+  \item maintain the median of a sliding window, and find largest rectangles with monotonic stacks.
+\end{chapterintro}
+
+% ======================================================================================================================
+\section[Prefix sums]{Prefix sums \hfill \bronze}\label{sec:prefix}
+
+Define $P_0 = 0$ and $P_{i+1} = P_i + a_i$, so that $P_i$ is the sum of the first $i$ elements $a_0, \ldots, a_{i-1}$. Then
+the sum of any range is the difference of two prefix sums:
+\[
+  a_l + a_{l+1} + \cdots + a_{r-1} = P_r - P_l ,
+\]
+because $P_r$ contains exactly the elements $a_0, \ldots, a_{r-1}$ and subtracting $P_l$ removes $a_0, \ldots, a_{l-1}$
+(Figure~\ref{fig:prefix}). The array $P$ takes $\Oh{n}$ to build and then answers every range sum in $\Oh{1}$. The
+\emph{half-open} convention, ranges $[l, r)$ that include $l$ and exclude $r$, is what makes the formula clean: there is no
+$\pm 1$ anywhere, the empty range $l = r$ has sum $P_l - P_l = 0$, and $P$ has one more entry than $a$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[blbl, anchor=east] at (-0.25, 0) {$a$};
+  \arrs{A}{0}{0}{3/n, 1/n, 4/hot, 1/hot, 5/hot, 9/n, 2/n}
+  \idx{A}{7}
+  \node[blbl, anchor=east] at (-0.6, -1.6) {$P$};
+  \arrs{P}{-0.35}{-1.6}{0/n, 3/n, 4/cool, 8/n, 9/n, 14/cool, 23/n, 25/n}
+  \idxfrom{P}{8}{0}
+  \spanabove{A-3}{A-5}{$a_2 + a_3 + a_4 = 10$}
+  \node[notel, anchor=west] at (5.6, -1.6) {$= P_5 - P_2 = 14 - 4$};
+\end{tikzpicture}
+\caption{Prefix sums sit \emph{between} the elements: $P_i$ is the sum of everything to the left of boundary $i$. A range sum
+is the difference of the prefix sums at its two boundaries.}
+\label{fig:prefix}
+\end{figure}
+
+\usetemplate{Prefix sums (1D)}{Ctrl+Alt+T, 1}{cpprefix}
+
+The same idea works for any operation that can be \emph{undone}. Prefix XORs give range XORs, since $x \oplus x = 0$. Prefix
+counts give ``how many times does the letter \texttt{c} occur in $[l, r)$?'' for every letter (26 prefix arrays, or one array
+of 26 counters per position). Prefix sums modulo a prime give range sums modulo that prime, and prefix \emph{products} give range
+products if every element is invertible. Operations that cannot be undone, such as minimum, maximum and gcd, have no prefix
+trick: a range minimum is not a difference of two prefix minima. Those need the sparse table or segment tree of
+Part~VI.
+
+\begin{trick}[Prefix sums without special cases]
+Use the half-open convention everywhere and size $P$ as $n + 1$. When the input is 1-indexed and inclusive, convert once at
+reading time (\cc{l--}, keep \cc{r}), not inside every formula. For circular arrays, append the array to itself and use
+ranges of length at most $n$. And when values or counts may exceed $2^{31}$, the prefix sums certainly will: make them
+\cc{long long} even if the elements fit in \cc{int}.
+\end{trick}
+
+\subsection{Two dimensions}
+
+Let $P_{i,j}$ be the sum of the rectangle of rows $[0, i)$ and columns $[0, j)$. The sum of a rectangle with rows $[r_1, r_2)$
+and columns $[c_1, c_2)$ follows by inclusion--exclusion: take everything above and to the left of its lower-right corner,
+remove the strip above it and the strip to its left, and add back the corner region, which was removed twice
+(Figure~\ref{fig:prefix2d}):
+\[
+  \mathrm{sum} = P_{r_2, c_2} - P_{r_1, c_2} - P_{r_2, c_1} + P_{r_1, c_1} .
+\]
+The table itself is built with the same identity in reverse, $P_{i+1, j+1} = P_{i, j+1} + P_{i+1, j} - P_{i,j} + a_{i,j}$, in
+$\Oh{nm}$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.26cm, y=0.26cm]
+  \tikzset{qr/.style={draw=fgverm, line width=1.1pt}}
+  \foreach \k/\op in {0/{$=$}, 1/{$-$}, 2/{$-$}, 3/{$+$}, 4/{}} {
+    \begin{scope}[xshift=\k*3.1cm]
+      \ifnum\k=0 \fill[fgverm!25] (3, -2) rectangle (7, -5);
+      \else
+        \ifnum\k=1 \fill[fgblue!25] (0, 0) rectangle (7, -5); \fi
+        \ifnum\k=2 \fill[fgorange!30] (0, 0) rectangle (7, -2); \fi
+        \ifnum\k=3 \fill[fgorange!30] (0, 0) rectangle (3, -5); \fi
+        \ifnum\k=4 \fill[fggreen!35] (0, 0) rectangle (3, -2); \fi
+      \fi
+      \draw[fgline!70, line width=0.3pt, step=1] (0, 0) grid (8, -6);
+      \draw[qr] (3, -2) rectangle (7, -5);
+      \ifnum\k<4 \node[font=\large] at (9.5, -3) {\op}; \fi
+    \end{scope}
+  }
+  \node[lbl] at (4, -7.2) {query};
+  \node[lbl] at (4 + 11.92, -7.2) {$P_{r_2, c_2}$};
+  \node[lbl] at (4 + 2*11.92, -7.2) {$P_{r_1, c_2}$};
+  \node[lbl] at (4 + 3*11.92, -7.2) {$P_{r_2, c_1}$};
+  \node[lbl] at (4 + 4*11.92, -7.2) {$P_{r_1, c_1}$};
+\end{tikzpicture}
+\caption{Two-dimensional prefix sums as a picture equation. The query rectangle (red frame) equals the region above and left
+of its lower-right corner, minus the strip above it, minus the strip to its left, plus the corner region that both strips
+removed.}
+\label{fig:prefix2d}
+\end{figure}
+
+\begin{problem}{Forest Queries (CSES)}
+An $n \times n$ grid ($n \le 1000$) contains trees. Answer $2\cdot10^5$ queries: how many trees are in a given rectangle?
+\solution Build $P$ once, answer each query with the four-term formula. Converting the 1-indexed, inclusive rectangle to the
+half-open form is the only place where care is needed.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, q;
+    cin >> n >> q;
+    // P[i][j] = number of trees in rows < i and columns < j
+    vvi P(n + 1, vi(n + 1, 0));
+    rep(i, n) {
+        string row;
+        cin >> row;
+        rep(j, n) {
+            int tree = row[j] == '*';
+            P[i + 1][j + 1] = P[i][j + 1] + P[i + 1][j] - P[i][j] + tree;
+        }
+    }
+    while (q--) {
+        int y1, x1, y2, x2;  // rows y1..y2, columns x1..x2, 1-indexed
+        cin >> y1 >> x1 >> y2 >> x2;
+        y1--, x1--;  // to the half-open rectangle [y1, y2) x [x1, x2)
+        print(P[y2][x2] - P[y1][x2] - P[y2][x1] + P[y1][x1]);
+    }
+}
+\end{code}
+
+\usetemplate{2D prefix sums}{Ctrl+Alt+T, Shift+A}{cpprefix2d}
+
+In $d$ dimensions the formula has $2^d$ terms with alternating signs, one per corner of the box. A different way to see
+it, which generalises better, is to take prefix sums along one dimension at a time: first along the rows, then along the
+columns of the result. After both passes, each entry is the sum of its whole upper-left rectangle. The same ``one dimension
+at a time'' idea computes sums over all submasks of every bitmask (Chapter~\ref{ch:dppatterns}), which is prefix sums in
+$n$ dimensions of size 2.
+
+% ======================================================================================================================
+\section[Difference arrays]{Difference arrays \hfill \silver}\label{sec:diff}
+
+Prefix sums answer many queries about a fixed array. The inverse problem, applying many \emph{updates} to an array and reading
+it only at the end, is solved by the inverse operation. The \defn{difference array} of $a$ is $D_i = a_i - a_{i-1}$ (with
+$a_{-1} = 0$), so $a$ is the prefix sum of $D$. Adding $v$ to every element of $[l, r)$ changes only two differences:
+$D_l$ grows by $v$ and $D_r$ shrinks by $v$. So each range update costs $\Oh{1}$, and one prefix-sum pass at the end rebuilds
+the array (Figure~\ref{fig:diff}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[blbl, anchor=east] at (-0.25, 0.9) {updates};
+  \draw[ivl=fgblue!55] (0.7, 1.15) -- (2.8, 1.15);
+  \node[font=\sffamily\scriptsize, text=fgblue, anchor=west] at (2.9, 1.15) {$+5$ on $[1, 4)$};
+  \draw[ivl=fgorange!80] (2.1, 0.65) -- (4.2, 0.65);
+  \node[font=\sffamily\scriptsize, text=fgorange!80!black, anchor=west] at (4.3, 0.65) {$+2$ on $[3, 6)$};
+  \node[blbl, anchor=east] at (-0.25, -0.4) {$D$};
+  \arrs{D}{0}{-0.4}{0/n, +5/cool, 0/n, +2/warn, $-5$/cool, 0/n, $-2$/warn}
+  \idx{D}{7}
+  \node[blbl, anchor=east] at (-0.25, -1.9) {prefix sums};
+  \arrs{S}{0}{-1.9}{0/n, 5/good, 5/good, 7/good, 2/good, 2/good, 0/n}
+  \node[notel, anchor=west, text width=5.2cm] at (5.4, -1.15) {each update writes two cells of $D$; one pass of
+    prefix sums applies all of them at once};
+\end{tikzpicture}
+\caption{A difference array. The update $+5$ on $[1, 4)$ becomes $+5$ at index 1 and $-5$ at index 4; after all updates, the
+prefix sums of $D$ are the final values.}
+\label{fig:diff}
+\end{figure}
+
+\usetemplate{Difference array (offline range add, 1D)}{Ctrl+Alt+T, 3}{cpdiff}
+
+\subsection{Rectangles}
+
+In two dimensions, adding $v$ to the rectangle $[x_1, x_2) \times [y_1, y_2)$ writes four corners of the difference array:
+$+v$ at $(x_1, y_1)$ and $(x_2, y_2)$, and $-v$ at $(x_1, y_2)$ and $(x_2, y_1)$. After 2D prefix sums, the $+v$ at
+$(x_1, y_1)$ spreads to the whole quadrant below and to the right of it; the two $-v$ remove the parts beyond $x_2$ and
+beyond $y_2$; and the second $+v$ restores the part beyond both, which was removed twice (Figure~\ref{fig:diff2d}). This is
+inclusion--exclusion again, run backwards.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.42cm, y=0.42cm]
+  \begin{scope}
+    \draw[fgline!70, line width=0.3pt, step=1] (0, 0) grid (8, -6);
+    \foreach \x/\y/\s/\c in {2/1/+1/fgblue, 6/1/$-1$/fgverm, 2/4/$-1$/fgverm, 6/4/+1/fgblue}
+      \node[font=\sffamily\scriptsize\bfseries, text=\c] at (\x + 0.5, -\y - 0.5) {\s};
+    \node[lbl] at (4, -6.8) {difference array: four corners};
+  \end{scope}
+  \node[font=\large] at (10, -3) {$\Rightarrow$};
+  \begin{scope}[xshift=5.3cm]
+    \fill[fggreen!30] (2, -1) rectangle (6, -4);
+    \draw[fgline!70, line width=0.3pt, step=1] (0, 0) grid (8, -6);
+    \draw[line width=1.1pt, draw=fggreen!70!black] (2, -1) rectangle (6, -4);
+    \foreach \x in {2,...,5} \foreach \y in {1,...,3}
+      \node[font=\sffamily\scriptsize, text=fggreen!50!black] at (\x + 0.5, -\y - 0.5) {1};
+    \node[lbl] at (4, -6.8) {after 2D prefix sums};
+  \end{scope}
+\end{tikzpicture}
+\caption{Adding 1 to the rectangle of columns 2--5 and rows 1--3. The difference array gets $+1$ at the rectangle's top-left
+cell and at the cell diagonally beyond its bottom-right corner, and $-1$ at the cells just beyond its other two corners; 2D
+prefix sums turn these four values into exactly the rectangle.}
+\label{fig:diff2d}
+\end{figure}
+
+\begin{problem}{Painting the Barn (USACO Silver)}
+Farmer John paints $n \le 10^5$ axis-parallel rectangles on a barn wall with coordinates in $[0, 1000]$; each rectangle adds
+one coat of paint to the unit squares it covers. How many unit squares end up with exactly $k$ coats?
+\solution Four updates per rectangle into a $1001 \times 1001$ difference array, one 2D prefix-sum pass, and a count: about
+$10^6$ operations, regardless of how large the rectangles are.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, k;
+    cin >> n >> k;
+    const int N = 1001;
+    vvi D(N + 1, vi(N + 1, 0));  // 2D difference array
+    rep(i, n) {
+        int x1, y1, x2, y2;  // the unit squares [x1, x2) x [y1, y2)
+        cin >> x1 >> y1 >> x2 >> y2;
+        D[x1][y1]++, D[x1][y2]--, D[x2][y1]--, D[x2][y2]++;
+    }
+    int cells = 0;
+    rep(x, N) rep(y, N) {  // 2D prefix sums in place: D[x][y] = coats on (x, y)
+        if (x > 0) D[x][y] += D[x - 1][y];
+        if (y > 0) D[x][y] += D[x][y - 1];
+        if (x > 0 && y > 0) D[x][y] -= D[x - 1][y - 1];
+        if (D[x][y] == k) cells++;
+    }
+    print(cells);
+}
+\end{code}
+
+\usetemplate{Difference array (offline rectangle add, 2D)}{Ctrl+Alt+T, 4}{cpdiff2d}
+
+\subsection{Arithmetic progressions: differences of differences}
+
+What if an update adds $1, 2, 3, \ldots$ to the elements of a range? The first differences of such an update are not two
+spikes but a whole block of ones, so one level of differences is not enough. Take differences \emph{twice}: the second
+differences of the progression are $+1$ at its start, $-(len + 1)$ just after its end and $+len$ one step later, three spikes
+again (Figure~\ref{fig:diff-ap}). Two prefix-sum passes rebuild the array. In general, an update by a polynomial of degree
+$d$ becomes $\Oh{d}$ spikes after $d + 1$ levels of differences, and $d + 1$ prefix-sum passes undo them.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[blbl, anchor=east] at (-0.25, 0) {second differences};
+  \arrs{E}{0}{0}{0/n, 0/n, +1/hot, 0/n, 0/n, 0/n, $-5$/hot, +4/hot}
+  \node[blbl, anchor=east] at (-0.25, -1.1) {first differences};
+  \arrs{F}{0}{-1.1}{0/n, 0/n, 1/cool, 1/cool, 1/cool, 1/cool, $-4$/cool, 0/n}
+  \node[blbl, anchor=east] at (-0.25, -2.2) {values};
+  \arrs{V}{0}{-2.2}{0/n, 0/n, 1/good, 2/good, 3/good, 4/good, 0/n, 0/n}
+  \idx{V}{8}
+  \node[notel, anchor=west, text width=4.6cm] at (6.0, -1.1) {adding $1, 2, 3, 4$ to positions $2..5$ ($len = 4$):
+    three spikes in the second differences; two passes of prefix sums rebuild the values};
+\end{tikzpicture}
+\caption{An arithmetic progression added to a range is three spikes in the second differences.}
+\label{fig:diff-ap}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n, q;
+    cin >> n >> q;
+    vi d2(n + 2, 0);  // second differences
+    while (q--) {
+        int l, r;  // add 1, 2, ..., r - l + 1 to positions l..r (0-indexed)
+        cin >> l >> r;
+        int len = r - l + 1;
+        d2[l] += 1;  // the first differences become 1 on [l, r]
+        d2[r + 1] -= len + 1;  // ... then drop by len right after r
+        d2[r + 2] += len;  // ... and are back to 0 after that
+    }
+    vi a(n);
+    ll d1 = 0, v = 0;
+    rep(i, n) {
+        d1 += d2[i];  // first difference a[i] - a[i - 1]
+        v += d1;
+        a[i] = v;
+    }
+    print(a);
+}
+\end{code}
+
+\begin{recognize}
+Many updates, few (or one) reads, and the updates add something simple to a contiguous range: an interval of days, a
+rectangle of cells, a path in a tree (Chapter~\ref{ch:trees}). When reads and updates are interleaved, the same two-point
+update goes into a Fenwick tree instead, which supports prefix sums online (Chapter~\ref{ch:segtree}).
+\end{recognize}
+
+% ======================================================================================================================
+\section[Counting subarrays with a hash map]{Counting subarrays with a hash map \hfill \silver}\label{sec:prefix-hash}
+
+``How many subarrays have sum exactly $x$?'' With prefix sums, the subarray $[l, r)$ has sum $x$ exactly when $P_r - P_l = x$,
+that is, when $P_l = P_r - x$. So scan $r$ from left to right, keep a map from each prefix sum seen so far to the number of
+times it has occurred, and add the count of $P_r - x$ at each step: every earlier prefix with that value is the left end of a
+subarray ending at $r$ with sum $x$. This counts all subarrays in $\Oh{n \log n}$ with a \cc{map} (or expected $\Oh{n}$ with
+a hash map), even when the values are negative, which rules out two pointers. The complete program is the worked problem
+Subarray Sums II (Chapter~\ref{ch:worked}).
+
+Picturing the prefix sums as a walk makes these counting problems visual: the subarrays with sum 0 are exactly the pairs of
+moments at which the walk is at the same height (Figure~\ref{fig:zerosum}), and the subarrays with sum $x$ are the pairs of
+moments whose heights differ by $x$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=1.0cm, y=0.55cm]
+  \draw[->, line width=0.5pt, draw=fgink!60] (-0.3, 0) -- (7.6, 0) node[right, lbl] {$i$};
+  \foreach \i in {0,...,7} \node[lbl] at (\i, -0.55) {\i};
+  \foreach \h in {0, 2} \draw[line width=0.5pt, draw=fgline, dashed] (-0.2, \h) -- (7.3, \h);
+  \draw[line width=1.3pt, draw=fgblue] (0, 0) -- (1, 3) -- (2, 1) -- (3, 2) -- (4, 0) -- (5, 4) -- (6, 0) -- (7, 2);
+  \foreach \i/\p in {0/0, 1/3, 2/1, 3/2, 4/0, 5/4, 6/0, 7/2} {
+    \fill[fgblue] (\i, \p) circle (2.2pt);
+    \node[font=\sffamily\scriptsize, text=fgblue, anchor=south] at (\i, \p + 0.15) {\p};
+  }
+  \foreach \a/\b/\yy/\cl in {0/4/-1.4/fggreen, 4/6/-1.4/fggreen, 0/6/-2.1/fggreen, 3/7/-2.8/fgorange}
+    \draw[ivl=\cl!75] (\a + 0.06, \yy) -- (\b - 0.06, \yy);
+  \node[notel, anchor=north west, text width=4.3cm] at (7.9, 4.4) {$a = 3, -2, 1, -2, 4, -4, 2$\\ prefix sums $P_0, \ldots,
+    P_7$ (blue); equal heights are zero-sum subarrays: $[0, 4)$, $[4, 6)$, $[0, 6)$ at height 0 and $[3, 7)$ at height 2};
+\end{tikzpicture}
+\caption{Prefix sums as a walk. Every pair of equal heights is a subarray with sum 0; the bars below the axis show the four
+such subarrays (green at height 0, orange at height 2). Counting them is counting pairs of equal values in $P$.}
+\label{fig:zerosum}
+\end{figure}
+
+The same scan answers a family of questions; only the map and its lookup change.
+\begin{itemize}
+  \item \textbf{Sum divisible by $m$:} two prefixes with equal $P \bmod m$ (Section~\ref{sec:pigeonhole}); normalise negative
+        remainders with \cc{((P % m) + m) % m}.
+  \item \textbf{XOR equal to $x$:} prefix XORs, and $X_r \oplus X_l = x \iff X_l = X_r \oplus x$.
+  \item \textbf{Equal numbers of two kinds of elements:} count one kind as $+1$ and the other as $-1$, and look for zero sums.
+  \item \textbf{The longest such subarray:} store the \emph{first} index of each prefix value instead of a count; the
+        longest subarray ending at $r$ starts at the first occurrence of the value it needs.
+\end{itemize}
+
+\begin{problem}{Longest balanced substring}
+Find the length of the longest substring of a binary string that contains equally many zeros and ones.
+\solution With $+1$ for each one and $-1$ for each zero, balanced substrings are exactly the zero-sum subarrays. The longest
+one ending at position $i$ starts right after the \emph{first} prefix with the same sum, so a map from prefix sum to the first
+index where it occurred gives the answer in one pass.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    string s;
+    cin >> s;
+    // count 1 as +1 and 0 as -1: balanced means a zero sum
+    map<int, int> first;  // the first index at which each prefix sum occurs
+    first[0] = 0;
+    int pre = 0, best = 0;
+    rep(i, n) {
+        pre += s[i] == '1' ? 1 : -1;
+        if (first.count(pre)) chmax(best, i + 1 - first[pre]);
+        else first[pre] = i + 1;
+    }
+    print(best);
+}
+\end{code}
+
+\begin{pitfall}[Hash maps and adversarial tests]
+An \cc{unordered_map} of prefix sums is expected $\Oh{1}$ per operation, but on Codeforces, tests are often built to collide
+with the default hash, which makes every operation linear. Use a \cc{map}, a custom hash with a random seed
+(Chapter~\ref{ch:cpp}), or, when the prefix values lie in a small range (as in the balanced-string problem, where they lie in
+$[-n, n]$), a plain array with an offset.
+\end{pitfall}
+
+% ======================================================================================================================
+\section[Two pointers]{Two pointers \hfill \silver}\label{sec:two-pointers}
+
+Suppose we want, for every right end $r$, the smallest left end $l$ such that the window $[l, r]$ satisfies some condition,
+and the condition is \emph{monotone}: shrinking a valid window keeps it valid (for example ``the sum is at most $x$'' with
+non-negative values, or ``all values are distinct''). Then the best left end $l(r)$ never moves backwards when $r$ grows,
+because a window that was invalid stays invalid when it is extended to the right. So the two ends can be moved with two
+pointers, both only forwards: for each new $r$, advance $l$ while the window is invalid.
+
+\emph{Why it is linear.} Each step of the algorithm moves one pointer one position forwards, and each pointer moves at most
+$n$ times, so there are at most $2n$ steps in total, however the work is distributed among the iterations. Plotting the pair
+$(r, l)$ as a point, the algorithm walks a monotone staircase path from the bottom-left to the top-right corner of an
+$n \times n$ grid (Figure~\ref{fig:staircase}). This is the simplest instance of amortised analysis
+(Section~\ref{sec:amortized}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.62cm, y=0.62cm]
+  \fill[fgline!22] (0, 1) \foreach \k in {1,...,6} { -- (\k, \k) -- (\k, \k + 1) } -- (0, 7) -- cycle;
+  \draw[fgline!60, line width=0.3pt, step=1] (0, 0) grid (7, 7);
+  \draw[->, line width=0.6pt, draw=fgink!70] (0, 0) -- (7.6, 0) node[right, lbl] {$r$};
+  \draw[->, line width=0.6pt, draw=fgink!70] (0, 0) -- (0, 7.6) node[above, lbl] {$l$};
+  \foreach \i in {0,...,6} { \node[lbl] at (\i + 0.5, -0.4) {\i}; \node[lbl] at (-0.4, \i + 0.5) {\i}; }
+  \draw[line width=1.6pt, draw=fgblue] (0.5, 0.5) -- (2.5, 0.5) -- (3.5, 0.5) -- (3.5, 1.5) -- (4.5, 1.5) -- (4.5, 4.5)
+    -- (5.5, 4.5) -- (5.5, 5.5) -- (6.5, 5.5);
+  \foreach \r/\l/\ok in {0/0/0, 1/0/0, 2/0/1, 3/1/1, 4/4/1, 5/5/0, 6/5/0} {
+    \ifnum\ok=1 \fill[fggreen] (\r + 0.5, \l + 0.5) circle (4pt); \else \fill[fgblue] (\r + 0.5, \l + 0.5) circle (2.6pt); \fi
+  }
+  \node[notel, anchor=west, text width=5.6cm] at (8.2, 4.2) {Subarray Sums I with $a = 2, 4, 1, 2, 7, 1, 3$ and $x = 7$.
+    For each $r$ the dot marks the left end $l(r)$ after shrinking; green dots are windows with sum exactly 7:
+    $[0, 2]$, $[1, 3]$ and $[4, 4]$. The path only goes right or up, so it has at most $2n$ steps.};
+\end{tikzpicture}
+\caption{Two pointers as a staircase. Moving $r$ is a step to the right, moving $l$ a step up; the shaded region ($l > r$)
+is never entered here. The total number of steps is at most $2n$, although a single value of $r$ can move $l$ many times.}
+\label{fig:staircase}
+\end{figure}
+
+\begin{problem}{Subarray Sums I (CSES)}
+Count the subarrays of an array of $n \le 2\cdot10^5$ \emph{positive} integers whose sum is exactly $x$.
+\solution With positive values, the sum of a window only grows when it is extended and only shrinks when it is cut, so for
+each right end there is at most one left end with sum $x$, and it can be found with two pointers: add $a_r$, then remove
+elements from the left while the sum exceeds $x$.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n;
+    ll x;
+    cin >> n >> x;
+    vi a(n);
+    cin >> a;
+    ll sum = 0, ways = 0;  // all values are positive
+    int l = 0;
+    rep(r, n) {  // the window is a[l..r]
+        sum += a[r];
+        while (sum > x) sum -= a[l++];  // too large: shrink from the left
+        if (sum == x) ways++;
+    }
+    print(ways);
+}
+\end{code}
+
+\usetemplate{Two pointers (sliding window)}{Ctrl+Alt+T, 5}{cptwoptr}
+
+\begin{problem}{Playlist (CSES)}
+Find the longest contiguous part of a playlist in which no song repeats.
+\solution ``All songs distinct'' is monotone under shrinking. For each right end, the left end must move past the previous
+occurrence of the new song if that occurrence is inside the window. Storing the last position of every song lets the left
+pointer jump there directly.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vi k(n);
+    cin >> k;
+    map<ll, int> last;  // the last position of each song so far
+    int l = 0, best = 0;
+    rep(r, n) {  // the longest window of distinct songs that ends at r
+        auto it = last.find(k[r]);
+        if (it != last.end() && it->second >= l) l = it->second + 1;
+        last[k[r]] = r;
+        chmax(best, r - l + 1);
+    }
+    print(best);
+}
+\end{code}
+
+\subsection{Counting windows: at most, and exactly}
+
+When the condition is monotone, all windows ending at $r$ with left end at least $l(r)$ are valid, so the number of valid
+windows is $\sum_r (r - l(r) + 1)$, again in linear time.
+
+\begin{problem}{Subarray Distinct Values (CSES)}
+Count the subarrays that contain at most $k$ distinct values.
+\solution Keep the count of each value in the window in a map; the number of distinct values is the size of the map. For
+each $r$, add $a_r$ and shrink from the left while there are more than $k$ distinct values; then add $r - l + 1$.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, k;
+    cin >> n >> k;
+    vi a(n);
+    cin >> a;
+    map<ll, int> cnt;  // occurrences of each value in the window a[l..r]
+    ll ways = 0;
+    int l = 0;
+    rep(r, n) {
+        cnt[a[r]]++;
+        while (sz(cnt) > k) {  // too many distinct values: shrink
+            if (--cnt[a[l]] == 0) cnt.erase(a[l]);
+            l++;
+        }
+        ways += r - l + 1;  // every window a[l'..r] with l' >= l is fine
+    }
+    print(ways);
+}
+\end{code}
+
+\begin{trick}[Exactly $k$ = at most $k$ $-$ at most $k - 1$]
+``Exactly $k$ distinct values'' is not monotone: shrinking a window can drop it to $k - 1$. But
+\[
+  \#\{\text{exactly } k\} = \#\{\text{at most } k\} - \#\{\text{at most } k - 1\},
+\]
+and both terms on the right are monotone conditions that two pointers count directly. The same subtraction handles ``sum
+exactly $x$'' with non-negative values (at most $x$ minus at most $x - 1$), ``exactly $k$ odd numbers'' and many more.
+\end{trick}
+
+\subsection{Pointers from both ends}
+
+The other classic form of two pointers starts one pointer at each end of a sorted array and moves them towards each other.
+
+\begin{problem}{Sum of Two Values (CSES)}
+Find two positions (distinct) whose values add up to $x$, or report that there are none.
+\solution Sort the values (remembering their original positions) and start with $i$ at the smallest and $j$ at the largest.
+If $a_i + a_j < x$, then $a_i$ is too small even for the largest remaining partner, so it can be discarded: $i$ moves right.
+If $a_i + a_j > x$, then $a_j$ is too large even for the smallest remaining partner: $j$ moves left. Each step discards one
+value for good, which is why the scan is linear and misses nothing (Figure~\ref{fig:saddleback}).
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.72cm, y=0.62cm]
+  \foreach \i/\vi in {0/1, 1/3, 2/4, 3/6, 4/8} \foreach \j/\vj in {1/3, 2/4, 3/6, 4/8, 5/11} {
+    \pgfmathtruncatemacro{\s}{\vi + \vj}
+    \ifnum\j>\i
+      \node[draw=fgline, line width=0.4pt, fill=white, minimum width=7mm, minimum height=5.8mm, inner sep=0pt,
+        font=\ttfamily\small] (m\i\j) at (\j, -\i) {\s};
+    \fi
+  }
+  \foreach \i/\j in {0/5, 0/4, 1/4, 1/3} \node[draw=fgblue, fill=fgsky!25, line width=0.8pt, minimum width=7mm,
+    minimum height=5.8mm, inner sep=0pt, font=\ttfamily\small] at (\j, -\i) {};
+  \foreach \i/\j/\s in {0/5/12, 0/4/9, 1/4/11, 1/3/9} \node[font=\ttfamily\small] at (\j, -\i) {\s};
+  \node[draw=fggreen, fill=fggreen!25, line width=1.2pt, minimum width=7mm, minimum height=5.8mm, inner sep=0pt,
+    font=\ttfamily\small\bfseries] at (3, -2) {10};
+  \draw[line width=5pt, draw=fgverm, opacity=0.28, line join=round] (5, 0) -- (4, 0) -- (4, -1) -- (3, -1)
+    -- (3, -2);
+  \foreach \j/\vj in {1/3, 2/4, 3/6, 4/8, 5/11} \node[blbl] at (\j, 0.85) {\vj};
+  \foreach \i/\vi in {0/1, 1/3, 2/4, 3/6, 4/8} \node[blbl] at (-0.1, -\i) {\vi};
+  \node[lbl] at (3, 1.5) {$a_j$};
+  \node[lbl, anchor=east] at (-0.55, -2) {$a_i$};
+  \node[notel, anchor=west, text width=5.8cm] at (6.1, -1.8) {Sums $a_i + a_j$ for $a = 1, 3, 4, 6, 8, 11$ and target 10.
+    They increase downwards and to the right. From the top-right corner, a sum that is too large rules out its whole
+    column (move left), and one that is too small rules out its whole row (move down).};
+\end{tikzpicture}
+\caption{Two pointers from both ends as a walk through the table of pair sums: $12 > 10$ (left), $9 < 10$ (down), $11 > 10$
+(left), $9 < 10$ (down), $10$ found. Each step discards a whole row or column, so at most $n$ steps are needed.}
+\label{fig:saddleback}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n;
+    ll x;
+    cin >> n >> x;
+    vector<pll> a(n);  // (value, original position)
+    rep(i, n) cin >> a[i].first, a[i].second = i + 1;
+    sort(all(a));
+    int i = 0, j = n - 1;
+    while (i < j) {
+        ll s = a[i].first + a[j].first;
+        if (s == x) {
+            print(a[i].second, a[j].second);
+            return;
+        }
+        if (s < x) i++;  // a[i] is too small for every remaining partner
+        else j--;  // a[j] is too large for every remaining partner
+    }
+    print("IMPOSSIBLE");
+}
+\end{code}
+
+Fixing one element and running this scan on the rest solves 3-SUM (Sum of Three Values) in $\Oh{n^2}$; for 4-SUM, fix two
+elements, or use meet in the middle over pairs (Section~\ref{sec:mitm}).
+
+\begin{recognize}
+``The longest or shortest subarray such that\ldots'', ``count the subarrays with at most\ldots'', pairs in a sorted array with
+a given sum or difference. The key test is monotonicity: does shrinking a valid window keep it valid? With non-negative
+values sums are monotone; with negative values they are not, and prefix sums with a map or a data structure take over.
+\end{recognize}
+
+% ======================================================================================================================
+\section[Sliding windows]{Sliding windows \hfill \gold}\label{sec:sliding}
+
+When every window has the same length $k$, the question is usually an aggregate of the window: its minimum, maximum, sum,
+median or number of distinct values. The sum and the number of distinct values are updated in $\Oh{1}$ as one element enters
+and one leaves. The minimum and maximum need the monotonic deque of Section~\ref{sec:queues}, which is amortised $\Oh{1}$ per
+step; for any other associative operation, the two-stack queue of Section~\ref{sec:augment} works. The median is harder,
+because it needs order statistics of a multiset that changes at both ends.
+
+\begin{problem}{Sliding Window Median (CSES)}
+For each window of $k$ consecutive elements, print its median (the lower one when $k$ is even).
+\solution Split the window into two multisets: \emph{low} holds the $\lceil k/2 \rceil$ smallest values and \emph{high} the
+rest, so the median is the largest element of \emph{low} (Figure~\ref{fig:slidingmedian}). A new element goes into the set
+it belongs to by comparison with that median; the leaving element is erased from whichever set contains it; then at most one
+element moves between the sets to restore the sizes. Every step is $\Oh{\log k}$.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \foreach \row/\wa/\wb/\low/\high/\med/\note in {0/1/5/{1,3,5}/{8,9}/5/{window $5, 1, 8, 3, 9$},
+      1/2/6/{1,2,3}/{8,9}/3/{5 leaves, 2 enters}} {
+    \pgfmathsetmacro{\yy}{-1.55*\row}
+    \foreach \v [count=\i] in {5, 1, 8, 3, 9, 2, 7} {
+      \pgfmathtruncatemacro{\inw}{(\i >= \wa && \i <= \wb) ? 1 : 0}
+      \ifnum\inw=1 \node[cellc, cool] at (\i*0.7, \yy) {\v}; \else \node[cellc, dim] at (\i*0.7, \yy) {\v}; \fi
+    }
+    \node[lbl, anchor=east] at (0.25, \yy) {\note};
+    \node[draw=fgblue, fill=fgsky!20, rounded corners=2pt, line width=0.7pt, minimum height=6mm, inner sep=3pt,
+      font=\sffamily\small] (lo\row) at (7.3, \yy) {low: \low};
+    \node[draw=fgorange!85!black, fill=fgorange!15, rounded corners=2pt, line width=0.7pt, minimum height=6mm,
+      inner sep=3pt, font=\sffamily\small, anchor=west] at ($(lo\row.east)+(0.25, 0)$) {high: \high};
+    \node[font=\sffamily\small\bfseries, text=fgverm, anchor=west] at (10.6, \yy) {median \med};
+  }
+\end{tikzpicture}
+\caption{Sliding window median with $k = 5$. \emph{low} keeps the three smallest values of the window, \emph{high} the other
+two; the median is the largest value in \emph{low}. When the window slides, 5 is erased and 2 inserted, and the median
+becomes 3.}
+\label{fig:slidingmedian}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n, k;
+    cin >> n >> k;
+    vi a(n);
+    cin >> a;
+    // low: the (k + 1) / 2 smallest values of the window, high: the rest
+    multiset<ll> low, high;
+    auto balance = [&]() {
+        while (sz(low) > (sz(low) + sz(high) + 1) / 2) {
+            high.insert(*prev(low.end()));
+            low.erase(prev(low.end()));
+        }
+        while (sz(low) < (sz(low) + sz(high) + 1) / 2) {
+            low.insert(*high.begin());
+            high.erase(high.begin());
+        }
+    };
+    vi med;
+    rep(i, n) {
+        if (low.empty() || a[i] <= *prev(low.end())) low.insert(a[i]);
+        else high.insert(a[i]);
+        if (i >= k) {  // a[i - k] leaves the window
+            auto it = low.find(a[i - k]);
+            if (it != low.end()) low.erase(it);
+            else high.erase(high.find(a[i - k]));
+        }
+        balance();
+        if (i >= k - 1) med.push_back(*prev(low.end()));  // largest of low
+    }
+    print(med);
+}
+\end{code}
+
+Two details deserve attention. Erasing a value with \cc{low.erase(x)} would remove \emph{all} copies of it; \cc{erase} of an
+iterator removes exactly one. And the leaving element must be erased from the set that actually contains it, which the code
+decides by searching \emph{low} first. Keeping the sums of both sets as well gives Sliding Window Cost, the minimum total
+distance from the window's values to a single point: by Section~\ref{sec:greedy-classics} that point is the median, and the
+cost is $(\text{med} \cdot |low| - \Sigma_{low}) + (\Sigma_{high} - \text{med} \cdot |high|)$.
+
+% ======================================================================================================================
+\section[Monotonic stacks in action]{Monotonic stacks in action \hfill \gold}\label{sec:monostack-apps}
+
+The monotonic stack of Section~\ref{sec:stacks} computes, for every element, the nearest smaller (or larger) element on each
+side in $\Oh{n}$. Those two numbers describe the largest window in which an element is the minimum, and that is exactly what
+many window problems need: the contribution technique of Section~\ref{sec:contribution} counts the subarrays in which each
+element is the minimum, and the following classic finds the largest rectangle under a histogram.
+
+\begin{problem}{Advertisement (CSES)}
+A fence consists of $n$ boards of width 1 and heights $h_i$. Find the largest rectangular advertisement that can be placed on
+the fence, aligned with the boards.
+\solution The largest rectangle has the height of its lowest board $i$ (otherwise it could be made taller), and extends left
+and right until a lower board blocks it. With $L_i$ and $R_i$, the nearest lower boards on each side from two monotonic stack
+passes, the rectangle for board $i$ has width $R_i - L_i - 1$, and the answer is $\max_i h_i (R_i - L_i - 1)$
+(Figure~\ref{fig:histogram}).
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.8cm, y=0.45cm]
+  \fill[fggreen!30] (2, 0) rectangle (4, 5);
+  \foreach \i/\h in {0/2, 1/1, 2/5, 3/6, 4/2, 5/3} {
+    \ifnum\i=1 \def\bc{fgverm}\else\ifnum\i=4 \def\bc{fgverm}\else\def\bc{fgblue}\fi\fi
+    \draw[line width=0.8pt, draw=\bc] (\i + 0.04, 0) rectangle (\i + 0.96, \h);
+    \node[font=\sffamily\scriptsize] at (\i + 0.5, \h + 0.5) {\h};
+    \node[lbl] at (\i + 0.5, -0.6) {\i};
+  }
+  \draw[line width=1.4pt, draw=fggreen!70!black] (2, 0) rectangle (4, 5);
+  \node[font=\sffamily\scriptsize\bfseries, text=fggreen!40!black, fill=fggreen!30, inner sep=1.5pt] at (3, 2.5)
+    {$5 \times 2 = 10$};
+  \node[font=\sffamily\scriptsize\bfseries, text=fgverm] at (1.5, 2.3) {$L_2$};
+  \node[font=\sffamily\scriptsize\bfseries, text=fgverm] at (4.5, 3.3) {$R_2$};
+  \draw[<->, line width=0.9pt, draw=fggreen!60!black] (2, -1.5) -- node[below, font=\sffamily\scriptsize,
+    text=fggreen!40!black] {width $R_2 - L_2 - 1 = 2$} (4, -1.5);
+  \draw[line width=0.6pt, draw=fgink!70] (-0.2, 0) -- (6.2, 0);
+\end{tikzpicture}
+\caption{The largest rectangle in the histogram $2, 1, 5, 6, 2, 3$ has height 5, set by board 2. It extends from just after
+the nearest lower board on the left ($L_2 = 1$) to just before the nearest lower board on the right ($R_2 = 4$); both
+blockers are drawn in red.}
+\label{fig:histogram}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vi h(n);
+    cin >> h;
+    // L[i], R[i]: nearest bars to the left and right lower than h[i]
+    vi L(n), R(n), st;
+    rep(i, n) {
+        while (!st.empty() && h[st.back()] >= h[i]) st.pop_back();
+        L[i] = st.empty() ? -1 : st.back();
+        st.push_back(i);
+    }
+    st.clear();
+    per(i, n) {
+        while (!st.empty() && h[st.back()] >= h[i]) st.pop_back();
+        R[i] = st.empty() ? n : st.back();
+        st.push_back(i);
+    }
+    ll best = 0;
+    rep(i, n) chmax(best, h[i] * (R[i] - L[i] - 1));  // as tall as bar i
+    print(best);
+}
+\end{code}
+
+\usetemplate{Monotonic stack (next greater / previous smaller)}{Ctrl+Alt+T, 7}{cpmonostack}
+
+\paragraph{From one dimension to two.} The largest rectangle of free cells in an $n \times m$ grid (Maximum Building I)
+reduces to $n$ histograms: for each row, let $h_j$ be the number of consecutive free cells ending at this row in column $j$
+(zero if the cell is blocked, otherwise one more than in the previous row). The best rectangle whose bottom edge lies on this
+row is the largest rectangle of that histogram, so the whole grid takes $\Oh{nm}$. Counting all free rectangles instead of
+finding the largest one (Maximum Building II) uses the same heights with the contribution technique.
+
+\begin{summary}[Chapter summary]
+\begin{itemize}
+  \item Prefix sums answer range sums in $\Oh{1}$ after $\Oh{n}$ work; use half-open ranges and $n + 1$ entries. In two
+        dimensions, inclusion--exclusion over four corners.
+  \item Difference arrays apply range updates in $\Oh{1}$ each and rebuild with one prefix-sum pass; rectangles need four
+        corners, arithmetic progressions a second level of differences.
+  \item Counting subarrays with sum $x$ is counting pairs of prefix sums with difference $x$: scan with a map. Variations
+        handle remainders, XOR, balance, and the longest such subarray.
+  \item Two pointers work when the window condition is monotone; both pointers move forwards, so the scan is linear. Count
+        ``exactly'' as ``at most $k$'' minus ``at most $k-1$''.
+  \item Two multisets maintain a sliding median; monotonic stacks give the largest window in which each element is the
+        minimum, which solves the largest rectangle problems.
+\end{itemize}
+\end{summary}
+
+\begin{practice}
+\ppgroup{Prefix sums and differences}
+\begin{pplist}
+  \item Static Range Sum Queries
+  \item Forest Queries
+  \item Subarray Sums II
+  \item Subarray Divisibility
+\end{pplist}
+\ppgroup{Two pointers}
+\begin{pplist}
+  \item Subarray Sums I
+  \item Sum of Two Values
+  \item Sum of Three Values
+  \item Sum of Four Values
+  \item Playlist
+  \item Subarray Distinct Values
+\end{pplist}
+\ppgroup{Sliding windows and stacks}
+\begin{pplist}
+  \item Sliding Window Median
+  \item Sliding Window Cost
+  \item Nearest Smaller Values
+  \item Advertisement
+  \item Maximum Building I
+\end{pplist}
+\end{practice}

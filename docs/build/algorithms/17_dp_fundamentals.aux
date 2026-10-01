@@ -1,0 +1,175 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\@writefile{toc}{\contentsline {chapter}{\numberline {18}Dynamic Programming Fundamentals}{250}{chapter.18}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{ch:dp}{{18}{250}{Dynamic Programming Fundamentals}{chapter.18}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {18.1}What DP is}{250}{section.18.1}\protected@file@percent }
+\newlabel{sec:dp-what}{{18.1}{250}{What DP is}{section.18.1}{}}
+\@writefile{toc}{\contentsline {paragraph}{DP is a computation on a DAG.}{250}{paragraph*.325}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {18.1}{\ignorespaces Left: the recursion tree of $F_5$ has 15 calls, because $F_3$ (orange) is solved twice and $F_2$ (blue) three times. Right: the same computation as a DAG of distinct states, where an arrow points to a value that is needed; DP evaluates each state once, in an order that respects the arrows.}}{251}{figure.caption.324}\protected@file@percent }
+\newlabel{fig:fibdag}{{18.1}{251}{Left: the recursion tree of $F_5$ has 15 calls, because $F_3$ (orange) is solved twice and $F_2$ (blue) three times. Right: the same computation as a DAG of distinct states, where an arrow points to a value that is needed; DP evaluates each state once, in an order that respects the arrows}{figure.caption.324}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {18.2}The recipe}{251}{section.18.2}\protected@file@percent }
+\newlabel{sec:dp-recipe}{{18.2}{251}{The recipe}{section.18.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {18.2}{\ignorespaces The recipe on Dice Combinations. Each state adds up the six states before it; $dp[0] = 1$ counts the empty sequence.}}{252}{figure.caption.326}\protected@file@percent }
+\newlabel{fig:dice}{{18.2}{252}{The recipe on Dice Combinations. Each state adds up the six states before it; $dp[0] = 1$ counts the empty sequence}{figure.caption.326}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {18.2.1}Top-down or bottom-up}{252}{subsection.18.2.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {18.2.2}Pulling and pushing}{252}{subsection.18.2.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {18.3}{\ignorespaces The same transitions in pull form (left) and push form (right). Pull computes one state from finished ones; push distributes one finished state forwards.}}{253}{figure.caption.327}\protected@file@percent }
+\newlabel{fig:pullpush}{{18.3}{253}{The same transitions in pull form (left) and push form (right). Pull computes one state from finished ones; push distributes one finished state forwards}{figure.caption.327}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {18.3}Coins and sums}{253}{section.18.3}\protected@file@percent }
+\newlabel{sec:dp-coins}{{18.3}{253}{Coins and sums}{section.18.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {18.4}{\ignorespaces Minimizing Coins for every sum up to 11. The last coin is 1, 5 or 7, so $dp[11]$ looks back at three cells.}}{253}{figure.caption.328}\protected@file@percent }
+\newlabel{fig:mincoins}{{18.4}{253}{Minimizing Coins for every sum up to 11. The last coin is 1, 5 or 7, so $dp[11]$ looks back at three cells}{figure.caption.328}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {18.3.1}Counting: the order of the loops is the order of the coins}{254}{subsection.18.3.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {18.5}{\ignorespaces Coins $\{1, 2\}$ and sum 3. With the sums in the outer loop, the inner loop chooses the last coin, so every order is counted. With the coins in the outer loop, coin 2 is added only after all coins 1 are placed, so every multiset is counted once.}}{254}{figure.caption.329}\protected@file@percent }
+\newlabel{fig:coinorder}{{18.5}{254}{Coins $\{1, 2\}$ and sum 3. With the sums in the outer loop, the inner loop chooses the last coin, so every order is counted. With the coins in the outer loop, coin 2 is added only after all coins 1 are placed, so every multiset is counted once}{figure.caption.329}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {18.4}Paths in grids}{255}{section.18.4}\protected@file@percent }
+\newlabel{sec:dp-grid}{{18.4}{255}{Paths in grids}{section.18.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {18.6}{\ignorespaces Grid Paths on the sample grid of the problem.}}{255}{figure.caption.330}\protected@file@percent }
+\newlabel{fig:gridpaths}{{18.6}{255}{Grid Paths on the sample grid of the problem}{figure.caption.330}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {18.5}Knapsack}{256}{section.18.5}\protected@file@percent }
+\newlabel{sec:knapsack}{{18.5}{256}{Knapsack}{section.18.5}{}}
+\@writefile{toc}{\contentsline {paragraph}{One row is enough.}{256}{paragraph*.331}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {18.7}{\ignorespaces The direction of the capacity loop is the whole difference between the 0/1 and the unbounded knapsack.}}{256}{figure.caption.332}\protected@file@percent }
+\newlabel{fig:knapdir}{{18.7}{256}{The direction of the capacity loop is the whole difference between the 0/1 and the unbounded knapsack}{figure.caption.332}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {18.5.1}Counting subsets}{256}{subsection.18.5.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {18.5.2}Bounded copies}{257}{subsection.18.5.2}\protected@file@percent }
+\newlabel{tpl:cpknap}{{18.5.2}{257}{Bounded copies}{section*.333}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {18.6}Increasing subsequences}{258}{section.18.6}\protected@file@percent }
+\newlabel{sec:lis}{{18.6}{258}{Increasing subsequences}{section.18.6}{}}
+\@writefile{toc}{\contentsline {paragraph}{The $\ensuremath  {\mathcal  {O}(n \log n)}$ method.}{258}{paragraph*.334}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {18.8}{\ignorespaces The tails for $3, 1, 4, 1, 5, 9, 2, 6$. The final list has length 4, the LIS length. The tails themselves ($1, 2, 5, 6$) are not a subsequence; following each element's predecessor, the tail before it at the moment it was placed, gives one: $1, 4, 5, 6$.}}{258}{figure.caption.335}\protected@file@percent }
+\newlabel{fig:lis}{{18.8}{258}{The tails for $3, 1, 4, 1, 5, 9, 2, 6$. The final list has length 4, the LIS length. The tails themselves ($1, 2, 5, 6$) are not a subsequence; following each element's predecessor, the tail before it at the moment it was placed, gives one: $1, 4, 5, 6$}{figure.caption.335}{}}
+\@writefile{toc}{\contentsline {paragraph}{Reconstruction.}{258}{paragraph*.336}\protected@file@percent }
+\newlabel{tpl:cplis}{{18.6}{259}{Reconstruction}{section*.337}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {18.7}Two sequences: LCS and edit distance}{259}{section.18.7}\protected@file@percent }
+\newlabel{sec:editdist}{{18.7}{259}{Two sequences: LCS and edit distance}{section.18.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {18.9}{\ignorespaces The edit-distance table of \texttt  {LOVE} (rows) and \texttt  {MOVIE} (columns), and an optimal alignment read from it.}}{260}{figure.caption.338}\protected@file@percent }
+\newlabel{fig:editdist}{{18.9}{260}{The edit-distance table of \texttt {LOVE} (rows) and \texttt {MOVIE} (columns), and an optimal alignment read from it}{figure.caption.338}{}}
+\newlabel{tpl:cplcs}{{18.7}{260}{Two sequences: LCS and edit distance}{section*.339}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {18.8}Choosing the state}{261}{section.18.8}\protected@file@percent }
+\newlabel{sec:dp-state}{{18.8}{261}{Choosing the state}{section.18.8}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {18.10}{\ignorespaces Array Description with $n = 3$, $m = 5$ and the array $2, 0, 2$ as a layered DAG of states.}}{261}{figure.caption.340}\protected@file@percent }
+\newlabel{fig:arraydesc}{{18.10}{261}{Array Description with $n = 3$, $m = 5$ and the array $2, 0, 2$ as a layered DAG of states}{figure.caption.340}{}}
+\@writefile{toc}{\contentsline {paragraph}{States that are shapes.}{262}{paragraph*.341}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {18.11}{\ignorespaces An optimal way to cut a $3 \times 5$ rectangle into squares.}}{262}{figure.caption.342}\protected@file@percent }
+\newlabel{fig:rectcut}{{18.11}{262}{An optimal way to cut a $3 \times 5$ rectangle into squares}{figure.caption.342}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {18.9}Reconstruction, memory and debugging}{262}{section.18.9}\protected@file@percent }
+\newlabel{sec:dp-debug}{{18.9}{262}{Reconstruction, memory and debugging}{section.18.9}{}}
+\@writefile{toc}{\contentsline {paragraph}{Reconstructing a solution.}{262}{paragraph*.343}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Shrinking the memory.}{263}{paragraph*.344}\protected@file@percent }
+\@setckpt{algorithms/17_dp_fundamentals}{
+\setcounter{page}{265}
+\setcounter{equation}{0}
+\setcounter{enumi}{5}
+\setcounter{enumii}{0}
+\setcounter{enumiii}{0}
+\setcounter{enumiv}{0}
+\setcounter{footnote}{0}
+\setcounter{mpfootnote}{0}
+\setcounter{part}{5}
+\setcounter{chapter}{18}
+\setcounter{section}{9}
+\setcounter{subsection}{0}
+\setcounter{subsubsection}{0}
+\setcounter{paragraph}{0}
+\setcounter{subparagraph}{0}
+\setcounter{figure}{11}
+\setcounter{table}{0}
+\setcounter{parentequation}{0}
+\setcounter{lstnumber}{17}
+\setcounter{tcbbreakpart}{1}
+\setcounter{tcblayer}{0}
+\setcounter{tcolorbox@number}{778}
+\setcounter{tcblisting}{158}
+\setcounter{tcbrastercolumn}{1}
+\setcounter{tcbrasterrow}{1}
+\setcounter{tcbrasternum}{1}
+\setcounter{tcbraster}{5}
+\setcounter{cpsegfig}{0}
+\setcounter{LT@tables}{0}
+\setcounter{LT@chunks}{0}
+\setcounter{nlinenum}{0}
+\setcounter{ALG@line}{11}
+\setcounter{ALG@rem}{0}
+\setcounter{ALG@nested}{0}
+\setcounter{ALG@Lnr}{2}
+\setcounter{ALG@blocknr}{15}
+\setcounter{ALG@storecount}{0}
+\setcounter{ALG@tmpcounter}{0}
+\setcounter{algpx@codeBoxCount}{0}
+\setcounter{algpx@nestedCBoxCount}{0}
+\setcounter{algpx@startedBoxesCount}{0}
+\setcounter{algpx@endedBoxesCount}{0}
+\setcounter{algpx@nestedBoxedStringCount}{0}
+\setcounter{algpx@nestedBoxedStringMaxCount}{0}
+\setcounter{algpx@indentCount}{20}
+\setcounter{algpx@lastIndentEnded}{19}
+\setcounter{algpx@pageCount}{1}
+\setcounter{algpx@tmpCount}{2}
+\setcounter{caption@flags}{2}
+\setcounter{continuedfloat}{0}
+\setcounter{float@type}{16}
+\setcounter{section@level}{0}
+\setcounter{Item}{18}
+\setcounter{Hfootnote}{0}
+\setcounter{bookmark@seq@number}{0}
+\setcounter{algpx@indentEndPage-0@totc}{0}
+\setcounter{algpx@indentEndPage-1@totc}{0}
+\setcounter{algpx@indentEndPage-2@totc}{0}
+\setcounter{algpx@indentEndPage-3@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-2@totc}{3}
+\setcounter{algpx@indentEndCoordIndex-0@totc}{3}
+\setcounter{algpx@indentEndPage-4@totc}{0}
+\setcounter{algpx@indentEndPage-5@totc}{0}
+\setcounter{algpx@indentEndPage-6@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-4@totc}{6}
+\setcounter{algpx@indentEndPage-7@totc}{0}
+\setcounter{algpx@indentEndPage-8@totc}{0}
+\setcounter{algpx@indentEndPage-9@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-8@totc}{9}
+\setcounter{algpx@indentEndPage-10@totc}{0}
+\setcounter{algpx@indentEndPage-11@totc}{0}
+\setcounter{algpx@indentEndPage-12@totc}{0}
+\setcounter{algpx@indentEndPage-13@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-12@totc}{13}
+\setcounter{algpx@indentEndCoordIndex-10@totc}{13}
+\setcounter{algpx@indentEndPage-14@totc}{0}
+\setcounter{algpx@indentEndPage-15@totc}{0}
+\setcounter{algpx@indentEndPage-16@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-15@totc}{16}
+\setcounter{algpx@indentEndPage-17@totc}{0}
+\setcounter{algpx@indentEndPage-18@totc}{1}
+\setcounter{algpx@indentEndPage-19@totc}{1}
+\setcounter{algpx@indentEndCoordIndex-18@totc}{19}
+\setcounter{lstlisting}{0}
+\setcounter{algpx@indentEndPage-0}{0}
+\setcounter{algpx@indentEndPage-1}{0}
+\setcounter{algpx@indentEndPage-2}{0}
+\setcounter{algpx@indentEndPage-3}{0}
+\setcounter{algpx@indentEndCoordIndex-2}{3}
+\setcounter{algpx@indentEndCoordIndex-0}{3}
+\setcounter{algpx@indentEndPage-4}{0}
+\setcounter{algpx@indentEndPage-5}{0}
+\setcounter{algpx@indentEndPage-6}{0}
+\setcounter{algpx@indentEndCoordIndex-4}{6}
+\setcounter{algpx@indentEndPage-7}{0}
+\setcounter{algpx@indentEndPage-8}{0}
+\setcounter{algpx@indentEndPage-9}{0}
+\setcounter{algpx@indentEndCoordIndex-8}{9}
+\setcounter{algpx@indentEndPage-10}{0}
+\setcounter{algpx@indentEndPage-11}{0}
+\setcounter{algpx@indentEndPage-12}{0}
+\setcounter{algpx@indentEndPage-13}{0}
+\setcounter{algpx@indentEndCoordIndex-12}{13}
+\setcounter{algpx@indentEndCoordIndex-10}{13}
+\setcounter{algpx@indentEndPage-14}{0}
+\setcounter{algpx@indentEndPage-15}{0}
+\setcounter{algpx@indentEndPage-16}{0}
+\setcounter{algpx@indentEndCoordIndex-15}{16}
+\setcounter{algpx@indentEndPage-17}{0}
+\setcounter{algpx@indentEndPage-18}{1}
+\setcounter{algpx@indentEndPage-19}{1}
+\setcounter{algpx@indentEndCoordIndex-18}{19}
+}

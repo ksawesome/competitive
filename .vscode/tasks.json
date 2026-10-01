@@ -1,0 +1,82 @@
+{
+    // Shortcuts for these live in the "competitive" profile's keybindings.json (see CHEATSHEET.md).
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "cf-run",
+            "detail": "F5: run the current file on its CPH test cases, with crash reason, time and memory",
+            "type": "process",
+            "command": "python",
+            "args": ["${workspaceFolder}/tools/cp.py", "test", "${file}"],
+            "presentation": { "reveal": "always", "focus": true, "panel": "dedicated", "clear": true, "showReuseMessage": false },
+            "problemMatcher": { "base": "$gcc", "fileLocation": "absolute" }
+        },
+        {
+            "label": "CP: Run With Typed Input",
+            "detail": "Ctrl+F5: compile and run the current file, typing the input in the terminal",
+            "type": "process",
+            "command": "python",
+            "args": ["${workspaceFolder}/tools/cp.py", "run", "${file}"],
+            "presentation": { "reveal": "always", "focus": true, "panel": "dedicated", "clear": true, "showReuseMessage": false },
+            "problemMatcher": { "base": "$gcc", "fileLocation": "absolute" }
+        },
+        {
+            "label": "CP: Stress Test",
+            "detail": "Ctrl+Alt+X: compare the current file with stress/brute.cpp on stress/gen.cpp tests",
+            "type": "process",
+            "command": "python",
+            "args": ["${workspaceFolder}/tools/cp.py", "stress", "${file}"],
+            "presentation": { "reveal": "always", "focus": false, "panel": "dedicated", "clear": true, "showReuseMessage": false },
+            "problemMatcher": { "base": "$gcc", "fileLocation": "absolute" }
+        },
+        {
+            "label": "CP: Quickstart",
+            "detail": "Ctrl+Shift+N: new problem file from template/template.cpp",
+            "type": "process",
+            "command": "python",
+            "args": ["${workspaceFolder}/tools/cp.py", "new", "${input:problemName}"],
+            "presentation": { "reveal": "silent", "panel": "shared", "showReuseMessage": false },
+            "problemMatcher": []
+        },
+        {
+            "label": "CP: Quickstart USACO",
+            "detail": "Ctrl+Shift+U: new USACO problem with file I/O filled in",
+            "type": "process",
+            "command": "python",
+            "args": ["${workspaceFolder}/tools/cp.py", "new", "${input:usacoName}", "--usaco"],
+            "presentation": { "reveal": "silent", "panel": "shared", "showReuseMessage": false },
+            "problemMatcher": []
+        },
+        {
+            "label": "CP: Archive Old Files",
+            "detail": "Ctrl+Shift+Alt+C: move solutions untouched for a day into archive/YYYY-MM (CPH tests kept)",
+            "type": "process",
+            "command": "python",
+            "args": ["${workspaceFolder}/tools/cp.py", "archive"],
+            "presentation": { "reveal": "always", "panel": "shared", "showReuseMessage": false },
+            "problemMatcher": []
+        },
+        {
+            "label": "CP: Build Docs",
+            "detail": "Compile docs/GUIDE.pdf and docs/ALGORITHMS.pdf from their LaTeX sources",
+            "type": "process",
+            "command": "python",
+            "args": ["${workspaceFolder}/tools/cp.py", "docs"],
+            "presentation": { "reveal": "always", "panel": "shared", "showReuseMessage": false },
+            "problemMatcher": []
+        },
+        {
+            "label": "CP: Setup",
+            "detail": "Rebuild precompiled header, template snippets, shortcuts, CPH flags and CHEATSHEET.md",
+            "type": "process",
+            "command": "python",
+            "args": ["${workspaceFolder}/tools/cp.py", "setup", "--check"],
+            "presentation": { "reveal": "always", "panel": "shared", "showReuseMessage": false },
+            "problemMatcher": []
+        }
+    ],
+    "inputs": [
+        { "id": "problemName", "type": "promptString", "description": "Problem file name (e.g. A_Two_Sum)" },
+        { "id": "usacoName", "type": "promptString", "description": "USACO I/O name (e.g. perimeter for perimeter.in / perimeter.out)" }
+    ]
+}

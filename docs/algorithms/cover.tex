@@ -1,0 +1,26 @@
+% Cover: the title, and the roadmap of the book itself -- its Parts as a prerequisite graph, each with the levels
+% (bronze to IOI) it covers. Every element on it is real: it is the same map that opens each Part.
+\begin{titlepage}
+\newsavebox{\cpCoverMap}\sbox{\cpCoverMap}{\cproadmap{dark}{0}}% typeset first: never nest one tikzpicture in another
+\newsavebox{\cpCoverLegend}\sbox{\cpCoverLegend}{\cprmLegend{white!80!cpblue}}%
+\begin{tikzpicture}[remember picture, overlay]
+  \fill[cpblue!92!black] (current page.south west) rectangle (current page.north east);
+  \fill[cpblue] ([yshift=-11.2cm]current page.north west) rectangle (current page.north east);
+  \draw[cpteal!70!white, line width=2pt] ([yshift=-11.2cm]current page.north west) -- ([yshift=-11.2cm]current page.north east);
+  \node[anchor=north west, text=white, font=\sffamily\bfseries\fontsize{36}{42}\selectfont, align=left]
+    at ([xshift=2.2cm, yshift=-2.4cm]current page.north west) {The Competitive\\Programming\\Handbook};
+  \node[anchor=north west, text=white!80!cpteal, font=\sffamily\large, align=left]
+    at ([xshift=2.2cm, yshift=-7.55cm]current page.north west)
+    {Data structures, algorithms, patterns and tricks,\\from your first loop to IOI gold};
+  \node[anchor=north west, text=white!65!cpblue, font=\sffamily\small\bfseries, align=left]
+    at ([xshift=2.2cm, yshift=-9.45cm]current page.north west) {SECOND EDITION \,\textperiodcentered\, 2026};
+  \node[anchor=north, inner sep=0pt] at ([yshift=-12.6cm]current page.north) {\usebox{\cpCoverMap}};
+  \node[anchor=north, inner sep=0pt] at ([yshift=-22.55cm]current page.north) {\usebox{\cpCoverLegend}};
+  \node[anchor=north, text=white!70!cpblue, font=\sffamily\scriptsize] at ([yshift=-23.25cm]current page.north)
+    {The map of this book: each Part, what it builds on, and the levels it covers.};
+  \node[anchor=south west, text=white, font=\sffamily\bfseries\large]
+    at ([xshift=2.2cm, yshift=2.6cm]current page.south west) {Kshitish Madbhavi};
+  \node[anchor=south west, text=white!70!cpblue, font=\sffamily\small]
+    at ([xshift=2.2cm, yshift=1.95cm]current page.south west) {Companion to the template library in \texttt{Desktop/competitive}};
+\end{tikzpicture}
+\end{titlepage}

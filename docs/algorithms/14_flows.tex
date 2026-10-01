@@ -1,0 +1,786 @@
+\chapter{Flows and Matchings}\label{ch:flows}
+
+Network flow models anything that moves through a network with capacities: water through pipes, data through links,
+workers to jobs. Its power in contests comes from \emph{modelling}. Assignment problems, disjoint paths, choosing a profitable
+set of projects with prerequisites, separating two groups at minimum cost, covering a DAG with few chains: all of these reduce
+to a maximum flow, a minimum cut or a matching, and then a single library routine solves them. This chapter develops the
+theory that makes those reductions trustworthy (residual graphs, the max-flow min-cut theorem, König's and Hall's theorems,
+linear programming duality in the form of potentials) and the algorithms behind the templates, from Dinic's blocking flows to
+the Hungarian algorithm, Edmonds' blossoms, Stoer--Wagner and Gomory--Hu trees.
+
+\begin{chapterintro}{\ioi}{Chapters~\ref{ch:graphs} and~\ref{ch:shortest} (BFS, Dijkstra, Bellman--Ford).}
+  \item understand residual graphs and augmenting paths, and run Dinic's algorithm;
+  \item use the max-flow min-cut theorem to model separation and selection problems;
+  \item find disjoint paths, maximum bipartite matchings, minimum vertex covers and path covers;
+  \item solve assignment problems with the Hungarian algorithm and min-cost flow;
+  \item handle lower bounds, general (non-bipartite) matching, global minimum cuts and all-pairs minimum cuts.
+\end{chapterintro}
+
+% ======================================================================================================================
+\section[Maximum flow]{Maximum flow \hfill \ioi}\label{sec:maxflow}
+
+A \defn{flow network} is a directed graph with a \emph{capacity} $c(e) \ge 0$ on every edge, a source $s$ and a sink $t$. A
+\defn{flow} assigns a value $0 \le f(e) \le c(e)$ to every edge such that, at every vertex other than $s$ and $t$, the flow
+coming in equals the flow going out (\emph{conservation}). The value of the flow is the net amount leaving $s$, and the
+\emph{maximum flow} problem asks for the largest possible value.
+
+\subsection{Residual graphs and augmenting paths}
+
+The key to every flow algorithm is the \defn{residual graph} of a flow. For every edge $u \to v$ with capacity $c$ and flow
+$f$, it contains a \emph{forward} edge $u \to v$ with the unused capacity $c - f$, and a \emph{backward} edge $v \to u$ with
+capacity $f$: pushing flow backwards along it cancels flow that was sent earlier. A path from $s$ to $t$ in the residual graph
+is an \defn{augmenting path}; pushing its bottleneck (smallest residual capacity) along it increases the flow value and keeps
+all constraints. Figure~\ref{fig:residual} shows why backward edges are indispensable: a greedy first path can block the
+optimum, and only cancelling part of it recovers.
+
+\begin{figure}[htbp]
+\centering
+\newcommand{\rgpanel}[2]{%
+\begin{tikzpicture}[x=0.95cm, y=0.95cm]
+  \node[vtxs, hot] (s) at (0, 0) {$s$}; \node[vtxs] (a) at (1.5, 1) {$a$}; \node[vtxs] (b) at (1.5, -1) {$b$};
+  \node[vtxs, good] (t) at (3, 0) {$t$};
+  #1
+  \node[lbl] at (1.5, -1.65) {#2};
+\end{tikzpicture}}
+\begin{filmstrip}[3]
+  \begin{stepbox}{1. a greedy path}
+    \rgpanel{\draw[ded] (s) -- (b); \draw[ded] (a) -- (t);
+      \draw[hded] (s) -- (a); \draw[hded] (a) -- (b); \draw[hded] (b) -- (t);}{flow 1 along $s, a, b, t$}
+  \end{stepbox}
+  \begin{stepbox}{2. residual graph}
+    \rgpanel{\draw[ded] (a) to[bend right=12] (s); \draw[ded] (t) to[bend left=12] (b);
+      \draw[hded] (s) -- (b); \draw[hded, draw=fgverm, dashed] (b) -- (a); \draw[hded] (a) -- (t);}{backward edge $b \to a$}
+  \end{stepbox}
+  \begin{stepbox}{3. after augmenting}
+    \rgpanel{\draw[ded, draw=fgline!60] (a) -- (b);
+      \draw[gded] (s) -- (a); \draw[gded] (a) -- (t); \draw[gded] (s) -- (b); \draw[gded] (b) -- (t);}{flow 2: the $a \to b$
+      flow is cancelled}
+  \end{stepbox}
+\end{filmstrip}
+\caption{Why residual graphs have backward edges. All capacities are 1. The first augmenting path uses $a \to b$ and blocks
+both remaining paths; in the residual graph, the backward edge $b \to a$ (dashed) lets the second path $s, b, a, t$ reroute the
+first unit, giving the maximum flow 2.}
+\label{fig:residual}
+\end{figure}
+
+A flow is maximum exactly when its residual graph has no augmenting path; the next section proves this. The algorithms differ in
+\emph{which} augmenting paths they use.
+
+\begin{itemize}
+  \item \textbf{Ford--Fulkerson}: any augmenting path, found by DFS. With integer capacities each augmentation adds at least 1,
+        so it runs in $\Oh{m F}$ for a maximum flow of value $F$: fine when $F$ is small, as in matching problems.
+  \item \textbf{Edmonds--Karp}: always a \emph{shortest} augmenting path (BFS), which bounds the number of augmentations by
+        $\Oh{nm}$ regardless of the capacities: $\Oh{nm^2}$.
+  \item \textbf{Dinic}: in each phase, BFS computes the distance \emph{level} of every vertex, and a DFS that only follows edges
+        from one level to the next pushes a \emph{blocking flow}, saturating all shortest augmenting paths at once
+        (Figure~\ref{fig:dinic}). The distance from $s$ to $t$ grows with every phase, so there are at most $n$ phases.
+        Dinic runs in $\Oh{n^2 m}$ in general, $\Oh{m\sqrt n}$ on unit-capacity bipartite graphs, and is extremely fast in
+        practice; it is the default.
+\end{itemize}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=1.35cm, y=1.1cm]
+  \foreach \lv in {0,...,3} {
+    \fill[fgsky!12] (\lv - 0.35, -1.75) rectangle (\lv + 0.35, 1.75);
+    \node[lbl] at (\lv, -2.05) {level \lv};
+  }
+  \node[vtx, hot] (s) at (0, 0) {$s$}; \node[vtx] (a) at (1, 1) {$a$}; \node[vtx] (b) at (1, -1) {$b$};
+  \node[vtx] (c) at (2, 1) {$c$}; \node[vtx] (d) at (2, -1) {$d$}; \node[vtx, good] (t) at (3, 0) {$t$};
+  \draw[bded] (s) -- (a); \draw[bded] (s) -- (b); \draw[bded] (a) -- (c); \draw[bded] (b) -- (d);
+  \draw[bded] (c) -- (t); \draw[bded] (d) -- (t);
+  \draw[ded, draw=fgline, dashed] (a) -- (b);
+  \node[notel, anchor=west, text width=5.2cm] at (3.7, 0) {One phase of Dinic: BFS assigns levels, and only edges from level
+    $i$ to level $i + 1$ (blue) belong to the level graph. The edge $a \to b$ stays inside a level and is ignored in this
+    phase; blocking-flow DFS never looks at it.};
+\end{tikzpicture}
+\caption{The level graph of one phase of Dinic's algorithm.}
+\label{fig:dinic}
+\end{figure}
+
+\begin{problem}{Download Speed (CSES)}
+Computers are joined by one-way connections with given speeds. Find the maximum speed at which data can be downloaded from
+computer 1 to computer $n$.
+\solution The maximum flow from 1 to $n$, with speeds as capacities.
+\end{problem}
+
+\begin{code}
+void solve() {  // Dinic (cpdinic) is pasted above solve()
+    int n, m;
+    cin >> n >> m;
+    Dinic g(n + 1);
+    rep(i, m) {
+        ll a, b, c;
+        cin >> a >> b >> c;
+        g.add_edge(a, b, c);  // a one-way connection of capacity c
+    }
+    print(g.max_flow(1, n));
+}
+\end{code}
+
+\usetemplate{Max flow (Dinic) + min cut}{Ctrl+Alt+Y, Y}{cpdinic}
+
+% ======================================================================================================================
+\section[Minimum cut]{Minimum cut \hfill \ioi}\label{sec:mincut}
+
+An $s$--$t$ \defn[cut]{cut} splits the vertices into a side $S$ containing $s$ and a side $T$ containing $t$; its capacity is the
+total capacity of the edges from $S$ to $T$. Every unit of flow must cross from $S$ to $T$ at least once, so the value of any
+flow is at most the capacity of any cut.
+
+\begin{fact}[Max-flow min-cut theorem]
+The maximum flow value equals the minimum cut capacity. Moreover, after a max-flow algorithm finishes, the vertices reachable
+from $s$ in the residual graph form the $S$ side of a minimum cut.
+\end{fact}
+
+\emph{Proof.} Let $f$ be a flow with no augmenting path, and let $S$ be the set of vertices reachable from $s$ in its residual
+graph; $t \notin S$. Every edge from $S$ to $T$ is saturated (otherwise its head would be reachable), and every edge from $T$ to
+$S$ carries no flow (otherwise its backward residual edge would make its tail reachable). So the net flow across the cut is exactly
+its capacity, and since the flow value equals the net flow across any cut, the flow value equals this cut's capacity. As no flow
+exceeds any cut, both are optimal (Figure~\ref{fig:mincut}). The same argument shows that ``no augmenting path'' implies
+``maximum'', which is why the augmenting-path algorithms are correct.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=1.25cm, y=1.1cm]
+  \fill[fgsky!15, rounded corners=10pt] (-0.45, -1.7) -- (-0.45, 1.7) -- (2.55, 1.7) -- (2.55, 0.3) -- (4.75, -0.35)
+    -- (4.75, -1.7) -- cycle;
+  \node[vtx, hot] (s) at (0, 0) {$s$}; \node[vtx] (a) at (2, 1.2) {$a$}; \node[vtx] (b) at (2, -1.2) {$b$};
+  \node[vtx] (c) at (4.2, 1.2) {$c$}; \node[vtx] (d) at (4.2, -1.2) {$d$}; \node[vtx, good] (t) at (6.2, 0) {$t$};
+  \draw[ded] (s) -- node[wl] {3/3} (a); \draw[ded] (s) -- node[wl] {1/2} (b);
+  \draw[ded] (a) -- node[wl] {1/1} (b); \draw[hded] (a) -- node[wl] {2/2} (c);
+  \draw[ded] (b) -- node[wl] {2/3} (d); \draw[ded] (c) -- node[wl] {2/3} (t);
+  \draw[hded] (d) -- node[wl] {2/2} (t);
+  \node[font=\sffamily\scriptsize, text=fgblue] at (0.3, -1.45) {residual-reachable side $S$};
+  \node[notel, anchor=west, text width=4.4cm] at (6.9, 0.2) {Labels are flow/capacity; the flow has value 4. The red edges
+    $a \to c$ and $d \to t$ leave $S$, both saturated, with total capacity $2 + 2 = 4$: no flow can do better.};
+\end{tikzpicture}
+\caption{A maximum flow and a minimum cut of the same value. The shaded side $S = \{s, a, b, d\}$ is what is reachable from $s$
+in the residual graph.}
+\label{fig:mincut}
+\end{figure}
+
+\begin{problem}{Police Chase (CSES)}
+Close as few two-way streets as possible so that there is no route from crossing 1 to crossing $n$, and print them.
+\solution With every street a capacity-1 edge in both directions, the minimum number of streets to close is the minimum cut. After
+the max flow, the streets with one end on each side of the residual-reachable set form a minimum cut.
+\end{problem}
+
+\begin{code}
+void solve() {  // Dinic (cpdinic) is pasted above solve()
+    int n, m;
+    cin >> n >> m;
+    Dinic g(n + 1);
+    vector<pii> street(m);
+    for (auto& [a, b] : street) {
+        cin >> a >> b;
+        g.add_edge(a, b, 1, 1);  // a two-way street: capacity 1 each way
+    }
+    print(g.max_flow(1, n));  // the size of a minimum cut
+    // the cut: streets between the source side and the sink side
+    for (auto [a, b] : street)
+        if (g.min_cut_side(a) != g.min_cut_side(b)) print(a, b);
+}
+\end{code}
+
+\subsection{Project selection}
+
+Min cuts shine when a problem asks to \emph{choose} a subset under dependencies. There are $n$ projects with profits $p_i$
+(possibly negative), and requirements ``choosing $a$ forces choosing $b$''. Build a network with an edge $s \to i$ of capacity
+$p_i$ for every profitable project, an edge $i \to t$ of capacity $-p_i$ for every costly one, and an edge $a \to b$ of infinite
+capacity for every requirement (Figure~\ref{fig:projsel}). A finite cut with source side $S$ never cuts a requirement edge, so $S$
+is a valid selection, and its capacity is exactly the profit given up plus the cost paid:
+\[
+  \text{best profit} = \sum_{p_i > 0} p_i - \text{min cut} .
+\]
+This is the \emph{maximum weight closure} problem, and a surprising number of problems are it in disguise: choosing experiments
+that need equipment, rooms that need keys, vertices of a graph that must include all successors.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=1.3cm, y=1.0cm]
+  \node[vtx, hot] (s) at (0, 0) {$s$};
+  \node[vtx] (p1) at (2, 1.2) {1}; \node[vtx] (p2) at (2, -1.2) {2};
+  \node[vtx] (p3) at (4, 1.2) {3}; \node[vtx] (p4) at (4, -1.2) {4};
+  \node[vtx, good] (t) at (6, 0) {$t$};
+  \draw[ded] (s) -- node[wl] {8} (p1); \draw[ded] (s) -- node[wl] {5} (p2);
+  \draw[ded] (p3) -- node[wl] {6} (t); \draw[ded] (p4) -- node[wl] {4} (t);
+  \draw[ded, line width=1.4pt] (p1) -- node[wl] {$\infty$} (p3); \draw[ded, line width=1.4pt] (p2) -- node[wl] {$\infty$}
+    (p3); \draw[ded, line width=1.4pt] (p2) -- node[wl] {$\infty$} (p4);
+  \node[notel, anchor=west, text width=5.0cm] at (6.6, 0) {Projects 1, 2 earn 8 and 5; projects 3, 4 cost 6 and 4. Project 1
+    needs 3; project 2 needs 3 and 4. Taking everything earns $13 - 10 = 3$; taking only 1 and 3 earns $8 - 6 = 2$. The
+    minimum cut, 10, gives $13 - 10 = 3$.};
+\end{tikzpicture}
+\caption{Project selection as a minimum cut. Infinite edges can never be cut, so the source side is always a closed set of
+projects.}
+\label{fig:projsel}
+\end{figure}
+
+\begin{code}
+void solve() {  // Dinic (cpdinic) is pasted above solve()
+    int n, m;  // n projects, m requirements "a needs b"
+    cin >> n >> m;
+    int s = 0, t = n + 1;
+    Dinic g(n + 2);
+    ll positive = 0;
+    rep(i, 1, n + 1) {
+        ll p;
+        cin >> p;  // profit, possibly negative
+        if (p > 0) g.add_edge(s, i, p), positive += p;
+        else g.add_edge(i, t, -p);
+    }
+    rep(j, m) {
+        int a, b;
+        cin >> a >> b;
+        g.add_edge(a, b, INF);  // choosing a forces choosing b
+    }
+    // best profit = all positive profits - the cheapest way to give up
+    // some of them or pay for the needed costs: a minimum cut
+    print(positive - g.max_flow(s, t));
+}
+\end{code}
+
+\begin{recognize}
+``Remove the cheapest set of edges or vertices so that $s$ and $t$ are separated'', ``split into two groups where each item has a
+cost for each side and some pairs cost extra if separated'', ``choose a subset with profits and prerequisites''. Whenever the
+objective is the cost of \emph{separating} things, think of a minimum cut. Costs on vertices become edges by splitting each vertex
+into an in-copy and an out-copy joined by an edge of that cost.
+\end{recognize}
+
+% ======================================================================================================================
+\section[Disjoint paths]{Disjoint paths \hfill \ioi}\label{sec:disjointpaths}
+
+The maximum number of \emph{edge-disjoint} paths from $s$ to $t$ is the maximum flow with all capacities 1: each unit of flow is one
+path, and conversely disjoint paths give a flow. Dually, by \defn{Menger's theorem}, it equals the minimum number of edges whose
+removal separates $s$ from $t$. For \emph{vertex-disjoint} paths, split every vertex $v$ other than $s$ and $t$ into $v_{\text{in}}$
+and $v_{\text{out}}$ joined by an edge of capacity 1, redirect incoming edges to $v_{\text{in}}$ and outgoing ones from
+$v_{\text{out}}$ (Figure~\ref{fig:vsplit}); now a vertex can carry at most one unit of flow.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[vtx] (u1) at (0, 0.7) {}; \node[vtx] (u2) at (0, -0.7) {}; \node[vtx, cool] (v) at (1.6, 0) {$v$};
+  \node[vtx] (w1) at (3.2, 0.7) {}; \node[vtx] (w2) at (3.2, -0.7) {};
+  \draw[ded] (u1) -- (v); \draw[ded] (u2) -- (v); \draw[ded] (v) -- (w1); \draw[ded] (v) -- (w2);
+  \draw[->, line width=1.2pt, draw=fgblue] (4.0, 0) -- (5.0, 0);
+  \begin{scope}[xshift=5.8cm]
+    \node[vtx] (x1) at (0, 0.7) {}; \node[vtx] (x2) at (0, -0.7) {};
+    \node[vtx, cool] (vi) at (1.5, 0) {\scriptsize in}; \node[vtx, cool] (vo) at (3.0, 0) {\scriptsize out};
+    \node[vtx] (y1) at (4.5, 0.7) {}; \node[vtx] (y2) at (4.5, -0.7) {};
+    \draw[ded] (x1) -- (vi); \draw[ded] (x2) -- (vi); \draw[hded] (vi) -- node[wl] {1} (vo);
+    \draw[ded] (vo) -- (y1); \draw[ded] (vo) -- (y2);
+  \end{scope}
+\end{tikzpicture}
+\caption{Vertex splitting. The edge $v_{\text{in}} \to v_{\text{out}}$ of capacity 1 (or of the vertex's cost) makes a vertex
+capacity into an edge capacity.}
+\label{fig:vsplit}
+\end{figure}
+
+\begin{problem}{Distinct Routes (CSES)}
+Find as many routes from room 1 to room $n$ as possible, such that no one-way teleporter is used by two routes, and print them.
+\solution The number of routes is the maximum flow with unit capacities. To print them, repeatedly walk from 1 along edges that
+carry flow and have not been used yet: by conservation, the walk can always continue until it reaches $n$, and each walk uses up
+one unit of flow.
+\end{problem}
+
+\begin{code}
+void solve() {  // Dinic (cpdinic) is pasted above solve()
+    int n, m;
+    cin >> n >> m;
+    Dinic g(n + 1);
+    vvi out(n + 1);  // edge ids leaving each room
+    vi to(2 * m);
+    rep(i, m) {
+        int a, b;
+        cin >> a >> b;
+        int id = g.add_edge(a, b, 1);
+        out[a].push_back(id), to[id] = b;
+    }
+    ll k = g.max_flow(1, n);
+    print(k);
+    // each unit of flow is one route: follow edges that carry flow,
+    // using every edge once (a used edge is marked by clearing its flow)
+    vector<bool> used(2 * m, false);
+    rep(r, k) {
+        vi route{1};
+        int u = 1;
+        while (u != n) {
+            for (int id : out[u])
+                if (!used[id] && g.flow_on(id) > 0) {
+                    used[id] = true, u = to[id];
+                    break;
+                }
+            route.push_back(u);
+        }
+        print(sz(route));
+        print(route);
+    }
+}
+\end{code}
+
+% ======================================================================================================================
+\section[Bipartite matching]{Bipartite matching \hfill \ioi}\label{sec:matching}
+
+A \defn{matching} is a set of edges no two of which share a vertex. In a bipartite graph with sides $L$ and $R$, a maximum matching
+is a maximum flow in the network $s \to L \to R \to t$ with all capacities 1. The flow view translates into a direct algorithm:
+an augmenting path is now an \defn{alternating path} that starts at an unmatched left vertex, alternates between non-matching and
+matching edges, and ends at an unmatched right vertex; flipping every edge on it increases the matching by one
+(Figure~\ref{fig:augmenting}). \defn{Berge's lemma} says that a matching is maximum exactly when no augmenting path exists.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \begin{scope}
+    \foreach \i in {0,...,2} { \node[vtx] (l\i) at (0, -\i*1.1) {}; \node[vtx] (r\i) at (2.2, -\i*1.1) {}; }
+    \node[vtx, hot] at (l2) {}; \node[vtx, good] at (r0) {};
+    \draw[ged] (l0) -- (r1); \draw[ged] (l1) -- (r2);
+    \draw[ed] (l0) -- (r0); \draw[ed] (l1) -- (r1); \draw[ed] (l2) -- (r2);
+    \draw[line width=4pt, draw=fgorange, opacity=0.35, line join=round] (l2.center) -- (r2.center) -- (l1.center)
+      -- (r1.center) -- (l0.center) -- (r0.center);
+    \node[lbl, align=center] at (1.1, -3.0) {matching of size 2 and an\\augmenting path (orange)};
+  \end{scope}
+  \draw[->, line width=1.2pt, draw=fgblue] (3.1, -1.1) -- (4.1, -1.1) node[midway, above, font=\sffamily\scriptsize,
+    text=fgblue] {flip};
+  \begin{scope}[xshift=5.0cm]
+    \foreach \i in {0,...,2} { \node[vtx] (m\i) at (0, -\i*1.1) {}; \node[vtx] (q\i) at (2.2, -\i*1.1) {}; }
+    \draw[ed] (m0) -- (q1); \draw[ed] (m1) -- (q2);
+    \draw[ged] (m0) -- (q0); \draw[ged] (m1) -- (q1); \draw[ged] (m2) -- (q2);
+    \node[lbl] at (1.1, -3.0) {matching of size 3};
+  \end{scope}
+\end{tikzpicture}
+\caption{An augmenting path runs from an unmatched left vertex (red) to an unmatched right vertex (green), alternating between
+edges outside and inside the matching (green). Flipping it grows the matching by one.}
+\label{fig:augmenting}
+\end{figure}
+
+\defn{Kuhn's algorithm} looks for an augmenting path from every left vertex by DFS, in $\Oh{nm}$ total and ten lines of code.
+\defn{Hopcroft--Karp} finds a maximal set of shortest augmenting paths per phase, like Dinic, in $\Oh{m\sqrt n}$; use it for
+$n, m$ around $10^5$.
+
+\begin{problem}{School Dance (CSES)}
+Given which boys and girls are willing to dance together, form as many dance pairs as possible and print them.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, m, k;  // n boys, m girls, k possible pairs
+    cin >> n >> m >> k;
+    vvi adj(n + 1);
+    rep(i, k) {
+        int a, b;
+        cin >> a >> b;
+        adj[a].push_back(b);
+    }
+    // Kuhn: for every boy, look for an augmenting path by DFS
+    vi girl_of(m + 1, 0), seen(m + 1, 0);
+    int stamp = 0;
+    auto augment = [&](auto&& self, int boy) -> bool {
+        for (int g : adj[boy]) {
+            if (seen[g] == stamp) continue;
+            seen[g] = stamp;
+            // g is free, or her partner can move to another girl
+            if (!girl_of[g] || self(self, girl_of[g])) {
+                girl_of[g] = boy;
+                return true;
+            }
+        }
+        return false;
+    };
+    int pairs = 0;
+    rep(boy, 1, n + 1) {
+        stamp++;
+        if (augment(augment, boy)) pairs++;
+    }
+    print(pairs);
+    rep(g, 1, m + 1) if (girl_of[g]) print(girl_of[g], g);
+}
+\end{code}
+
+\usetemplate{Bipartite matching (Hopcroft-Karp)}{Ctrl+Alt+Y, Shift+H}{cphopcroft}
+
+% ======================================================================================================================
+\section[König, Hall and path covers]{König, Hall and path covers \hfill \ioi}\label{sec:konig}
+
+Matchings are more useful for the theorems they come with than for themselves; each of these turns a hard-looking optimisation
+into a matching size.
+
+\begin{itemize}
+  \item \textbf{König's theorem}: in a bipartite graph, the size of a minimum \emph{vertex cover} (a set of vertices touching every
+        edge) equals the size of a maximum matching.
+  \item \textbf{Independent sets}: the complement of a vertex cover is an independent set, so a maximum independent set of a
+        bipartite graph has $|L| + |R| - \text{matching}$ vertices.
+  \item \textbf{Hall's theorem}: $L$ can be matched completely if and only if every subset $X \subseteq L$ has at least $|X|$
+        neighbours. The obstruction is always a small neighbourhood.
+  \item \textbf{Edge covers}: with no isolated vertices, a minimum edge cover has $n - \text{matching}$ edges.
+\end{itemize}
+
+\emph{Constructing the cover (König).} After a maximum matching, let $Z$ be the vertices reachable from unmatched left vertices by
+alternating paths (non-matching edges from left to right, matching edges from right to left). Then $(L \setminus Z) \cup (R \cap Z)$
+is a vertex cover of exactly the matching's size (Figure~\ref{fig:konig}): every matching edge contributes exactly one endpoint, and
+no edge can go from $L \cap Z$ to $R \setminus Z$, or its right end would be reachable.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \foreach \i in {0,...,2} \node[vtx] (l\i) at (0, -\i*1.0) {\scriptsize L\i};
+  \foreach \i in {0,...,2} \node[vtx] (r\i) at (2.4, -\i*1.0) {\scriptsize R\i};
+  \node[vtx, hot] at (l0) {\scriptsize L0};
+  \node[vtx, hot] at (r0) {\scriptsize R0};
+  \node[vtx, dim] at (l2) {\scriptsize L2};
+  \draw[ged] (l0) -- (r1); \draw[ged] (l1) -- (r0);
+  \draw[ed] (l0) -- (r0); \draw[ed] (l0) -- (r2); \draw[ed] (l2) -- (r0);
+  \node[notel, anchor=west, text width=6.6cm] at (3.4, -1.0) {Maximum matching L0--R1, L1--R0 (green); L2 is unmatched.
+    Alternating paths from L2 reach R0 and, through R0's partner, L1: $Z = \{\text{L2}, \text{R0}, \text{L1}\}$. The cover
+    $(L \setminus Z) \cup (R \cap Z) = \{\text{L0}, \text{R0}\}$ (red) touches every edge and has size 2, the matching size.};
+\end{tikzpicture}
+\caption{König's construction of a minimum vertex cover from a maximum matching.}
+\label{fig:konig}
+\end{figure}
+
+\usetemplate{Bipartite minimum vertex cover / maximum independent set (Konig)}{Ctrl+Alt+U, V}{cpkonig}
+
+\subsection{Path covers and Dilworth's theorem}
+
+A \defn{path cover} of a DAG is a set of vertex-disjoint paths that together contain every vertex. Make a bipartite graph with a
+left copy and a right copy of every vertex and an edge from $u$'s left copy to $v$'s right copy for every DAG edge $u \to v$. A
+matching chooses, for some vertices, a successor on their path, with no two vertices choosing the same successor; every matched
+edge glues two paths into one. So the minimum number of paths is $n - \text{maximum matching}$ (Figure~\ref{fig:pathcover}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \begin{scope}
+    \node[vtx] (a) at (0, 0) {1}; \node[vtx] (b) at (1.4, 0.8) {2}; \node[vtx] (c) at (1.4, -0.8) {3};
+    \node[vtx] (d) at (2.8, 0) {4}; \node[vtx] (e) at (4.2, 0) {5};
+    \draw[gded] (a) -- (b); \draw[gded] (b) -- (d); \draw[gded] (d) -- (e);
+    \draw[ded] (a) -- (c); \draw[ded] (c) -- (d);
+    \node[lbl] at (2.1, -1.5) {two paths: $1, 2, 4, 5$ and $3$};
+  \end{scope}
+  \begin{scope}[xshift=6.6cm, yshift=1.2cm]
+    \foreach \i in {1,...,5} { \node[vtxs] (L\i) at (0, -\i*0.55 + 0.55) {\i}; \node[vtxs] (R\i) at (2.0, -\i*0.55 + 0.55)
+      {\i}; }
+    \draw[ged] (L1) -- (R2); \draw[ged] (L2) -- (R4); \draw[ged] (L4) -- (R5);
+    \draw[ed] (L1) -- (R3); \draw[ed] (L3) -- (R4);
+    \node[lbl] at (1.0, -2.75) {as a matching ($5 - 3 = 2$ paths)};
+  \end{scope}
+\end{tikzpicture}
+\caption{A minimum path cover of a DAG (green) and the corresponding matching between ``left'' (predecessor) and ``right''
+(successor) copies.}
+\label{fig:pathcover}
+\end{figure}
+
+\begin{code}
+void solve() {  // HopcroftKarp (cphopcroft) is pasted above solve()
+    int n, m;
+    cin >> n >> m;
+    // left copy: v as a predecessor on a path, right copy: v as a successor
+    HopcroftKarp hk(n, n);
+    rep(i, m) {
+        int a, b;
+        cin >> a >> b;
+        hk.add_edge(a - 1, b - 1);  // the edge a -> b may join two paths
+    }
+    // every matched edge glues two paths together: n - matching paths
+    print(n - hk.max_matching());
+}
+\end{code}
+
+If paths may share vertices (a \emph{chain} cover of a partial order), first take the transitive closure, then apply the same
+formula. \defn{Dilworth's theorem} states that the minimum number of chains covering a partial order equals the size of its
+largest \emph{antichain} (a set of pairwise incomparable elements); for example, the minimum number of non-increasing
+subsequences that cover a sequence equals the length of its longest strictly increasing subsequence.
+
+% ======================================================================================================================
+\section[The assignment problem]{The assignment problem: the Hungarian algorithm \hfill \ioi}\label{sec:hungarian}
+
+In the \defn{assignment problem}, $n$ workers must be matched to $n$ jobs, worker $i$ doing job $j$ costs $a_{ij}$, and the total
+cost is to be minimised. It is a minimum-cost perfect matching in a complete bipartite graph, and the \defn{Hungarian algorithm}
+solves it in $\Oh{n^3}$ with \emph{potentials}: numbers $u_i$ for rows and $v_j$ for columns with $a_{ij} - u_i - v_j \ge 0$ for
+all cells. For any such potentials, every assignment costs at least $\sum u_i + \sum v_j$ (sum the inequalities over the assigned
+cells). The algorithm adjusts the potentials, one row at a time, until the assigned cells are all \emph{tight} ($a_{ij} = u_i +
+v_j$); then the assignment's cost equals the lower bound, so it is optimal (Figure~\ref{fig:hungarian}). This is linear
+programming duality in its simplest form.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \foreach \rw/\vals in {0/{7,2,6,9}, 1/{4,1,8,5}, 2/{6,5,3,7}, 3/{8,9,4,2}} {
+    \foreach \cv [count=\ci from 0] in \vals {
+      \pgfmathtruncatemacro{\hit}{(\rw == 0 && \ci == 1) || (\rw == 1 && \ci == 0) || (\rw == 2 && \ci == 2) ||
+        (\rw == 3 && \ci == 3) ? 1 : 0}
+      \ifnum\hit=1 \node[cellc, good, minimum width=8mm, minimum height=7mm] at (\ci*0.8, -\rw*0.7) {\cv};
+      \else \node[cellc, minimum width=8mm, minimum height=7mm] at (\ci*0.8, -\rw*0.7) {\cv}; \fi
+    }
+  }
+  \foreach \rw/\uu in {0/5, 1/4, 2/3, 3/2} \node[font=\sffamily\small\bfseries, text=fgblue] at (-0.8, -\rw*0.7) {\uu};
+  \foreach \ci/\vv in {0/0, 1/$-3$, 2/0, 3/0} \node[font=\sffamily\small\bfseries, text=fgorange!80!black] at (\ci*0.8, 0.7)
+    {\vv};
+  \node[lbl] at (-0.8, 1.15) {$u_i$}; \node[lbl] at (1.2, 1.15) {$v_j$};
+  \begin{scope}[xshift=5.2cm]
+    \foreach \rw/\vals in {0/{2,0,1,4}, 1/{0,0,4,1}, 2/{3,5,0,4}, 3/{6,10,2,0}} {
+      \foreach \cv [count=\ci from 0] in \vals {
+        \pgfmathtruncatemacro{\hit}{(\rw == 0 && \ci == 1) || (\rw == 1 && \ci == 0) || (\rw == 2 && \ci == 2) ||
+          (\rw == 3 && \ci == 3) ? 1 : 0}
+        \ifnum\hit=1 \node[cellc, good, minimum width=8mm, minimum height=7mm] at (\ci*0.8, -\rw*0.7) {\cv};
+        \else \node[cellc, minimum width=8mm, minimum height=7mm] at (\ci*0.8, -\rw*0.7) {\cv}; \fi
+      }
+    }
+    \node[lbl] at (1.2, 0.7) {reduced costs $a_{ij} - u_i - v_j$};
+  \end{scope}
+  \node[notel, anchor=west, text width=4.0cm] at (9.0, -1.05) {All reduced costs are $\ge 0$, and the assigned cells (green) are
+    0. The assignment costs $2 + 4 + 3 + 2 = 11 = \sum u + \sum v$, the lower bound: it is optimal.};
+\end{tikzpicture}
+\caption{The Hungarian algorithm's certificate of optimality. Left: costs with row potentials $u$ (blue) and column potentials $v$
+(orange); right: the reduced costs.}
+\label{fig:hungarian}
+\end{figure}
+
+\begin{problem}{Task Assignment (CSES)}
+Assign $n \le 200$ employees to $n$ tasks, one each, minimising the total cost, and print the assignment.
+\end{problem}
+
+\begin{code}
+void solve() {  // hungarian (cphungarian) is pasted above solve()
+    int n;
+    cin >> n;
+    vector<vector<ll>> cost(n, vector<ll>(n));
+    for (auto& row : cost) cin >> row;
+    auto [total, task] = hungarian(cost);  // row i gets column task[i]
+    print(total);
+    rep(i, n) print(i + 1, task[i] + 1);
+}
+\end{code}
+
+\usetemplate{Hungarian algorithm (min-cost assignment)}{Ctrl+Alt+U, Shift+H}{cphungarian}
+
+For maximum-weight assignments, negate the costs; for rectangular problems ($n$ rows, $m \ge n$ columns), the template assigns every
+row a distinct column. The $\Oh{n^3}$ bound beats a general min-cost flow on dense assignment problems by a wide margin.
+
+% ======================================================================================================================
+\section[Minimum-cost flow]{Minimum-cost flow \hfill \ioi}\label{sec:mcmf}
+
+When every edge also has a cost per unit of flow, the \defn{minimum-cost flow} problem asks for the cheapest flow of a given value
+(or the cheapest among maximum flows). The standard method is \emph{successive shortest paths}: repeatedly push flow along the
+cheapest $s$--$t$ path of the residual graph, where backward edges have the negated cost, until the required value is reached.
+Each augmentation keeps the flow optimal among flows of its value, because a flow is cost-optimal exactly when its residual graph
+has no negative cycle. Backward edges have negative costs, so the shortest paths need Bellman--Ford (the template uses SPFA), or
+Dijkstra with \emph{potentials}: after each round, add the distances to the potentials, which makes every residual edge
+non-negative again (Johnson's reweighting, Section~\ref{sec:bellman}).
+
+\begin{problem}{Parcel Delivery (CSES)}
+Send $k$ parcels from city 1 to city $n$; route $i$ carries at most $r_i$ parcels at cost $c_i$ each. Find the minimum total cost,
+or report that it is impossible.
+\end{problem}
+
+\begin{code}
+void solve() {  // MCMF (cpmcmf) is pasted above solve()
+    int n, m, k;
+    cin >> n >> m >> k;
+    MCMF g(n + 1);
+    rep(i, m) {
+        ll a, b, r, c;
+        cin >> a >> b >> r >> c;  // at most r parcels, c per parcel
+        g.add_edge(a, b, r, c);
+    }
+    auto [flow, cost] = g.run(1, n, k);  // the cheapest way to send k
+    print(flow < k ? -1 : cost);
+}
+\end{code}
+
+\usetemplate{Min-cost max-flow}{Ctrl+Alt+Y, Shift+Y}{cpmcmf}
+
+\begin{trick}[Min-cost flow as a modelling language]
+Assignment with capacities (a worker can take up to $c$ jobs), $k$ disjoint paths of minimum total length (CSES Distinct Routes
+II), transporting goods between warehouses, and ``choose $k$ non-overlapping intervals with maximum weight'' (a chain of time
+points with capacity-$k$ edges and interval edges of negative cost) are all min-cost flows. When costs are convex in the amount
+(the second unit costs more than the first), model each unit as a separate parallel edge with its own cost.
+\end{trick}
+
+% ======================================================================================================================
+\section[Flows with lower bounds]{Flows with lower bounds \hfill \ioi}\label{sec:lowerbounds}
+
+Sometimes an edge must carry \emph{at least} $l(e)$ units. Force the lower bounds first: pretend $l(e)$ units flow along every edge,
+keep only the remaining capacity $c(e) - l(e)$, and note that each vertex now has an imbalance (more forced flow in than out, or the
+reverse). Add a new source $S'$ with edges to every vertex with excess and a new sink $T'$ with edges from every vertex with deficit,
+and an edge $t \to s$ of infinite capacity. A feasible flow exists if and only if the maximum flow from $S'$ to $T'$ saturates all
+edges out of $S'$; then the flow on $t \to s$ is a feasible $s$--$t$ flow, and one more max flow from $s$ to $t$ (with the helper
+edges removed) maximises it. Circulations with demands, and minimum flows (the smallest feasible flow), use the same construction.
+
+\usetemplate{Max flow with lower bounds}{Ctrl+Alt+Y, Shift+G}{cpflowlb}
+
+% ======================================================================================================================
+\section[Matching in general graphs]{Matching in general graphs: blossoms \hfill \ioi}\label{sec:blossom}
+
+In a non-bipartite graph, alternating paths still characterise maximum matchings (Berge's lemma holds for every graph), but finding
+them is harder: an odd cycle lets an alternating path reach the same vertex with both parities, which confuses a plain search.
+\defn{Edmonds' blossom algorithm} handles this. When the search finds an odd alternating cycle, a \emph{blossom}, it contracts the
+whole cycle into a single vertex and continues (Figure~\ref{fig:blossom}); an augmenting path in the contracted graph lifts to one
+in the original graph, because an odd cycle can be entered at any vertex and traversed on the correct side. The template runs in
+$\Oh{n^3}$, comfortable for $n \le 500$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \begin{scope}
+    \node[vtx, hot] (r) at (0, 0) {r}; \node[vtx] (a) at (1.2, 0) {a}; \node[vtx] (b) at (2.4, 0) {b};
+    \node[vtx] (c) at (3.2, 0.9) {c}; \node[vtx] (d) at (3.2, -0.9) {d};
+    \node[vtx, good] (x) at (4.6, 0.9) {x};
+    \draw[ed] (r) -- (a); \draw[ged] (a) -- (b); \draw[ed] (b) -- (c); \draw[ged] (c) -- (d); \draw[ed] (d) -- (b);
+    \draw[ed] (c) -- (x);
+    \node[lbl, align=center] at (2.3, -1.7) {an odd alternating cycle\\$b, c, d$ (a blossom)};
+  \end{scope}
+  \draw[->, line width=1.2pt, draw=fgblue] (5.3, 0) -- (6.3, 0) node[midway, above, font=\sffamily\scriptsize, text=fgblue]
+    {contract};
+  \begin{scope}[xshift=7.0cm]
+    \node[vtx, hot] (r2) at (0, 0) {r}; \node[vtx] (a2) at (1.2, 0) {a};
+    \node[vtx, cool, minimum size=10mm] (B) at (2.6, 0) {\scriptsize $B$};
+    \node[vtx, good] (x2) at (4.0, 0.9) {x};
+    \draw[ed] (r2) -- (a2); \draw[ged] (a2) -- (B); \draw[ed] (B) -- (x2);
+    \node[lbl, align=center] at (2.0, -1.7) {now $r, a, B, x$ is an augmenting path;\\expanding $B$ routes it via $b, d, c$};
+  \end{scope}
+\end{tikzpicture}
+\caption{A blossom. The search from the unmatched vertex $r$ reaches the odd cycle $b, c, d$; contracting it into $B$ reveals the
+augmenting path to the unmatched vertex $x$, which in the original graph goes $r, a, b, d, c, x$.}
+\label{fig:blossom}
+\end{figure}
+
+\begin{problem}{Maximum matching in a general graph}
+Given an undirected graph with $n \le 500$ vertices, find the size of a maximum matching.
+\end{problem}
+
+\begin{code}
+void solve() {  // blossom_matching (cpblossom) is pasted above solve()
+    int n, m;
+    cin >> n >> m;
+    vvi adj(n);
+    rep(i, m) {
+        int a, b;
+        cin >> a >> b;
+        adj[a - 1].push_back(b - 1);
+        adj[b - 1].push_back(a - 1);
+    }
+    vi mate = blossom_matching(adj);  // mate[v] = partner or -1
+    int pairs = 0;
+    rep(v, n) if (mate[v] > v) pairs++;
+    print(pairs);
+}
+\end{code}
+
+\usetemplate{Maximum matching in a general graph (Edmonds' blossom)}{Ctrl+Alt+U, Shift+G}{cpblossom}
+
+% ======================================================================================================================
+\section[Global and all-pairs minimum cuts]{Global and all-pairs minimum cuts \hfill \ioi}\label{sec:globalcut}
+
+\paragraph{Global minimum cut.} The smallest set of edges (by total weight) whose removal disconnects an undirected graph, with no
+fixed source or sink, could be found with $n - 1$ max flows from a fixed vertex. The \defn{Stoer--Wagner algorithm} does better
+with no flow at all. Each phase grows a set $A$ from any vertex by repeatedly adding the vertex most tightly connected to $A$ (the
+largest total edge weight into $A$, a \emph{maximum adjacency order}). If $s$ and $t$ are the last two vertices added, the weight of
+$t$'s connection to everything else is a minimum $s$--$t$ cut. Either that cut is the global minimum, or $s$ and $t$ are on the same
+side of it, so they can be merged into one vertex. After $n - 1$ phases the answer is the best cut seen, in $\Oh{n^3}$ with a
+matrix.
+
+\begin{code}
+void solve() {  // stoer_wagner (cpstoerwagner) is pasted above solve()
+    int n, m;
+    cin >> n >> m;
+    vector<vector<ll>> w(n, vector<ll>(n, 0));
+    rep(i, m) {
+        ll a, b, c;
+        cin >> a >> b >> c;
+        w[a - 1][b - 1] += c, w[b - 1][a - 1] += c;  // parallel edges add up
+    }
+    print(stoer_wagner(w));
+}
+\end{code}
+
+\usetemplate{Global minimum cut (Stoer-Wagner)}{Ctrl+Alt+U, Shift+A}{cpstoerwagner}
+
+\paragraph{All-pairs minimum cuts: the Gomory--Hu tree.} Remarkably, the $\binom{n}{2}$ minimum cuts of an undirected graph take only
+$n - 1$ different values, and they are organised by a tree. A \defn{Gomory--Hu tree} is a weighted tree on the same vertices such that
+the minimum cut between any $u$ and $v$ in the graph equals the smallest edge weight on the tree path between them
+(Figure~\ref{fig:gomoryhu}). Gusfield's algorithm builds it with $n - 1$ max flows: for $s = 1, \ldots, n - 1$, compute the minimum cut
+between $s$ and its current tree parent, attach $s$ with that weight, and re-hang every later vertex that lies on $s$'s side of the cut
+under $s$. Afterwards every min-cut query is a path-minimum query in a tree.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \begin{scope}
+    \node[vtx] (g1) at (0, 0) {1}; \node[vtx] (g2) at (1.6, 1.0) {2}; \node[vtx] (g3) at (1.6, -1.0) {3};
+    \node[vtx] (g4) at (3.4, 1.0) {4}; \node[vtx] (g5) at (3.4, -1.0) {5};
+    \draw[ed] (g1) -- node[wl] {3} (g2); \draw[ed] (g1) -- node[wl] {2} (g3); \draw[ed] (g2) -- node[wl] {4} (g3);
+    \draw[ed] (g2) -- node[wl] {2} (g4); \draw[ed] (g3) -- node[wl] {3} (g5); \draw[ed] (g4) -- node[wl] {4} (g5);
+    \draw[ed] (g3) -- node[wl, pos=0.3] {1} (g4);
+    \node[lbl] at (1.7, -1.75) {an undirected capacitated graph};
+  \end{scope}
+  \begin{scope}[xshift=6.0cm]
+    \node[vtx] (t1) at (0, 0) {1}; \node[vtx] (t2) at (1.4, 0) {2}; \node[vtx] (t3) at (2.8, 0) {3};
+    \node[vtx] (t4) at (4.2, 0) {4}; \node[vtx] (t5) at (5.6, 0) {5};
+    \draw[bed] (t1) -- node[wl] {5} (t2); \draw[bed] (t2) -- node[wl] {8} (t3); \draw[bed] (t3) -- node[wl] {6} (t4);
+    \draw[bed] (t4) -- node[wl] {7} (t5);
+    \node[lbl] at (2.8, -1.0) {its Gomory--Hu tree};
+    \node[notel, anchor=north, text width=5.8cm] at (2.8, -1.3) {min cut$(2, 5) = \min(8, 6, 7) = 6$, min cut$(1, x) = 5$ for
+      every $x$: vertex 1 has total incident weight 5.};
+  \end{scope}
+\end{tikzpicture}
+\caption{A graph and its Gomory--Hu tree, computed with four max flows. Every one of the ten pairwise minimum cuts is the smallest
+weight on a tree path.}
+\label{fig:gomoryhu}
+\end{figure}
+
+\begin{code}
+void solve() {  // gomory_hu (cpgomoryhu) is pasted above solve()
+    int n, m, q;
+    cin >> n >> m >> q;
+    vector<array<ll, 3>> e(m);
+    for (auto& [a, b, c] : e) cin >> a >> b >> c, a--, b--;
+    auto [par, w] = gomory_hu(n, e);  // a tree on the vertices
+    // min cut(u, v) = the lightest edge on the tree path from u to v
+    vi depth(n, 0);
+    rep(v, 1, n) {  // depth by walking up; n is small in this problem
+        for (int x = v; x != 0; x = par[x]) depth[v]++;
+    }
+    while (q--) {
+        int u, v;
+        cin >> u >> v;
+        u--, v--;
+        ll best = LLONG_MAX;
+        while (u != v) {  // climb from the deeper end, taking the minimum
+            if (depth[u] < depth[v]) swap(u, v);
+            chmin(best, w[u]);
+            u = par[u];
+        }
+        print(best);
+    }
+}
+\end{code}
+
+\usetemplate{Gomory-Hu tree (all-pairs minimum cut)}{Ctrl+Alt+U, A}{cpgomoryhu}
+
+\begin{summary}[Chapter summary]
+\begin{itemize}
+  \item Residual graphs with backward edges make augmenting paths correct; Dinic's level graphs and blocking flows make them fast.
+  \item Max flow = min cut; the residual-reachable set is a minimum cut. Project selection is a minimum cut with infinite edges.
+  \item Edge-disjoint paths are unit flows; vertex capacities become edges by splitting vertices.
+  \item Bipartite matching: augmenting alternating paths (Kuhn, Hopcroft--Karp); König: vertex cover = matching; DAG path cover =
+        $n -$ matching; Dilworth for chains and antichains.
+  \item Assignment: the Hungarian algorithm with potentials, certified by duality. Min-cost flow: successive shortest paths.
+  \item Lower bounds reduce to a feasibility flow; general matching needs blossoms; Stoer--Wagner and Gomory--Hu trees answer
+        global and all-pairs minimum cuts.
+\end{itemize}
+\end{summary}
+
+\begin{practice}
+\ppgroup{Flows and cuts}
+\begin{pplist}
+  \item Download Speed
+  \item Police Chase
+  \item Distinct Routes
+  \item Distinct Routes II
+\end{pplist}
+\ppgroup{Matchings and assignment}
+\begin{pplist}
+  \item School Dance
+  \item Task Assignment
+  \item Parcel Delivery
+\end{pplist}
+\end{practice}

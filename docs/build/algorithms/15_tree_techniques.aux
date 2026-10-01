@@ -1,0 +1,185 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\@writefile{toc}{\contentsline {chapter}{\numberline {16}Tree Techniques}{207}{chapter.16}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{ch:trees}{{16}{207}{Tree Techniques}{chapter.16}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {16.1}Rooted trees}{207}{section.16.1}\protected@file@percent }
+\newlabel{sec:rooted}{{16.1}{207}{Rooted trees}{section.16.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {16.1.1}The BFS-order idiom}{207}{subsection.16.1.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {16.1}{\ignorespaces A rooted tree and its basic quantities. In the DFS order, the subtree of 1 occupies the consecutive positions 1--4.}}{208}{figure.caption.272}\protected@file@percent }
+\newlabel{fig:rooted}{{16.1}{208}{A rooted tree and its basic quantities. In the DFS order, the subtree of 1 occupies the consecutive positions 1--4}{figure.caption.272}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {16.1.2}DFS orders}{208}{subsection.16.1.2}\protected@file@percent }
+\newlabel{tpl:cptree}{{16.1.2}{208}{DFS orders}{section*.274}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {16.2}{\ignorespaces The three DFS orders of one tree. In preorder and postorder the subtree of 1 (red) is a contiguous block. In the Euler tour, the shallowest vertex between the first visits of 3 and 4 is their LCA (green).}}{209}{figure.caption.273}\protected@file@percent }
+\newlabel{fig:dfsorders}{{16.2}{209}{The three DFS orders of one tree. In preorder and postorder the subtree of 1 (red) is a contiguous block. In the Euler tour, the shallowest vertex between the first visits of 3 and 4 is their LCA (green)}{figure.caption.273}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {16.2}Diameter and farthest vertices}{209}{section.16.2}\protected@file@percent }
+\newlabel{sec:diameter}{{16.2}{209}{Diameter and farthest vertices}{section.16.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {16.3}{\ignorespaces The two-BFS diameter algorithm; the numbers are BFS distances. The farthest vertex from $s$ is $a$, the farthest from $a$ is $b$, and $a$--$b$ (red) is a diameter. Panel~3 is the corollary: the farthest vertex from any vertex is $a$ or $b$.}}{209}{figure.caption.275}\protected@file@percent }
+\newlabel{fig:diameter}{{16.3}{209}{The two-BFS diameter algorithm; the numbers are BFS distances. The farthest vertex from $s$ is $a$, the farthest from $a$ is $b$, and $a$--$b$ (red) is a diameter. Panel~3 is the corollary: the farthest vertex from any vertex is $a$ or $b$}{figure.caption.275}{}}
+\newlabel{tpl:cpdiameter}{{16.2}{210}{Diameter and farthest vertices}{section*.276}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {16.3}The Euler tour technique}{210}{section.16.3}\protected@file@percent }
+\newlabel{sec:eulertour}{{16.3}{210}{The Euler tour technique}{section.16.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {16.4}{\ignorespaces The Euler tour technique. Each vertex shows its range $[\mathit  {tin}, \mathit  {tout})$; listing the vertices by entry time makes every subtree a contiguous block, here positions $[1, 4)$ for the subtree of 1.}}{211}{figure.caption.277}\protected@file@percent }
+\newlabel{fig:eulertour}{{16.4}{211}{The Euler tour technique. Each vertex shows its range $[\mathit {tin}, \mathit {tout})$; listing the vertices by entry time makes every subtree a contiguous block, here positions $[1, 4)$ for the subtree of 1}{figure.caption.277}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {16.3.1}Paths to the root}{212}{subsection.16.3.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {16.5}{\ignorespaces Root-path sums with an Euler tour, for the value $x$ of vertex 1 alone in the tree of Figure~\ref {fig:eulertour}. A value is added where its subtree's range starts and removed where it ends.}}{212}{figure.caption.278}\protected@file@percent }
+\newlabel{fig:pathsum}{{16.5}{212}{Root-path sums with an Euler tour, for the value $x$ of vertex 1 alone in the tree of Figure~\ref {fig:eulertour}. A value is added where its subtree's range starts and removed where it ends}{figure.caption.278}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {16.4}Binary lifting and the LCA}{213}{section.16.4}\protected@file@percent }
+\newlabel{sec:lca}{{16.4}{213}{Binary lifting and the LCA}{section.16.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {16.6}{\ignorespaces Binary lifting on a path of 9 vertices rooted at 0. With $\lceil \log _2 n \rceil $ rows in the table, any ancestor is at most that many lookups away.}}{214}{figure.caption.279}\protected@file@percent }
+\newlabel{fig:lifting}{{16.6}{214}{Binary lifting on a path of 9 vertices rooted at 0. With $\lceil \log _2 n \rceil $ rows in the table, any ancestor is at most that many lookups away}{figure.caption.279}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {16.7}{\ignorespaces Computing an LCA by binary lifting: bring both vertices to the same depth, then take the largest jumps that keep them apart.}}{215}{figure.caption.280}\protected@file@percent }
+\newlabel{fig:lcasteps}{{16.7}{215}{Computing an LCA by binary lifting: bring both vertices to the same depth, then take the largest jumps that keep them apart}{figure.caption.280}{}}
+\newlabel{tpl:cplca}{{16.4}{216}{Binary lifting and the LCA}{section*.281}{}}
+\newlabel{tpl:cpjumpptr}{{16.4}{216}{Binary lifting and the LCA}{section*.282}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {16.5}Offline LCA}{216}{section.16.5}\protected@file@percent }
+\newlabel{sec:offlinelca}{{16.5}{216}{Offline LCA}{section.16.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {16.8}{\ignorespaces Tarjan's offline LCA in the middle of the DFS. Every finished vertex belongs to a set (shaded) that hangs from an open ancestor, its anchor; for a finished $w$, the anchor of $w$'s set is its LCA with the vertex being finished.}}{217}{figure.caption.283}\protected@file@percent }
+\newlabel{fig:tarjanlca}{{16.8}{217}{Tarjan's offline LCA in the middle of the DFS. Every finished vertex belongs to a set (shaded) that hangs from an open ancestor, its anchor; for a finished $w$, the anchor of $w$'s set is its LCA with the vertex being finished}{figure.caption.283}{}}
+\newlabel{tpl:cpofflinelca}{{16.5}{218}{Offline LCA}{section*.284}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {16.6}DP on trees}{218}{section.16.6}\protected@file@percent }
+\newlabel{sec:treedp}{{16.6}{218}{DP on trees}{section.16.6}{}}
+\@writefile{toc}{\contentsline {paragraph}{A first example: maximum-weight independent set.}{218}{paragraph*.285}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{The recipe.}{218}{paragraph*.286}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {16.9}{\ignorespaces The tree-matching DP on a small tree, and a maximum matching read back from it.}}{219}{figure.caption.287}\protected@file@percent }
+\newlabel{fig:treematching}{{16.9}{219}{The tree-matching DP on a small tree, and a maximum matching read back from it}{figure.caption.287}{}}
+\newlabel{tpl:cptreedp}{{16.6}{219}{The recipe}{section*.288}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {16.7}Rerooting}{220}{section.16.7}\protected@file@percent }
+\newlabel{sec:rerooting}{{16.7}{220}{Rerooting}{section.16.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {16.10}{\ignorespaces Rerooting the sum of distances across one edge.}}{220}{figure.caption.289}\protected@file@percent }
+\newlabel{fig:reroot}{{16.10}{220}{Rerooting the sum of distances across one edge}{figure.caption.289}{}}
+\newlabel{tpl:cpreroot}{{16.7}{221}{Rerooting}{section*.290}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {16.7.1}When the combine cannot be undone}{221}{subsection.16.7.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {16.11}{\ignorespaces Rerooting with a maximum: keeping the two best child values answers ``the best value without this child'' in $\ensuremath  {\mathcal  {O}(1)}$.}}{221}{figure.caption.291}\protected@file@percent }
+\newlabel{fig:reroot2}{{16.11}{221}{Rerooting with a maximum: keeping the two best child values answers ``the best value without this child'' in $\Oh {1}$}{figure.caption.291}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {16.8}Merging child tables}{222}{section.16.8}\protected@file@percent }
+\newlabel{sec:treeknap}{{16.8}{222}{Merging child tables}{section.16.8}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {16.12}{\ignorespaces Why merging subtree tables costs $\ensuremath  {\mathcal  {O}(n^2)}$ in total: the work of all merges together is at most one unit per pair of vertices.}}{223}{figure.caption.292}\protected@file@percent }
+\newlabel{fig:treeknap}{{16.12}{223}{Why merging subtree tables costs $\Oh {n^2}$ in total: the work of all merges together is at most one unit per pair of vertices}{figure.caption.292}{}}
+\newlabel{tpl:cptreeknap}{{16.8}{224}{Merging child tables}{section*.293}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {16.9}Small-to-large merging}{224}{section.16.9}\protected@file@percent }
+\newlabel{sec:smalltolarge}{{16.9}{224}{Small-to-large merging}{section.16.9}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {16.13}{\ignorespaces Small-to-large merging. Left: the parent keeps the larger child set (an $\ensuremath  {\mathcal  {O}(1)}$ swap) and inserts the elements of the smaller one. Right: why each element moves $\ensuremath  {\mathcal  {O}(\log n)}$ times.}}{224}{figure.caption.294}\protected@file@percent }
+\newlabel{fig:smalltolarge}{{16.13}{224}{Small-to-large merging. Left: the parent keeps the larger child set (an $\Oh {1}$ swap) and inserts the elements of the smaller one. Right: why each element moves $\Oh {\log n}$ times}{figure.caption.294}{}}
+\newlabel{tpl:cpsmall2large}{{16.9}{225}{Small-to-large merging}{section*.295}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {16.10}Tree isomorphism}{225}{section.16.10}\protected@file@percent }
+\newlabel{sec:treeiso}{{16.10}{225}{Tree isomorphism}{section.16.10}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {16.14}{\ignorespaces AHU canonical labels. Each vertex shows the label of the sorted multiset of its children's labels.}}{226}{figure.caption.296}\protected@file@percent }
+\newlabel{fig:ahu}{{16.14}{226}{AHU canonical labels. Each vertex shows the label of the sorted multiset of its children's labels}{figure.caption.296}{}}
+\@writefile{toc}{\contentsline {paragraph}{Unrooted trees.}{227}{paragraph*.297}\protected@file@percent }
+\newlabel{tpl:cptreehash}{{16.10}{228}{Unrooted trees}{section*.298}{}}
+\@setckpt{algorithms/15_tree_techniques}{
+\setcounter{page}{230}
+\setcounter{equation}{0}
+\setcounter{enumi}{2}
+\setcounter{enumii}{0}
+\setcounter{enumiii}{0}
+\setcounter{enumiv}{0}
+\setcounter{footnote}{0}
+\setcounter{mpfootnote}{0}
+\setcounter{part}{4}
+\setcounter{chapter}{16}
+\setcounter{section}{10}
+\setcounter{subsection}{0}
+\setcounter{subsubsection}{0}
+\setcounter{paragraph}{0}
+\setcounter{subparagraph}{0}
+\setcounter{figure}{14}
+\setcounter{table}{0}
+\setcounter{parentequation}{0}
+\setcounter{lstnumber}{58}
+\setcounter{tcbbreakpart}{1}
+\setcounter{tcblayer}{0}
+\setcounter{tcolorbox@number}{688}
+\setcounter{tcblisting}{140}
+\setcounter{tcbrastercolumn}{1}
+\setcounter{tcbrasterrow}{1}
+\setcounter{tcbrasternum}{1}
+\setcounter{tcbraster}{5}
+\setcounter{cpsegfig}{0}
+\setcounter{LT@tables}{0}
+\setcounter{LT@chunks}{0}
+\setcounter{nlinenum}{0}
+\setcounter{ALG@line}{11}
+\setcounter{ALG@rem}{0}
+\setcounter{ALG@nested}{0}
+\setcounter{ALG@Lnr}{2}
+\setcounter{ALG@blocknr}{15}
+\setcounter{ALG@storecount}{0}
+\setcounter{ALG@tmpcounter}{0}
+\setcounter{algpx@codeBoxCount}{0}
+\setcounter{algpx@nestedCBoxCount}{0}
+\setcounter{algpx@startedBoxesCount}{0}
+\setcounter{algpx@endedBoxesCount}{0}
+\setcounter{algpx@nestedBoxedStringCount}{0}
+\setcounter{algpx@nestedBoxedStringMaxCount}{0}
+\setcounter{algpx@indentCount}{20}
+\setcounter{algpx@lastIndentEnded}{19}
+\setcounter{algpx@pageCount}{1}
+\setcounter{algpx@tmpCount}{2}
+\setcounter{caption@flags}{2}
+\setcounter{continuedfloat}{0}
+\setcounter{float@type}{16}
+\setcounter{section@level}{0}
+\setcounter{Item}{8}
+\setcounter{Hfootnote}{0}
+\setcounter{bookmark@seq@number}{0}
+\setcounter{algpx@indentEndPage-0@totc}{0}
+\setcounter{algpx@indentEndPage-1@totc}{0}
+\setcounter{algpx@indentEndPage-2@totc}{0}
+\setcounter{algpx@indentEndPage-3@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-2@totc}{3}
+\setcounter{algpx@indentEndCoordIndex-0@totc}{3}
+\setcounter{algpx@indentEndPage-4@totc}{0}
+\setcounter{algpx@indentEndPage-5@totc}{0}
+\setcounter{algpx@indentEndPage-6@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-4@totc}{6}
+\setcounter{algpx@indentEndPage-7@totc}{0}
+\setcounter{algpx@indentEndPage-8@totc}{0}
+\setcounter{algpx@indentEndPage-9@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-8@totc}{9}
+\setcounter{algpx@indentEndPage-10@totc}{0}
+\setcounter{algpx@indentEndPage-11@totc}{0}
+\setcounter{algpx@indentEndPage-12@totc}{0}
+\setcounter{algpx@indentEndPage-13@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-12@totc}{13}
+\setcounter{algpx@indentEndCoordIndex-10@totc}{13}
+\setcounter{algpx@indentEndPage-14@totc}{0}
+\setcounter{algpx@indentEndPage-15@totc}{0}
+\setcounter{algpx@indentEndPage-16@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-15@totc}{16}
+\setcounter{algpx@indentEndPage-17@totc}{0}
+\setcounter{algpx@indentEndPage-18@totc}{1}
+\setcounter{algpx@indentEndPage-19@totc}{1}
+\setcounter{algpx@indentEndCoordIndex-18@totc}{19}
+\setcounter{lstlisting}{0}
+\setcounter{algpx@indentEndPage-0}{0}
+\setcounter{algpx@indentEndPage-1}{0}
+\setcounter{algpx@indentEndPage-2}{0}
+\setcounter{algpx@indentEndPage-3}{0}
+\setcounter{algpx@indentEndCoordIndex-2}{3}
+\setcounter{algpx@indentEndCoordIndex-0}{3}
+\setcounter{algpx@indentEndPage-4}{0}
+\setcounter{algpx@indentEndPage-5}{0}
+\setcounter{algpx@indentEndPage-6}{0}
+\setcounter{algpx@indentEndCoordIndex-4}{6}
+\setcounter{algpx@indentEndPage-7}{0}
+\setcounter{algpx@indentEndPage-8}{0}
+\setcounter{algpx@indentEndPage-9}{0}
+\setcounter{algpx@indentEndCoordIndex-8}{9}
+\setcounter{algpx@indentEndPage-10}{0}
+\setcounter{algpx@indentEndPage-11}{0}
+\setcounter{algpx@indentEndPage-12}{0}
+\setcounter{algpx@indentEndPage-13}{0}
+\setcounter{algpx@indentEndCoordIndex-12}{13}
+\setcounter{algpx@indentEndCoordIndex-10}{13}
+\setcounter{algpx@indentEndPage-14}{0}
+\setcounter{algpx@indentEndPage-15}{0}
+\setcounter{algpx@indentEndPage-16}{0}
+\setcounter{algpx@indentEndCoordIndex-15}{16}
+\setcounter{algpx@indentEndPage-17}{0}
+\setcounter{algpx@indentEndPage-18}{1}
+\setcounter{algpx@indentEndPage-19}{1}
+\setcounter{algpx@indentEndCoordIndex-18}{19}
+}

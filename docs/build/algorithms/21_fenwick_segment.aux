@@ -1,0 +1,124 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\@writefile{toc}{\contentsline {chapter}{\numberline {22}Fenwick Trees and Segment Trees}{306}{chapter.22}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{ch:segtree}{{22}{306}{Fenwick Trees and Segment Trees}{chapter.22}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {22.1}Fenwick trees}{306}{section.22.1}\protected@file@percent }
+\newlabel{sec:fenwick}{{22.1}{306}{Fenwick trees}{section.22.1}{}}
+\newlabel{tpl:cpbit}{{22.1}{306}{Fenwick trees}{section*.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {22.1}{\ignorespaces The blocks of a Fenwick tree with 16 cells: cell $i$ covers the $\mathit  {lowbit}(i)$ positions ending at $i$.}}{307}{figure.caption.2}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{fig:fenwick}{{22.1}{307}{The blocks of a Fenwick tree with 16 cells: cell $i$ covers the $\mathit {lowbit}(i)$ positions ending at $i$}{figure.caption.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{Range updates, point queries.}{307}{paragraph*.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Order statistics by descent.}{307}{paragraph*.5}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {22.2}{\ignorespaces Fenwick descent: one cell per power of two, $\ensuremath  {\mathcal  {O}(\log n)}$ for the $k$-th element.}}{308}{figure.caption.6}\protected@file@percent }
+\newlabel{fig:fendescent}{{22.2}{308}{Fenwick descent: one cell per power of two, $\Oh {\log n}$ for the $k$-th element}{figure.caption.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {22.1.1}Range updates with range sums}{309}{subsection.22.1.1}\protected@file@percent }
+\newlabel{tpl:cpbitrange}{{22.1.1}{309}{Range updates with range sums}{section*.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {22.1.2}Two dimensions}{309}{subsection.22.1.2}\protected@file@percent }
+\newlabel{tpl:cpbit2d}{{22.1.2}{309}{Two dimensions}{section*.8}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {22.2}Segment trees}{310}{section.22.2}\protected@file@percent }
+\newlabel{sec:segtree}{{22.2}{310}{Segment trees}{section.22.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {22.3}{\ignorespaces A segment tree of sums over $3, 1, 4, 5, 2, 6, 5, 1$.}}{310}{figure.caption.9}\protected@file@percent }
+\newlabel{fig:segtree}{{22.3}{310}{A segment tree of sums over $3, 1, 4, 5, 2, 6, 5, 1$}{figure.caption.9}{}}
+\@writefile{toc}{\contentsline {paragraph}{Why $\ensuremath  {\mathcal  {O}(\log n)}$.}{310}{paragraph*.10}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Bottom-up implementation.}{310}{paragraph*.11}\protected@file@percent }
+\newlabel{tpl:cpseg}{{22.2}{310}{Bottom-up implementation}{section*.12}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {22.3}Descending a segment tree}{310}{section.22.3}\protected@file@percent }
+\newlabel{sec:segdescent}{{22.3}{310}{Descending a segment tree}{section.22.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {22.4}{\ignorespaces Descending a maximum segment tree to the leftmost leaf with value at least 4.}}{311}{figure.caption.13}\protected@file@percent }
+\newlabel{fig:hotel}{{22.4}{311}{Descending a maximum segment tree to the leftmost leaf with value at least 4}{figure.caption.13}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {22.4}Designing a node}{311}{section.22.4}\protected@file@percent }
+\newlabel{sec:segnode}{{22.4}{311}{Designing a node}{section.22.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {22.5}{\ignorespaces The four numbers of a maximum-subarray node, and how two nodes merge.}}{312}{figure.caption.14}\protected@file@percent }
+\newlabel{fig:segnode}{{22.5}{312}{The four numbers of a maximum-subarray node, and how two nodes merge}{figure.caption.14}{}}
+\newlabel{tpl:cpsegnode}{{22.4}{312}{Designing a node}{section*.15}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {22.5}Lazy propagation}{313}{section.22.5}\protected@file@percent }
+\newlabel{sec:lazy}{{22.5}{313}{Lazy propagation}{section.22.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {22.6}{\ignorespaces Lazy tags record updates that the subtree below still owes.}}{313}{figure.caption.16}\protected@file@percent }
+\newlabel{fig:lazy}{{22.6}{313}{Lazy tags record updates that the subtree below still owes}{figure.caption.16}{}}
+\newlabel{tpl:cplazy}{{22.5}{314}{Lazy propagation}{section*.17}{}}
+\newlabel{tpl:cplazyassign}{{22.5}{314}{Lazy propagation}{section*.18}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {22.6}Counting minimums}{314}{section.22.6}\protected@file@percent }
+\newlabel{sec:mincount}{{22.6}{314}{Counting minimums}{section.22.6}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {22.7}{\ignorespaces The union of two rectangles by a sweep line: the area is the sum of covered length times strip width.}}{314}{figure.caption.19}\protected@file@percent }
+\newlabel{fig:rectsweep}{{22.7}{314}{The union of two rectangles by a sweep line: the area is the sum of covered length times strip width}{figure.caption.19}{}}
+\newlabel{tpl:cpmincount}{{22.6}{315}{Counting minimums}{section*.20}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {22.7}Dynamic and persistent segment trees}{315}{section.22.7}\protected@file@percent }
+\newlabel{sec:persistent}{{22.7}{315}{Dynamic and persistent segment trees}{section.22.7}{}}
+\@writefile{toc}{\contentsline {paragraph}{Dynamic trees.}{315}{paragraph*.21}\protected@file@percent }
+\newlabel{tpl:cpdynseg}{{22.7}{315}{Dynamic trees}{section*.22}{}}
+\@writefile{toc}{\contentsline {paragraph}{Persistence.}{315}{paragraph*.23}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {22.8}{\ignorespaces Path copying: a persistent update costs $\ensuremath  {\mathcal  {O}(\log n)}$ new nodes.}}{315}{figure.caption.24}\protected@file@percent }
+\newlabel{fig:persistent}{{22.8}{315}{Path copying: a persistent update costs $\Oh {\log n}$ new nodes}{figure.caption.24}{}}
+\newlabel{tpl:cppersist}{{22.7}{316}{Persistence}{section*.25}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {22.8}Segment tree beats}{316}{section.22.8}\protected@file@percent }
+\newlabel{sec:beats}{{22.8}{316}{Segment tree beats}{section.22.8}{}}
+\newlabel{tpl:cpbeats}{{22.8}{316}{Segment tree beats}{section*.26}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {22.9}Offline sweeps}{317}{section.22.9}\protected@file@percent }
+\newlabel{sec:sweepqueries}{{22.9}{317}{Offline sweeps}{section.22.9}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {22.9}{\ignorespaces Distinct values by sweeping the right end: only the last occurrence of each value carries a 1.}}{317}{figure.caption.27}\protected@file@percent }
+\newlabel{fig:sweepdistinct}{{22.9}{317}{Distinct values by sweeping the right end: only the last occurrence of each value carries a 1}{figure.caption.27}{}}
+\newlabel{tpl:cpdistinct}{{22.9}{317}{Offline sweeps}{section*.28}{}}
+\@writefile{toc}{\contentsline {paragraph}{Containment as a sweep.}{317}{paragraph*.29}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {22.10}A staircase for dominance}{319}{section.22.10}\protected@file@percent }
+\newlabel{sec:staircase}{{22.10}{319}{A staircase for dominance}{section.22.10}{}}
+\@setckpt{algorithms/21_fenwick_segment}{
+\setcounter{page}{320}
+\setcounter{equation}{0}
+\setcounter{enumi}{5}
+\setcounter{enumii}{0}
+\setcounter{enumiii}{0}
+\setcounter{enumiv}{0}
+\setcounter{footnote}{0}
+\setcounter{mpfootnote}{0}
+\setcounter{part}{6}
+\setcounter{chapter}{22}
+\setcounter{section}{10}
+\setcounter{subsection}{0}
+\setcounter{subsubsection}{0}
+\setcounter{paragraph}{0}
+\setcounter{subparagraph}{0}
+\setcounter{figure}{9}
+\setcounter{table}{0}
+\setcounter{parentequation}{0}
+\setcounter{lstnumber}{1}
+\setcounter{tcbbreakpart}{1}
+\setcounter{tcblayer}{0}
+\setcounter{tcolorbox@number}{945}
+\setcounter{tcblisting}{198}
+\setcounter{tcbrastercolumn}{1}
+\setcounter{tcbrasterrow}{1}
+\setcounter{tcbrasternum}{1}
+\setcounter{tcbraster}{5}
+\setcounter{cpsegfig}{0}
+\setcounter{LT@tables}{0}
+\setcounter{LT@chunks}{0}
+\setcounter{nlinenum}{0}
+\setcounter{ALG@line}{11}
+\setcounter{ALG@rem}{0}
+\setcounter{ALG@nested}{0}
+\setcounter{ALG@Lnr}{2}
+\setcounter{ALG@blocknr}{15}
+\setcounter{ALG@storecount}{0}
+\setcounter{ALG@tmpcounter}{0}
+\setcounter{algpx@codeBoxCount}{0}
+\setcounter{algpx@nestedCBoxCount}{0}
+\setcounter{algpx@startedBoxesCount}{0}
+\setcounter{algpx@endedBoxesCount}{0}
+\setcounter{algpx@nestedBoxedStringCount}{0}
+\setcounter{algpx@nestedBoxedStringMaxCount}{0}
+\setcounter{algpx@indentCount}{20}
+\setcounter{algpx@lastIndentEnded}{19}
+\setcounter{algpx@pageCount}{1}
+\setcounter{algpx@tmpCount}{2}
+\setcounter{caption@flags}{2}
+\setcounter{continuedfloat}{0}
+\setcounter{float@type}{16}
+\setcounter{section@level}{0}
+\setcounter{Item}{18}
+\setcounter{Hfootnote}{0}
+\setcounter{bookmark@seq@number}{0}
+\setcounter{lstlisting}{0}
+}

@@ -1,0 +1,65 @@
+% The roadmap of the handbook: its Parts as a prerequisite graph, each with a bar showing the levels it covers
+% (bronze, silver, gold, platinum, IOI). Used on the cover (dark) and on every part page (light, with that part
+% highlighted). Keep it in sync with the \part list in algorithms.tex.
+%
+%   \cproadmap{light|dark}{part to highlight, 0 for none}
+\tikzset{
+  rm light/.style={draw=fgline, fill=white, text=fgink, line width=0.7pt},
+  rm light hl/.style={draw=cpblue, fill=cpblue, text=white, line width=0.9pt},
+  rm dark/.style={draw=white!70!cpblue, fill=white, fill opacity=0.07, text opacity=1, text=white, line width=0.7pt},
+  rm dark hl/.style={draw=white, fill=white, fill opacity=0.22, text opacity=1, text=white, line width=1.2pt},
+  rm edge light/.style={->, line width=0.8pt, draw=fgline!80!fgink},
+  rm edge dark/.style={->, line width=0.8pt, draw=white!55!cpblue},
+  rm note light/.style={font=\sffamily\scriptsize\itshape, text=fggray},
+  rm note dark/.style={font=\sffamily\scriptsize\itshape, text=white!75!cpblue},
+}
+% levels bar: 5 segments centred at the given point; flags 1 = covered, 0 = not
+\newcommand{\cprmLevels}[2]{%
+  \foreach \f [count=\k] in {#2} {%
+    \pgfmathsetmacro{\cprmX}{(\k-3)*0.5}%
+    \edef\cprmCol{\ifcase\k\or lvbronze\or lvsilver\or lvgold\or lvplat\or lvioi\fi}%
+    \edef\cprmOp{\ifnum\f=1 1\else 0.2\fi}%
+    \fill[\cprmCol, fill opacity=\cprmOp, rounded corners=0.8pt]
+      ($#1+(\cprmX-0.22,-0.055)$) rectangle ($#1+(\cprmX+0.22,0.055)$);}}
+% one part: id, roman numeral, title, x, y, level flags
+\newcommand{\cprmPart}[6]{%
+  \edef\cprmStyle{rm \cprmMode\ifnum\cprmHl=#1 \space hl\fi}%
+  \node[\cprmStyle, rounded corners=3pt, minimum width=3.35cm, minimum height=1.32cm, align=center, inner sep=2pt]
+    (P#1) at (#4,#5) {{\sffamily\tiny\bfseries PART #2}\\[-1pt]{\sffamily\footnotesize\bfseries #3}\\[5pt]};
+  \cprmLevels{(P#1.south)+(0,0.21)}{#6}}
+\newcommand{\cprmEdge}[2]{\draw[\cprmEdgeStyle] (P#1.south) -- (P#2.north);}
+\newcommand{\cproadmap}[2]{%
+  \edef\cprmMode{#1}\edef\cprmHl{#2}\edef\cprmEdgeStyle{rm edge #1}\edef\cprmNoteStyle{rm note #1}%
+  \begin{tikzpicture}[x=1cm, y=1cm]
+    \cprmPart{1}{I}{Foundations}{6.5}{0}{1,1,1,0,0}
+    \cprmPart{2}{II}{Core Techniques}{6.5}{-1.85}{1,1,1,0,1}
+    \cprmPart{3}{III}{Graphs}{0.8}{-3.9}{1,1,1,1,1}
+    \cprmPart{5}{V}{Dynamic Programming}{4.6}{-3.9}{0,0,1,1,1}
+    \cprmPart{6}{VI}{Range Queries \& DS}{8.4}{-3.9}{0,1,1,1,1}
+    \cprmPart{7}{VII}{Mathematics}{12.2}{-3.9}{0,1,1,1,1}
+    \cprmPart{4}{IV}{Trees}{4.6}{-5.95}{0,1,1,1,1}
+    \cprmPart{8}{VIII}{Strings \& Geometry}{12.2}{-5.95}{0,1,1,1,1}
+    \cprmPart{9}{IX}{Special Topics \& Craft}{8.4}{-8.0}{1,1,1,1,1}
+    \cprmPart{10}{X}{Practice}{0.8}{-8.0}{1,1,1,1,0}
+    \cprmEdge{1}{2}
+    \cprmEdge{2}{3}\cprmEdge{2}{5}\cprmEdge{2}{6}\cprmEdge{2}{7}
+    \cprmEdge{3}{4}\cprmEdge{5}{4}\cprmEdge{6}{4}
+    \cprmEdge{7}{8}
+    \cprmEdge{4}{9}\cprmEdge{6}{9}\cprmEdge{8}{9}
+    \draw[\cprmEdgeStyle, dashed] (P3.south) -- (P10.north)
+      node[midway, left=3pt, \cprmNoteStyle, align=right] {alongside\\Parts II--VIII};
+  \end{tikzpicture}}
+% a legend for the level bars
+\newcommand{\cprmLegend}[1]{%
+  \begin{tikzpicture}
+    \foreach \c/\t [count=\k] in {lvbronze/Bronze, lvsilver/Silver, lvgold/Gold, lvplat/Platinum, lvioi/IOI} {
+      \fill[\c, rounded corners=0.8pt] ({(\k-1)*2.25},-0.055) rectangle ++(0.44,0.11);
+      \node[anchor=west, font=\sffamily\scriptsize, text=#1] at ({(\k-1)*2.25+0.5},0) {\t};}
+  \end{tikzpicture}}
+% part pages: \partdesc{text} before \part{...} prints a description and the roadmap with that part highlighted
+\newcommand{\partdesc}[1]{\gdef\cpPartDesc{#1}}
+\gdef\cpPartDesc{}
+\renewcommand{\cppartextra}{%
+  \par\vspace{1.4cm}{\normalfont\normalsize\color{fgink}\parbox{12.5cm}{\centering\cpPartDesc}}\par
+  \vspace{1.6cm}{\normalfont\normalsize\scalebox{0.86}{\cproadmap{light}{\number\value{part}}}}\par
+  \vspace{0.3cm}{\normalfont\normalsize\cprmLegend{fggray}}}

@@ -1,0 +1,170 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\@writefile{toc}{\contentsline {chapter}{\numberline {17}Tree Decompositions}{230}{chapter.17}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{ch:treedecomp}{{17}{230}{Tree Decompositions}{chapter.17}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {17.1}Heavy-light decomposition}{230}{section.17.1}\protected@file@percent }
+\newlabel{sec:hld}{{17.1}{230}{Heavy-light decomposition}{section.17.1}{}}
+\@writefile{toc}{\contentsline {paragraph}{Heavy and light edges.}{230}{paragraph*.299}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {17.1}{\ignorespaces Heavy-light decomposition of the running example. Heavy edges form the chains 0--1--4--7--11 and 2--6--10--12; every other vertex is a chain by itself. Numbering each chain from its head, and only then the light subtrees hanging from it, deepest first, makes every chain \emph  {and} every subtree a contiguous block of positions.}}{231}{figure.caption.300}\protected@file@percent }
+\newlabel{fig:hld}{{17.1}{231}{Heavy-light decomposition of the running example. Heavy edges form the chains 0--1--4--7--11 and 2--6--10--12; every other vertex is a chain by itself. Numbering each chain from its head, and only then the light subtrees hanging from it, deepest first, makes every chain \emph {and} every subtree a contiguous block of positions}{figure.caption.300}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {17.2}{\ignorespaces The light-edge lemma behind every $\log n$ bound of this section.}}{231}{figure.caption.301}\protected@file@percent }
+\newlabel{fig:hldlight}{{17.2}{231}{The light-edge lemma behind every $\log n$ bound of this section}{figure.caption.301}{}}
+\@writefile{toc}{\contentsline {paragraph}{Positions.}{231}{paragraph*.302}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Answering a path query.}{231}{paragraph*.303}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {17.3}{\ignorespaces A path query on the running example. The path from 11 to 9 (green) is cut into three chain pieces, which are three ranges of positions (framed); each costs one segment-tree query.}}{232}{figure.caption.304}\protected@file@percent }
+\newlabel{fig:hldpath}{{17.3}{232}{A path query on the running example. The path from 11 to 9 (green) is cut into three chain pieces, which are three ranges of positions (framed); each costs one segment-tree query}{figure.caption.304}{}}
+\newlabel{tpl:cphld}{{17.1}{233}{Answering a path query}{section*.305}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {17.2}Centroid decomposition}{233}{section.17.2}\protected@file@percent }
+\newlabel{sec:centroid}{{17.2}{233}{Centroid decomposition}{section.17.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{Centroids.}{234}{paragraph*.306}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{The decomposition.}{234}{paragraph*.307}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {17.4}{\ignorespaces Centroid decomposition of the running example. Removing the centroid 0 leaves parts of 6, 5 and 1 vertices, at most $13/2$ each; their centroids 4, 6 and 3 form level 1, and so on. Right: the centroid tree, of depth $3 \le \log _2 13$. The path from 11 to 9 contains exactly one vertex of the lowest level, 0, which is the LCA of 11 and 9 in the centroid tree.}}{234}{figure.caption.308}\protected@file@percent }
+\newlabel{fig:centroid}{{17.4}{234}{Centroid decomposition of the running example. Removing the centroid 0 leaves parts of 6, 5 and 1 vertices, at most $13/2$ each; their centroids 4, 6 and 3 form level 1, and so on. Right: the centroid tree, of depth $3 \le \log _2 13$. The path from 11 to 9 contains exactly one vertex of the lowest level, 0, which is the LCA of 11 and 9 in the centroid tree}{figure.caption.308}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {17.5}{\ignorespaces Counting the paths of length $k = 3$ through a centroid $c$; vertices show their depth below $c$. Branch B finds $\mathit  {cnt}[2] + \mathit  {cnt}[1] = 3$ partners for its depths 1 and 2, branch C finds 6, so $0 + 3 + 6 = 9$ paths pass through $c$. Paths inside one branch are counted later, at a deeper centroid.}}{235}{figure.caption.309}\protected@file@percent }
+\newlabel{fig:fixedlen}{{17.5}{235}{Counting the paths of length $k = 3$ through a centroid $c$; vertices show their depth below $c$. Branch B finds $\mathit {cnt}[2] + \mathit {cnt}[1] = 3$ partners for its depths 1 and 2, branch C finds 6, so $0 + 3 + 6 = 9$ paths pass through $c$. Paths inside one branch are counted later, at a deeper centroid}{figure.caption.309}{}}
+\@writefile{toc}{\contentsline {paragraph}{Fixed-Length Paths II: a range of lengths.}{236}{paragraph*.310}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {17.2.1}The centroid tree as a data structure}{236}{subsection.17.2.1}\protected@file@percent }
+\newlabel{tpl:cpcentroid}{{17.2.1}{238}{The centroid tree as a data structure}{section*.311}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {17.3}DSU on tree}{238}{section.17.3}\protected@file@percent }
+\newlabel{sec:sack}{{17.3}{238}{DSU on tree}{section.17.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {17.6}{\ignorespaces DSU on tree. Left: when $v$ is processed, the heavy child's counts are still in the array, and only $v$ and the light subtrees are added. Right: why every vertex is added $\ensuremath  {\mathcal  {O}(\log n)}$ times.}}{239}{figure.caption.312}\protected@file@percent }
+\newlabel{fig:sack}{{17.6}{239}{DSU on tree. Left: when $v$ is processed, the heavy child's counts are still in the array, and only $v$ and the light subtrees are added. Right: why every vertex is added $\Oh {\log n}$ times}{figure.caption.312}{}}
+\newlabel{tpl:cpsack}{{17.3}{240}{DSU on tree}{section*.313}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {17.4}Long-path decomposition}{241}{section.17.4}\protected@file@percent }
+\newlabel{sec:longpath}{{17.4}{241}{Long-path decomposition}{section.17.4}{}}
+\@writefile{toc}{\contentsline {paragraph}{Long paths.}{241}{paragraph*.314}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {17.7}{\ignorespaces Long-path decomposition. Each long path owns one block of the buffer, so a vertex inherits its long child's counts in $\ensuremath  {\mathcal  {O}(1)}$; only the short child 3 is merged by hand. Three vertices lie at distance 2 below 1, the most at any distance, so the dominant depth of 1 is 2.}}{241}{figure.caption.315}\protected@file@percent }
+\newlabel{fig:longpath}{{17.7}{241}{Long-path decomposition. Each long path owns one block of the buffer, so a vertex inherits its long child's counts in $\Oh {1}$; only the short child 3 is merged by hand. Three vertices lie at distance 2 below 1, the most at any distance, so the dominant depth of 1 is 2}{figure.caption.315}{}}
+\newlabel{tpl:cplongpath}{{17.4}{242}{Long paths}{section*.316}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {17.5}Virtual trees}{243}{section.17.5}\protected@file@percent }
+\newlabel{sec:virtualtree}{{17.5}{243}{Virtual trees}{section.17.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {17.8}{\ignorespaces The virtual tree of the keys 11, 8, 5 and 12 (red). In DFS order the keys are 11, 8, 5, 12, and the LCAs of neighbours in that order, 4, 1 and 0 (blue), complete the vertex set. The smallest subtree containing the keys (green) has 10 edges, the total weight of the virtual tree.}}{243}{figure.caption.317}\protected@file@percent }
+\newlabel{fig:virtualtree}{{17.8}{243}{The virtual tree of the keys 11, 8, 5 and 12 (red). In DFS order the keys are 11, 8, 5, 12, and the LCAs of neighbours in that order, 4, 1 and 0 (blue), complete the vertex set. The smallest subtree containing the keys (green) has 10 edges, the total weight of the virtual tree}{figure.caption.317}{}}
+\@writefile{toc}{\contentsline {paragraph}{Construction.}{243}{paragraph*.318}\protected@file@percent }
+\newlabel{tpl:cpvirtual}{{17.5}{244}{Construction}{section*.319}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {17.6}Euler tour trees}{245}{section.17.6}\protected@file@percent }
+\newlabel{sec:ett}{{17.6}{245}{Euler tour trees}{section.17.6}{}}
+\@writefile{toc}{\contentsline {paragraph}{Representation.}{245}{paragraph*.320}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {17.9}{\ignorespaces An Euler tour tree. The tour lists every vertex once (white) and every edge once in each direction (grey). Rerooting at b rotates the tour; cutting b--d removes the two edge nodes (red) together with d's side between them (blue), which leaves the tour of the remaining tree and the tour of d alone.}}{246}{figure.caption.321}\protected@file@percent }
+\newlabel{fig:ett}{{17.9}{246}{An Euler tour tree. The tour lists every vertex once (white) and every edge once in each direction (grey). Rerooting at b rotates the tour; cutting b--d removes the two edge nodes (red) together with d's side between them (blue), which leaves the tour of the remaining tree and the tour of d alone}{figure.caption.321}{}}
+\newlabel{tpl:cpett}{{17.6}{246}{Representation}{section*.322}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {17.7}Link-cut trees and top trees}{246}{section.17.7}\protected@file@percent }
+\newlabel{sec:lct}{{17.7}{246}{Link-cut trees and top trees}{section.17.7}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {17.1}{\ignorespaces What the tree structures of this chapter support. ``Distances'' means queries that combine distances to centroid ancestors, as in the nearest-red-vertex problem.}}{247}{table.caption.323}\protected@file@percent }
+\newlabel{tab:dyntrees}{{17.1}{247}{What the tree structures of this chapter support. ``Distances'' means queries that combine distances to centroid ancestors, as in the nearest-red-vertex problem}{table.caption.323}{}}
+\@setckpt{algorithms/16_tree_decompositions}{
+\setcounter{page}{249}
+\setcounter{equation}{0}
+\setcounter{enumi}{5}
+\setcounter{enumii}{0}
+\setcounter{enumiii}{0}
+\setcounter{enumiv}{0}
+\setcounter{footnote}{0}
+\setcounter{mpfootnote}{0}
+\setcounter{part}{4}
+\setcounter{chapter}{17}
+\setcounter{section}{7}
+\setcounter{subsection}{0}
+\setcounter{subsubsection}{0}
+\setcounter{paragraph}{0}
+\setcounter{subparagraph}{0}
+\setcounter{figure}{9}
+\setcounter{table}{1}
+\setcounter{parentequation}{0}
+\setcounter{lstnumber}{1}
+\setcounter{tcbbreakpart}{2}
+\setcounter{tcblayer}{0}
+\setcounter{tcolorbox@number}{732}
+\setcounter{tcblisting}{147}
+\setcounter{tcbrastercolumn}{1}
+\setcounter{tcbrasterrow}{1}
+\setcounter{tcbrasternum}{1}
+\setcounter{tcbraster}{5}
+\setcounter{cpsegfig}{0}
+\setcounter{LT@tables}{0}
+\setcounter{LT@chunks}{0}
+\setcounter{nlinenum}{0}
+\setcounter{ALG@line}{11}
+\setcounter{ALG@rem}{0}
+\setcounter{ALG@nested}{0}
+\setcounter{ALG@Lnr}{2}
+\setcounter{ALG@blocknr}{15}
+\setcounter{ALG@storecount}{0}
+\setcounter{ALG@tmpcounter}{0}
+\setcounter{algpx@codeBoxCount}{0}
+\setcounter{algpx@nestedCBoxCount}{0}
+\setcounter{algpx@startedBoxesCount}{0}
+\setcounter{algpx@endedBoxesCount}{0}
+\setcounter{algpx@nestedBoxedStringCount}{0}
+\setcounter{algpx@nestedBoxedStringMaxCount}{0}
+\setcounter{algpx@indentCount}{20}
+\setcounter{algpx@lastIndentEnded}{19}
+\setcounter{algpx@pageCount}{1}
+\setcounter{algpx@tmpCount}{2}
+\setcounter{caption@flags}{2}
+\setcounter{continuedfloat}{0}
+\setcounter{float@type}{16}
+\setcounter{section@level}{0}
+\setcounter{Item}{13}
+\setcounter{Hfootnote}{0}
+\setcounter{bookmark@seq@number}{0}
+\setcounter{algpx@indentEndPage-0@totc}{0}
+\setcounter{algpx@indentEndPage-1@totc}{0}
+\setcounter{algpx@indentEndPage-2@totc}{0}
+\setcounter{algpx@indentEndPage-3@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-2@totc}{3}
+\setcounter{algpx@indentEndCoordIndex-0@totc}{3}
+\setcounter{algpx@indentEndPage-4@totc}{0}
+\setcounter{algpx@indentEndPage-5@totc}{0}
+\setcounter{algpx@indentEndPage-6@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-4@totc}{6}
+\setcounter{algpx@indentEndPage-7@totc}{0}
+\setcounter{algpx@indentEndPage-8@totc}{0}
+\setcounter{algpx@indentEndPage-9@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-8@totc}{9}
+\setcounter{algpx@indentEndPage-10@totc}{0}
+\setcounter{algpx@indentEndPage-11@totc}{0}
+\setcounter{algpx@indentEndPage-12@totc}{0}
+\setcounter{algpx@indentEndPage-13@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-12@totc}{13}
+\setcounter{algpx@indentEndCoordIndex-10@totc}{13}
+\setcounter{algpx@indentEndPage-14@totc}{0}
+\setcounter{algpx@indentEndPage-15@totc}{0}
+\setcounter{algpx@indentEndPage-16@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-15@totc}{16}
+\setcounter{algpx@indentEndPage-17@totc}{0}
+\setcounter{algpx@indentEndPage-18@totc}{1}
+\setcounter{algpx@indentEndPage-19@totc}{1}
+\setcounter{algpx@indentEndCoordIndex-18@totc}{19}
+\setcounter{lstlisting}{0}
+\setcounter{algpx@indentEndPage-0}{0}
+\setcounter{algpx@indentEndPage-1}{0}
+\setcounter{algpx@indentEndPage-2}{0}
+\setcounter{algpx@indentEndPage-3}{0}
+\setcounter{algpx@indentEndCoordIndex-2}{3}
+\setcounter{algpx@indentEndCoordIndex-0}{3}
+\setcounter{algpx@indentEndPage-4}{0}
+\setcounter{algpx@indentEndPage-5}{0}
+\setcounter{algpx@indentEndPage-6}{0}
+\setcounter{algpx@indentEndCoordIndex-4}{6}
+\setcounter{algpx@indentEndPage-7}{0}
+\setcounter{algpx@indentEndPage-8}{0}
+\setcounter{algpx@indentEndPage-9}{0}
+\setcounter{algpx@indentEndCoordIndex-8}{9}
+\setcounter{algpx@indentEndPage-10}{0}
+\setcounter{algpx@indentEndPage-11}{0}
+\setcounter{algpx@indentEndPage-12}{0}
+\setcounter{algpx@indentEndPage-13}{0}
+\setcounter{algpx@indentEndCoordIndex-12}{13}
+\setcounter{algpx@indentEndCoordIndex-10}{13}
+\setcounter{algpx@indentEndPage-14}{0}
+\setcounter{algpx@indentEndPage-15}{0}
+\setcounter{algpx@indentEndPage-16}{0}
+\setcounter{algpx@indentEndCoordIndex-15}{16}
+\setcounter{algpx@indentEndPage-17}{0}
+\setcounter{algpx@indentEndPage-18}{1}
+\setcounter{algpx@indentEndPage-19}{1}
+\setcounter{algpx@indentEndCoordIndex-18}{19}
+}

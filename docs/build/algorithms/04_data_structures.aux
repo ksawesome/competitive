@@ -1,0 +1,136 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\@writefile{toc}{\contentsline {chapter}{\numberline {5}Choosing a Data Structure}{50}{chapter.5}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{ch:ds-basics}{{5}{50}{Choosing a Data Structure}{chapter.5}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.1}Operations decide}{50}{section.5.1}\protected@file@percent }
+\newlabel{sec:ops-decide}{{5.1}{50}{Operations decide}{section.5.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5.1}{\ignorespaces The cost of each operation, in $\mathcal  {O}$-notation, for five ways to store a dynamic set (green: constant, orange: logarithmic or $n \log n$, red: linear). No structure is best at everything; the balanced tree is the only one with no red cell among the everyday operations, which is why \texttt  {set} is the default for ``sorted and changing''.}}{50}{figure.caption.75}\protected@file@percent }
+\newlabel{fig:ds-costs}{{5.1}{50}{The cost of each operation, in $\mathcal {O}$-notation, for five ways to store a dynamic set (green: constant, orange: logarithmic or $n \log n$, red: linear). No structure is best at everything; the balanced tree is the only one with no red cell among the everyday operations, which is why \texttt {set} is the default for ``sorted and changing''}{figure.caption.75}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.2}Stacks}{51}{section.5.2}\protected@file@percent }
+\newlabel{sec:stacks}{{5.2}{51}{Stacks}{section.5.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5.2}{\ignorespaces Matching \texttt  {([]\{()\})} with a stack. Each column shows the stack after reading the character above it; a closing bracket always meets its partner on top, and the stack ends empty.}}{51}{figure.caption.76}\protected@file@percent }
+\newlabel{fig:brackets}{{5.2}{51}{Matching \texttt {([]\{()\})} with a stack. Each column shows the stack after reading the character above it; a closing bracket always meets its partner on top, and the stack ends empty}{figure.caption.76}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2.1}The monotonic stack}{51}{subsection.5.2.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5.3}{\ignorespaces Nearest smaller values of $2, 5, 1, 4, 8, 3, 2, 5$ (positions under the bars). Each arrow points to the answer. The stack, bottom to top, only ever holds increasing values: when 3 arrives, 8 and 4 are popped for good, because 3 hides them from everything to its right.}}{52}{figure.caption.77}\protected@file@percent }
+\newlabel{fig:monostack}{{5.3}{52}{Nearest smaller values of $2, 5, 1, 4, 8, 3, 2, 5$ (positions under the bars). Each arrow points to the answer. The stack, bottom to top, only ever holds increasing values: when 3 arrives, 8 and 4 are popped for good, because 3 hides them from everything to its right}{figure.caption.77}{}}
+\newlabel{tpl:cpmonostack}{{5.2.1}{52}{The monotonic stack}{section*.78}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.3}Queues and deques}{53}{section.5.3}\protected@file@percent }
+\newlabel{sec:queues}{{5.3}{53}{Queues and deques}{section.5.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3.1}The sliding window maximum}{53}{subsection.5.3.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {5.1}{\ignorespaces The monotonic deque on $1, 3, -1, -3, 5, 3, 6, 7$ with $k = 3$. Values are shown instead of indices.}}{53}{table.caption.79}\protected@file@percent }
+\newlabel{tab:deque-trace}{{5.1}{53}{The monotonic deque on $1, 3, -1, -3, 5, 3, 6, 7$ with $k = 3$. Values are shown instead of indices}{table.caption.79}{}}
+\newlabel{tpl:cpwindow}{{5.3.1}{54}{The sliding window maximum}{section*.80}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.4}Heaps}{54}{section.5.4}\protected@file@percent }
+\newlabel{sec:heaps}{{5.4}{54}{Heaps}{section.5.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4.1}How a heap works}{54}{subsection.5.4.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5.4}{\ignorespaces Inserting 10 into a max-heap. The new element rises along one path from the bottom to the root; everything off that path is untouched, so the cost is the height of the tree, $\ensuremath  {\mathcal  {O}(\log n)}$.}}{54}{figure.caption.81}\protected@file@percent }
+\newlabel{fig:siftup}{{5.4}{54}{Inserting 10 into a max-heap. The new element rises along one path from the bottom to the root; everything off that path is untouched, so the cost is the height of the tree, $\Oh {\log n}$}{figure.caption.81}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4.2}Scheduling with a heap}{55}{subsection.5.4.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4.3}The running median with two heaps}{55}{subsection.5.4.3}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5.5}{\ignorespaces Two heaps split the numbers at the median. Only the two tops are ever inspected, and they sit on either side of the split, so the median is always at hand.}}{56}{figure.caption.82}\protected@file@percent }
+\newlabel{fig:twoheaps}{{5.5}{56}{Two heaps split the numbers at the median. Only the two tops are ever inspected, and they sit on either side of the split, so the median is always at hand}{figure.caption.82}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.5}Ordered sets and interval sets}{56}{section.5.5}\protected@file@percent }
+\newlabel{sec:ordered-sets}{{5.5}{56}{Ordered sets and interval sets}{section.5.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.5.1}Sets of intervals}{57}{subsection.5.5.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5.6}{\ignorespaces Inserting $[6, 10]$ into a set of disjoint intervals. It overlaps $[5, 7]$ and $[9, 12]$ (red), which are erased and replaced, together with it, by their union $[5, 12]$. The overlapping intervals are consecutive in the \texttt  {map}, so one \texttt  {lower\_bound} and a short walk find them all.}}{57}{figure.caption.83}\protected@file@percent }
+\newlabel{fig:intervalset}{{5.6}{57}{Inserting $[6, 10]$ into a set of disjoint intervals. It overlaps $[5, 7]$ and $[9, 12]$ (red), which are erased and replaced, together with it, by their union $[5, 12]$. The overlapping intervals are consecutive in the \texttt {map}, so one \texttt {lower\_bound} and a short walk find them all}{figure.caption.83}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.6}Hash maps for counting}{57}{section.5.6}\protected@file@percent }
+\newlabel{sec:hashmaps}{{5.6}{57}{Hash maps for counting}{section.5.6}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.7}Augmenting simple structures}{57}{section.5.7}\protected@file@percent }
+\newlabel{sec:augment}{{5.7}{57}{Augmenting simple structures}{section.5.7}{}}
+\@writefile{toc}{\contentsline {paragraph}{A stack with its minimum.}{57}{paragraph*.84}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{A queue made of two stacks.}{57}{paragraph*.85}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5.7}{\ignorespaces A queue with minimum built from two stacks. Each entry stores its value and, in grey, the minimum of its stack from the bottom up to it. Pouring reverses the order, so the oldest element is popped first.}}{58}{figure.caption.86}\protected@file@percent }
+\newlabel{fig:twostacks}{{5.7}{58}{A queue with minimum built from two stacks. Each entry stores its value and, in grey, the minimum of its stack from the bottom up to it. Pouring reverses the order, so the oldest element is popped first}{figure.caption.86}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.8}Linked lists in arrays}{58}{section.5.8}\protected@file@percent }
+\newlabel{sec:linked}{{5.8}{58}{Linked lists in arrays}{section.5.8}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5.8}{\ignorespaces The Josephus circle as a linked list in an array. Removing a child only redirects one link.}}{59}{figure.caption.87}\protected@file@percent }
+\newlabel{fig:josephus}{{5.8}{59}{The Josephus circle as a linked list in an array. Removing a child only redirects one link}{figure.caption.87}{}}
+\@setckpt{algorithms/04_data_structures}{
+\setcounter{page}{61}
+\setcounter{equation}{0}
+\setcounter{enumi}{3}
+\setcounter{enumii}{0}
+\setcounter{enumiii}{0}
+\setcounter{enumiv}{0}
+\setcounter{footnote}{0}
+\setcounter{mpfootnote}{0}
+\setcounter{part}{1}
+\setcounter{chapter}{5}
+\setcounter{section}{8}
+\setcounter{subsection}{0}
+\setcounter{subsubsection}{0}
+\setcounter{paragraph}{0}
+\setcounter{subparagraph}{0}
+\setcounter{figure}{8}
+\setcounter{table}{1}
+\setcounter{parentequation}{0}
+\setcounter{lstnumber}{16}
+\setcounter{tcbbreakpart}{1}
+\setcounter{tcblayer}{0}
+\setcounter{tcolorbox@number}{190}
+\setcounter{tcblisting}{33}
+\setcounter{tcbrastercolumn}{1}
+\setcounter{tcbrasterrow}{1}
+\setcounter{tcbrasternum}{1}
+\setcounter{tcbraster}{1}
+\setcounter{cpsegfig}{0}
+\setcounter{LT@tables}{0}
+\setcounter{LT@chunks}{0}
+\setcounter{nlinenum}{0}
+\setcounter{ALG@line}{0}
+\setcounter{ALG@rem}{0}
+\setcounter{ALG@nested}{0}
+\setcounter{ALG@Lnr}{2}
+\setcounter{ALG@blocknr}{15}
+\setcounter{ALG@storecount}{0}
+\setcounter{ALG@tmpcounter}{0}
+\setcounter{algpx@codeBoxCount}{0}
+\setcounter{algpx@nestedCBoxCount}{0}
+\setcounter{algpx@startedBoxesCount}{0}
+\setcounter{algpx@endedBoxesCount}{0}
+\setcounter{algpx@nestedBoxedStringCount}{0}
+\setcounter{algpx@nestedBoxedStringMaxCount}{0}
+\setcounter{algpx@indentCount}{0}
+\setcounter{algpx@lastIndentEnded}{0}
+\setcounter{algpx@pageCount}{0}
+\setcounter{algpx@tmpCount}{0}
+\setcounter{caption@flags}{2}
+\setcounter{continuedfloat}{0}
+\setcounter{float@type}{16}
+\setcounter{section@level}{0}
+\setcounter{Item}{6}
+\setcounter{Hfootnote}{0}
+\setcounter{bookmark@seq@number}{0}
+\setcounter{algpx@indentEndPage-0@totc}{0}
+\setcounter{algpx@indentEndPage-1@totc}{0}
+\setcounter{algpx@indentEndPage-2@totc}{0}
+\setcounter{algpx@indentEndPage-3@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-2@totc}{3}
+\setcounter{algpx@indentEndCoordIndex-0@totc}{3}
+\setcounter{algpx@indentEndPage-4@totc}{0}
+\setcounter{algpx@indentEndPage-5@totc}{0}
+\setcounter{algpx@indentEndPage-6@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-4@totc}{6}
+\setcounter{algpx@indentEndPage-7@totc}{0}
+\setcounter{algpx@indentEndPage-8@totc}{0}
+\setcounter{algpx@indentEndPage-9@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-8@totc}{9}
+\setcounter{algpx@indentEndPage-10@totc}{0}
+\setcounter{algpx@indentEndPage-11@totc}{0}
+\setcounter{algpx@indentEndPage-12@totc}{0}
+\setcounter{algpx@indentEndPage-13@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-12@totc}{13}
+\setcounter{algpx@indentEndCoordIndex-10@totc}{13}
+\setcounter{algpx@indentEndPage-14@totc}{0}
+\setcounter{algpx@indentEndPage-15@totc}{0}
+\setcounter{algpx@indentEndPage-16@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-15@totc}{16}
+\setcounter{algpx@indentEndPage-17@totc}{0}
+\setcounter{algpx@indentEndPage-18@totc}{1}
+\setcounter{algpx@indentEndPage-19@totc}{1}
+\setcounter{algpx@indentEndCoordIndex-18@totc}{19}
+\setcounter{lstlisting}{0}
+}

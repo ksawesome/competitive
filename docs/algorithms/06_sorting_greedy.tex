@@ -1,0 +1,838 @@
+\chapter{Sorting and Greedy Algorithms}\label{ch:sorting}
+
+Sorting is the most useful preprocessing step in competitive programming. Once data is ordered, equal values sit next to
+each other, extremes sit at the ends, and a whole family of questions collapses into a single left-to-right scan. Greedy
+algorithms, which build a solution by repeatedly making the choice that looks best right now, are sorting's natural partner:
+almost every greedy algorithm begins by sorting the input into the order in which its choices will be made. This chapter
+treats both, with an emphasis on the part that contests actually test: \emph{finding} the right order, and \emph{proving}
+that the greedy choice is safe.
+
+\begin{chapterintro}{\bronze\ \silver\ \gold}{Chapters~\ref{ch:approach} to~\ref{ch:ds-basics}, in particular the exchange
+argument of Section~\ref{sec:exchange}.}
+  \item use sorting to turn questions about pairs and groups into scans, and pick the right library routine;
+  \item sort integers in linear time with counting sort and radix sort;
+  \item design comparators with exchange arguments, and know when a comparator is legal;
+  \item compress coordinates;
+  \item prove greedy algorithms with ``greedy stays ahead'' and exchange arguments, and break wrong ones with
+        counterexamples;
+  \item combine greedy choices with heaps and ordered sets, including greedy algorithms that can undo their choices.
+\end{chapterintro}
+
+% ======================================================================================================================
+\section[Sorting as a tool]{Sorting as a tool \hfill \bronze}\label{sec:sorting-tool}
+
+\cc{sort} runs in $\Oh{n\log n}$: about 40\,ms for $10^6$ numbers (Table~\ref{tab:sortcost}), so for typical limits it is
+almost free. What makes it so useful is what the order gives you afterwards.
+
+\begin{itemize}
+  \item \textbf{Equal values are adjacent.} Counting duplicates, grouping items by key, and counting distinct values all
+        become one scan: after sorting, a new group starts exactly where \cc{a[i] != a[i - 1]}. The idiom
+        \cc{a.erase(unique(all(a)), a.end())} removes duplicates.
+  \item \textbf{Order statistics are positions.} The $k$-th smallest value is \cc{a[k - 1]}, the median is in the middle,
+        and ``how many values are below $x$'' is a binary search (Chapter~\ref{ch:binsearch}).
+  \item \textbf{Closest values are neighbours.} For any $i < k < j$ in sorted order, $a_j - a_i \ge a_k - a_i$, so the
+        minimum difference between two values is attained by two adjacent values. The same holds for ``the value nearest to
+        $x$'': it is next to where $x$ would be inserted.
+  \item \textbf{Scans with two pointers become possible.} Once both of two lists are sorted, matching them (pairs with a given
+        sum, assigning applicants to apartments) takes one linear pass (Chapter~\ref{ch:prefix}).
+  \item \textbf{Sorting fixes the order of decisions.} A greedy algorithm needs to know which item to consider first; sorting
+        by the right key is usually the whole difficulty.
+\end{itemize}
+
+A beautiful example of the last point, and of an invariant that holds throughout a scan of sorted data, is the following
+problem.
+
+\begin{problem}{Missing Coin Sum (CSES)}
+Given $n \le 2\cdot10^5$ coins with positive values, find the smallest sum that cannot be formed by choosing a subset of the
+coins.
+\solution Sort the coins and maintain the invariant \emph{every sum $0, 1, \ldots, r$ can be formed with the coins seen
+so far}; initially $r = 0$. Take the next coin $c$. If $c \le r + 1$, then adding $c$ to the sums $0, \ldots, r$ gives all
+sums $c, \ldots, r + c$, which together with $0, \ldots, r$ cover $0, \ldots, r + c$ without a gap, so $r$ becomes $r + c$.
+If $c > r + 1$, then $r + 1$ can never be formed: the coins seen so far sum to exactly $r$ (by induction, $r$ is the sum of
+all coins so far), and every remaining coin is at least $c > r + 1$ by the sorted order. So the answer is $r + 1$
+(Figure~\ref{fig:missingcoin}).
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.52cm, y=0.62cm]
+  \draw[->, line width=0.6pt, draw=fgink!70] (-0.3, 0) -- (21.6, 0) node[right, lbl] {sum};
+  \foreach \t in {0, 5, 10, 15, 20} \draw[line width=0.5pt, draw=fgink!70] (\t, 0.1) -- (\t, -0.1)
+    node[below, lbl] {\t};
+  \foreach \cl/\rr/\yy in {start/0/5, {after coin 1}/1/4, {after coin 1}/2/3, {after coin 3}/5/2,
+      {after coin 6}/11/1} {
+    \draw[ivl=fggreen!60] (0, \yy) -- (\rr + 0.02, \yy);
+    \node[lbl, anchor=east] at (-0.5, \yy) {\cl: \ $r = \rr$};
+  }
+  \draw[line width=1pt, draw=fgverm, dashed] (12, -0.15) -- (12, 5.4);
+  \node[font=\sffamily\scriptsize\bfseries, text=fgverm, anchor=south] at (12, 5.4) {12 cannot be formed};
+  \fill[fgverm] (20, 1) circle (3pt) node[above=2pt, font=\sffamily\scriptsize, text=fgverm] {next coin: $20 > r + 1$};
+\end{tikzpicture}
+\caption{Missing Coin Sum with the sorted coins $1, 1, 3, 6, 20$. Each green bar is the range $0, \ldots, r$ of sums that can
+be formed after taking the coins so far. Each coin at most $r + 1$ extends the range without a gap; the coin 20 would leave
+the gap $12, \ldots, 19$, so the answer is 12.}
+\label{fig:missingcoin}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vi x(n);
+    cin >> x;
+    sort(all(x));
+    ll reach = 0;  // invariant: every sum 0, 1, ..., reach can be formed
+    for (ll c : x) {
+        if (c > reach + 1) break;  // then reach + 1 can never be formed
+        reach += c;
+    }
+    print(reach + 1);
+}
+\end{code}
+
+\subsection{The sorting toolbox}
+
+The standard library offers more than \cc{sort}, and choosing the right routine matters when the input is large or only part
+of the order is needed (Figure~\ref{fig:sortfamily}).
+
+\begin{itemize}
+  \item \cc{sort(all(a))} sorts in $\Oh{n \log n}$ (introsort: quicksort that falls back to heapsort, so the worst case is
+        guaranteed). Equal elements may be reordered.
+  \item \cc{stable_sort} keeps equal elements in their original order, at $\Oh{n\log n}$ with extra memory. It is what you
+        need when sorting by one key after another (``by age, and among equal ages by the original order'').
+  \item \cc{partial_sort(a.begin(), a.begin() + k, a.end())} puts the $k$ smallest elements, sorted, at the front, in
+        $\Oh{n\log k}$. The rest is left in unspecified order.
+  \item \cc{nth_element(a.begin(), a.begin() + k, a.end())} puts the element that belongs at position $k$ there, with smaller
+        or equal elements before it and larger or equal ones after it, in $\Oh{n}$ on average: the fastest way to find a
+        median or a threshold.
+  \item Pairs, tuples and \cc{array}s compare lexicographically, so \cc{sort} on a vector of \cc{tuple<int, int, int>} sorts
+        by the first component, then the second, then the third. To sort by the second component first, store it first.
+  \item To sort indices by a key without moving the data (an \defn{argsort}), sort \cc{iota(all(ord), 0)} with a comparator
+        that compares \cc{key[i]} and \cc{key[j]}. Keep the original indices whenever the output must refer to them.
+\end{itemize}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[blbl, anchor=east] at (-0.25, 0) {input};
+  \arrs{I}{0}{0}{7/n, 2/n, 9/n, 4/n, 1/n, 8/n, 3/n, 6/n}
+  \node[blbl, anchor=east] at (-0.25, -1.05) {sort};
+  \arrs{S}{0}{-1.05}{1/good, 2/good, 3/good, 4/good, 6/good, 7/good, 8/good, 9/good}
+  \node[blbl, anchor=east] at (-0.25, -2.2) {partial\_sort, $k = 3$};
+  \arrs{P}{0}{-2.2}{1/good, 2/good, 3/good, 9/dim, 7/dim, 8/dim, 4/dim, 6/dim}
+  \node[blbl, anchor=east] at (-0.25, -3.5) {nth\_element, $k = 3$};
+  \arrs{N}{0}{-3.5}{3/cool, 1/cool, 2/cool, 4/hot, 8/warn, 9/warn, 7/warn, 6/warn}
+  \idx{N}{8}
+  \node[notel, anchor=west, text width=6.6cm] at (6.0, -1.05) {all sorted, $\Oh{n\log n}$};
+  \node[notel, anchor=west, text width=6.6cm] at (6.0, -2.2) {the 3 smallest, sorted, then the rest in some order;
+    $\Oh{n\log k}$};
+  \node[notel, anchor=west, text width=6.6cm] at (6.0, -3.5) {the right value at index 3; smaller values before it,
+    larger ones after it, each side in some order; $\Oh{n}$};
+\end{tikzpicture}
+\caption{What \texttt{sort}, \texttt{partial\_sort} and \texttt{nth\_element} guarantee. Grey cells are in an unspecified
+order; with \texttt{nth\_element}, blue cells are at most the value at index $k$ and orange cells at least it.}
+\label{fig:sortfamily}
+\end{figure}
+
+\usetemplate{Argsort + custom comparator}{Ctrl+Alt+T, Shift+J}{cpargsort}
+
+% ======================================================================================================================
+\section[Counting sort and radix sort]{Counting sort and radix sort \hfill \silver}\label{sec:radix}
+
+Comparison sorts cannot beat $\Oh{n \log n}$: there are $n!$ possible orders and each comparison has two outcomes, so some
+input needs $\log_2 n! \approx n \log_2 n$ comparisons. Sorting \emph{integers} escapes this bound by not comparing at all.
+
+\paragraph{Counting sort.} If the keys are small integers in $[0, K)$, count how many items have each key, turn the counts
+into starting positions with a prefix sum, and place every item at the next free position of its key
+(Figure~\ref{fig:countingsort}). This takes $\Oh{n + K}$ and is \emph{stable}: items with equal keys keep their input order,
+because they are placed in input order. Stability is what makes the next algorithm work.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[kc/.style={cellc, minimum width=8mm}]
+  \tikzset{k0/.style={fill=fgsky!30, draw=fgblue}, k1/.style={fill=fggreen!22, draw=fggreen},
+    k2/.style={fill=fgorange!25, draw=fgorange!85!black}, k3/.style={fill=fgpink!25, draw=fgpink!80!black}}
+  \node[blbl, anchor=east] at (-0.3, 0) {input (key, item)};
+  \foreach \kv/\lt/\s [count=\i] in {2/a/k2, 0/b/k0, 3/c/k3, 2/d/k2, 0/e/k0, 1/f/k1, 2/g/k2}
+    \node[kc, \s] (in\i) at (\i*0.8 - 0.4, 0) {\kv\,\textit{\lt}};
+  \node[blbl, anchor=east] at (-0.3, -1.3) {count per key};
+  \foreach \c/\s [count=\i] in {2/k0, 1/k1, 3/k2, 1/k3} {
+    \pgfmathtruncatemacro{\kk}{\i - 1}
+    \node[kc, \s] (cnt\i) at (\i*0.8 - 0.4, -1.3) {\c};
+    \node[lbl, above=0pt of cnt\i] {key \kk};
+  }
+  \node[blbl, anchor=east] at (-0.3, -2.45) {first position};
+  \foreach \c/\s [count=\i] in {0/k0, 2/k1, 3/k2, 6/k3} \node[kc, \s] at (\i*0.8 - 0.4, -2.45) {\c};
+  \node[notel, anchor=west, text width=5.2cm] at (3.6, -1.9) {prefix sums of the counts: key 2 starts at position
+    $2 + 1 = 3$};
+  \node[blbl, anchor=east] at (-0.3, -3.75) {output};
+  \foreach \kv/\lt/\s [count=\i] in {0/b/k0, 0/e/k0, 1/f/k1, 2/a/k2, 2/d/k2, 2/g/k2, 3/c/k3}
+    \node[kc, \s] (out\i) at (\i*0.8 - 0.4, -3.75) {\kv\,\textit{\lt}};
+  \foreach \i in {0,...,6} \node[lbl] at (\i*0.8 + 0.4, -4.3) {\i};
+  \node[notel, anchor=west, text width=5.2cm] at (6.1, -3.75) {items with equal keys keep their input order
+    ($a, d, g$): the sort is stable};
+\end{tikzpicture}
+\caption{Counting sort with keys in $[0, 4)$. Count the keys, turn the counts into first positions with a prefix sum, then
+place the items in input order, each at the next free position of its key.}
+\label{fig:countingsort}
+\end{figure}
+
+\paragraph{Radix sort.} To sort $d$-digit numbers, counting-sort them by the \emph{last} digit, then by the second-to-last,
+and so on up to the first digit (Figure~\ref{fig:radix}). This is \defn{radix sort}, least significant digit first. It is
+correct by induction: after the pass on digit $j$, the numbers are sorted by their last $j$ digits, because the pass orders
+them by digit $j$, and numbers that tie on digit $j$ keep their previous order, which by induction was sorted by the last
+$j - 1$ digits. Each pass costs $\Oh{n + b}$ for base $b$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[dg/.style={font=\ttfamily\small, inner sep=0.8pt}]
+  \foreach \col/\vals/\hl/\ttl in {0/{329,457,657,839,436,720,355}/-1/input,
+      1/{720,355,436,457,657,329,839}/2/{by ones},
+      2/{720,329,436,839,355,457,657}/1/{by tens},
+      3/{329,355,436,457,657,720,839}/0/{by hundreds}} {
+    \node[title] at (\col*2.9, 0.55) {\ttl};
+    \foreach \vv [count=\rw] in \vals {
+      \node[draw=fgline, line width=0.5pt, fill=white, minimum width=13mm, minimum height=5.2mm]
+        at (\col*2.9, -\rw*0.58) {};
+      \pgfmathtruncatemacro{\da}{floor(\vv/100)}
+      \pgfmathtruncatemacro{\db}{mod(floor(\vv/10),10)}
+      \pgfmathtruncatemacro{\dd}{mod(\vv,10)}
+      \ifnum\hl=0 \node[dg, text=fgverm, font=\ttfamily\small\bfseries] at (\col*2.9-0.2, -\rw*0.58) {\da};
+      \else \node[dg] at (\col*2.9-0.2, -\rw*0.58) {\da}; \fi
+      \ifnum\hl=1 \node[dg, text=fgverm, font=\ttfamily\small\bfseries] at (\col*2.9, -\rw*0.58) {\db};
+      \else \node[dg] at (\col*2.9, -\rw*0.58) {\db}; \fi
+      \ifnum\hl=2 \node[dg, text=fgverm, font=\ttfamily\small\bfseries] at (\col*2.9+0.2, -\rw*0.58) {\dd};
+      \else \node[dg] at (\col*2.9+0.2, -\rw*0.58) {\dd}; \fi
+    }
+  }
+  \foreach \a/\b in {0/1, 1/2, 2/3} \draw[farr] (\a*2.9+0.85, -2.32) -- (\b*2.9-0.85, -2.32);
+\end{tikzpicture}
+\caption{Radix sort of three-digit numbers: three stable counting sorts, by the ones digit, the tens digit and the hundreds
+digit (the digit used in each pass is red). After the pass on the tens digit, the numbers are sorted by their last two
+digits; after the last pass, completely.}
+\label{fig:radix}
+\end{figure}
+
+For 64-bit integers the template uses base $2^{16}$, four passes of 16 bits each, and flips the sign bit first so that
+negative numbers sort correctly as unsigned values. Table~\ref{tab:sortcost} shows that it is more than twice as fast as
+\cc{sort} on large inputs. That rarely decides a contest problem, but it does when $n$ is $10^7$, when the same data is
+sorted many times, or inside a suffix array construction (Chapter~\ref{ch:strings}), which is a radix sort of pairs of ranks.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}l r r l@{}}
+  \toprule
+  \thd{Routine} & \thd{$n = 10^6$} & \thd{$n = 10^7$} & \thd{Guarantee} \\
+  \midrule
+  \texttt{sort} & 43\,ms & 515\,ms & $\Oh{n\log n}$ \\
+  \texttt{stable\_sort} & 51\,ms & 615\,ms & $\Oh{n\log n}$, stable \\
+  radix sort (template) & 17\,ms & 238\,ms & $\Oh{n}$, 4 passes, stable \\
+  \texttt{nth\_element} (median) & 6\,ms & 48\,ms & $\Oh{n}$ on average \\
+  \texttt{partial\_sort}, $k = 100$ & $< 1$\,ms & 2\,ms & $\Oh{n \log k}$ \\
+  \bottomrule
+\end{tabular}
+\caption{Measured costs of sorting random 64-bit integers (\texttt{g++ -O2}, best of three runs).}
+\label{tab:sortcost}
+\end{table}
+
+\usetemplate{Radix sort and counting sort}{Ctrl+Alt+U, Shift+R}{cpradix}
+
+% ======================================================================================================================
+\section[Comparators and exchange arguments]{Comparators and exchange arguments \hfill \silver}\label{sec:comparators}
+
+When the order you need is not the natural order of the values, you write it as a comparator: a function \cc{cmp(a, b)} that
+returns \cc{true} when $a$ must come before $b$. Finding the comparator is the creative part, and the tool for it is the
+\emph{adjacent exchange argument} of Section~\ref{sec:exchange}: take an optimal order, look at two neighbours $x$ and $y$,
+and ask when swapping them helps. Because only the two neighbours are affected, the condition usually becomes a simple
+inequality in the parameters of $x$ and $y$, and that inequality \emph{is} the comparator.
+
+\begin{problem}{Weighted completion time}
+Task $i$ takes $t_i$ time units and has weight $w_i$ (both positive). The tasks run one after another, and the cost is
+$\sum_i w_i C_i$, where $C_i$ is the time at which task $i$ finishes. Find the minimum cost.
+\solution Consider two adjacent tasks $x$ and $y$ that start at time $T$ (Figure~\ref{fig:smith}). Swapping them does not
+change when any other task finishes, so only their own two terms change. With $x$ first, the two terms are
+$w_x (T + t_x) + w_y (T + t_x + t_y)$; with $y$ first, $w_y (T + t_y) + w_x (T + t_x + t_y)$. The difference is
+$w_y t_x - w_x t_y$, so $x$ should come first exactly when $t_x w_y < t_y w_x$, that is, when $t_x / w_x < t_y / w_y$. Sort
+by this ratio (\defn{Smith's rule}); any order that is not sorted has an adjacent pair that can be swapped without increasing
+the cost, so the sorted order is optimal.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.55cm, y=0.8cm]
+  \tikzset{jb/.style={draw=fgink!60, line width=0.6pt, minimum height=6mm, inner sep=0pt, font=\sffamily\small}}
+  \foreach \yy/\lab/\wa/\wb/\na/\nb/\ca/\cb in {0/{$x$ first}/4/6/x/y/fgblue/fgorange,
+      -1.5/{$y$ first}/6/4/y/x/fgorange/fgblue} {
+    \node[blbl, anchor=east] at (-0.3, \yy) {\lab};
+    \node[jb, fill=fgline!30, minimum width=5*0.55cm, anchor=west] at (0, \yy) {earlier tasks};
+    \node[jb, fill=\ca!25, minimum width=\wa*0.55cm, anchor=west] at (5, \yy) {$\na$};
+    \node[jb, fill=\cb!25, minimum width=\wb*0.55cm, anchor=west] at (5 + \wa, \yy) {$\nb$};
+    \node[jb, fill=fgline!30, minimum width=5*0.55cm, anchor=west] at (15, \yy) {later tasks};
+  }
+  \draw[line width=0.6pt, draw=fgink!60, dashed] (5, 0.55) -- (5, -2.05) node[below, lbl] {$T$};
+  \draw[line width=0.6pt, draw=fgink!60, dashed] (15, 0.55) -- (15, -2.05) node[below, lbl] {$T + t_x + t_y$};
+  \node[notel, anchor=north, text width=10cm, align=center] at (10, -2.75) {Only $x$ and $y$ finish at different times,
+    so the swap changes the cost by $w_y t_x - w_x t_y$.};
+\end{tikzpicture}
+\caption{The exchange argument behind Smith's rule. Swapping two adjacent tasks changes only their own finishing times; the
+tasks before and after them are unaffected.}
+\label{fig:smith}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vector<pll> job(n);  // (t, w): duration and weight, both positive
+    for (auto& [t, w] : job) cin >> t >> w;
+    // x goes first exactly when t_x * w_y < t_y * w_x (Smith's rule)
+    sort(all(job), [](const pll& x, const pll& y) {
+        return x.first * y.second < y.first * x.second;
+    });
+    ll time = 0, cost = 0;
+    for (auto [t, w] : job) {
+        time += t;  // this job finishes at the current time
+        cost += w * time;
+    }
+    print(cost);
+}
+\end{code}
+
+The comparator cross-multiplies instead of comparing the ratios $t/w$ as doubles: integer arithmetic is exact, and with
+$t, w \le 10^6$ the products fit comfortably in 64 bits. With all weights equal, Smith's rule becomes \emph{shortest job
+first}, which minimises the sum (and so the average) of completion times.
+
+\subsection{When is a comparator legal?}
+
+\cc{sort} assumes that the comparator is a \defn{strict weak ordering}: $\mathrm{cmp}(a, a)$ is false; if $\mathrm{cmp}(a,
+b)$ and $\mathrm{cmp}(b, c)$ then $\mathrm{cmp}(a, c)$; and ``neither comes before the other'' is transitive too, so that
+equivalent elements form groups. If any of these fails, the behaviour is undefined, and in practice \cc{sort} can produce an
+unsorted result, loop forever or read outside the array. An exchange argument only tells you how to order \emph{two}
+elements; before trusting it as a comparator, check that it is transitive, usually by rewriting it as a comparison of a single
+key computed from each element, like $t/w$ above.
+
+\begin{problem}{The largest concatenation}
+Arrange $n$ non-negative integers in a row so that their concatenation, read as one number, is as large as possible (for
+$5, 50, 56$ the answer is $56550$).
+\solution Adjacent exchange: $a$ should precede $b$ when the string $a + b$ is larger than $b + a$. This is transitive,
+because $a + b > b + a$ as numbers means $a \cdot 10^{|b|} + b > b \cdot 10^{|a|} + a$, which rearranges to
+$a / (10^{|a|} - 1) > b / (10^{|b|} - 1)$: a comparison of one key per number. So sorting with it is legal and, by the
+exchange argument, optimal. If the largest element is 0, all are, and the answer is the single digit 0.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vector<string> s(n);
+    cin >> s;
+    // a goes first when the concatenation a + b beats b + a
+    sort(all(s), [](const string& a, const string& b) {
+        return a + b > b + a;
+    });
+    if (s[0] == "0") s = {"0"};  // every number is zero
+    string out;
+    for (auto& x : s) out += x;
+    print(out);
+}
+\end{code}
+
+\begin{pitfall}[Comparators that break \texttt{sort}]
+Never use \cc{<=} in a comparator: $\mathrm{cmp}(a, a)$ becomes true, and GCC's \cc{sort} can then run past the end of the
+array. Never compare floating-point keys that may be NaN. And be careful with comparators that look symmetric but are not
+transitive, such as ``$a$ before $b$ if $a$ beats $b$'' in a rock-paper-scissors tournament: no order is consistent with
+them. When in doubt, compile with \cc{-D_GLIBCXX_DEBUG}, which checks the comparator on every call.
+\end{pitfall}
+
+% ======================================================================================================================
+\section[Coordinate compression]{Coordinate compression \hfill \silver}\label{sec:compression}
+
+Many data structures index arrays by value: counting arrays, Fenwick trees, segment trees. When values are huge (up to $10^9$)
+but there are few of them ($2\cdot10^5$), \defn{coordinate compression} replaces every value by its \emph{rank} among the
+distinct values (Figure~\ref{fig:compress}). The order of values is preserved, equal values stay equal, and the new values
+are small enough to index arrays.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[blbl, anchor=east] at (-0.25, 0) {values};
+  \arrs{A}{0}{0}{1e9/n, 7/n, 42/n, 7/n, 999/n}
+  \node[blbl, anchor=east] at (-0.25, -1.6) {ranks};
+  \arrs{B}{0}{-1.6}{3/cool, 0/cool, 1/cool, 0/cool, 2/cool}
+  \foreach \i in {1,...,5} \draw[->, line width=0.8pt, draw=fgblue] (A-\i.south) -- (B-\i.north);
+  \node[blbl, anchor=east] at (6.4, -0.8) {sorted distinct};
+  \arrs{V}{6.6}{-0.8}{7/n, 42/n, 999/n, 1e9/n}
+  \idx{V}{4}
+  \node[notel, anchor=north west, text width=4.4cm] at (6.6, -1.75) {rank of $v$ = position of $v$ here, found with
+    \texttt{lower\_bound}};
+\end{tikzpicture}
+\caption{Coordinate compression: every value is replaced by its index in the sorted list of distinct values.}
+\label{fig:compress}
+\end{figure}
+
+In code: copy the values, sort, remove duplicates, and map each value $v$ to \cc{lower_bound(all(vals), v) - vals.begin()}.
+Building costs $\Oh{n\log n}$ and each lookup $\Oh{\log n}$; if lookups are frequent, store the ranks once in an array.
+
+\usetemplate{Coordinate compression}{Ctrl+Alt+T, Shift+C}{cpcompress}
+
+\begin{pitfall}[Compress everything that will be looked up]
+Offline problems often have values in the data \emph{and} in the queries. Collect all of them before compressing, or a query
+value that does not occur in the data has no rank. When intervals are compressed and the gaps between endpoints matter
+(``is the point between two endpoints covered?''), also insert $v + 1$ for each endpoint $v$, or keep the original values next
+to the ranks to measure lengths.
+\end{pitfall}
+
+% ======================================================================================================================
+\section[Greedy algorithms and their proofs]{Greedy algorithms and their proofs \hfill \silver}\label{sec:greedy}
+
+A \defn{greedy algorithm} builds a solution step by step, always taking the choice that looks best now and never
+reconsidering it. Greedy algorithms are short and fast, and they are wrong more often than they are right: many natural greedy
+rules fail on small inputs. So a greedy algorithm needs either a proof or, at the very least, a stress test against a brute
+force (Chapter~\ref{ch:approach}). Two proof patterns cover almost every contest greedy.
+
+\begin{itemize}
+  \item \textbf{Greedy stays ahead.} Show that after each step, the greedy partial solution is at least as good as the
+        corresponding part of \emph{any} solution, by some measure; then it is also at least as good at the end.
+  \item \textbf{Exchange argument.} Take an optimal solution that differs from the greedy one, and transform it step by step
+        into the greedy solution, never making it worse (Section~\ref{sec:exchange}). Then the greedy solution is optimal
+        too.
+\end{itemize}
+
+\subsection{Interval scheduling}
+
+\begin{problem}{Most disjoint intervals}
+Given $n$ intervals, choose as many as possible so that no two of them overlap.
+\solution Sort the intervals by their end. Scan them, taking every interval that starts no earlier than the end of the last
+interval taken (Figure~\ref{fig:intervalsched}). This takes $\Oh{n\log n}$; the CSES problem Movie Festival is exactly this
+(Chapter~\ref{ch:worked}).
+\end{problem}
+
+\emph{Why it works (greedy stays ahead).} Let $g_1, g_2, \ldots, g_k$ be the intervals chosen by the greedy algorithm and
+$o_1, o_2, \ldots, o_m$ those of any valid solution, both in order of time. We claim that $g_i$ ends no later than $o_i$ for
+every $i \le k$. For $i = 1$ this holds because $g_1$ has the earliest end of all intervals. If $g_{i}$ ends no later than
+$o_i$, then $o_{i+1}$, which starts after $o_i$ ends, also starts after $g_i$ ends, so $o_{i+1}$ was still available when
+the greedy algorithm chose $g_{i+1}$, and the greedy algorithm chose the available interval with the earliest end: $g_{i+1}$
+ends no later than $o_{i+1}$. Finally, if $m > k$, the interval $o_{k+1}$ starts after $o_k$ ends, hence after $g_k$ ends,
+so the greedy algorithm would have taken another interval: a contradiction. So $k \ge m$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.95cm, y=0.44cm]
+  \numline{0}{12}{0}{time}
+  \foreach \l/\r/\y/\c in {0/3/1/fggreen!70, 2/4/2/fgline!70, 1/5/3/fgline!70, 3.5/6/4/fggreen!70, 6.5/8/5/fggreen!70,
+      4/9/6/fgline!70, 7/11/7/fgline!70, 8.5/12/8/fggreen!70}
+    \draw[ivl=\c] (\l, \y) -- (\r, \y);
+  \foreach \e/\y in {3/1, 6/4, 8/5, 12/8} \draw[line width=0.6pt, draw=fggreen!60!black, dashed] (\e, \y) -- (\e, 0.2);
+  \node[notel, anchor=west, text width=3.3cm] at (12.8, 4.5) {one row per interval, by end time from bottom to top;
+    green: taken};
+\end{tikzpicture}
+\caption{Earliest end first. Each interval is on its own row, in order of end time. The algorithm takes an interval whenever
+it starts at or after the end of the last one taken (dashed lines): four intervals, the maximum.}
+\label{fig:intervalsched}
+\end{figure}
+
+\usetemplate{Intervals: merge + max disjoint (greedy)}{Ctrl+Alt+T, Shift+N}{cpintervals}
+
+The same greedy, with the same proof, solves the \emph{stabbing} problem: the fewest points such that every interval contains
+at least one of them. Sort by end, and whenever an interval does not contain the last point placed, place a new point at its
+end. The number of points equals the maximum number of disjoint intervals, an instance of a min-max duality that reappears
+with matchings and flows (Chapter~\ref{ch:flows}).
+
+\subsection{Breaking a wrong greedy}
+
+Plausible greedy rules fail all the time, and the fastest way to discover it is to look for a small counterexample, by hand or
+with a stress test. Figure~\ref{fig:greedyfail} shows three classics. The lesson is not that greedy is bad, but that the
+\emph{specific} rule matters, and that a rule is only as good as its proof.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.36cm, y=0.5cm]
+  \begin{scope}
+    \node[title, anchor=west] at (0, 3.1) {(a) shortest first};
+    \draw[ivl=fgline!70] (0, 1.9) -- (5, 1.9);
+    \draw[ivl=fgline!70] (6, 1.9) -- (11, 1.9);
+    \draw[ivl=fgverm!70] (4, 0.9) -- (7, 0.9);
+    \node[notel, anchor=north west, text width=3.9cm] at (0, 0.2) {Greedy takes the short red interval and then nothing
+      else; the two grey ones are better.};
+  \end{scope}
+  \begin{scope}[xshift=5.4cm]
+    \node[title, anchor=west] at (0, 3.1) {(b) earliest start first};
+    \draw[ivl=fgverm!70] (0, 1.9) -- (11, 1.9);
+    \draw[ivl=fgline!70] (0.5, 0.9) -- (3, 0.9);
+    \draw[ivl=fgline!70] (4, 0.9) -- (6.5, 0.9);
+    \draw[ivl=fgline!70] (7.5, 0.9) -- (10, 0.9);
+    \node[notel, anchor=north west, text width=3.9cm] at (0, 0.2) {Greedy takes the long interval that starts first; the
+      three short ones are better.};
+  \end{scope}
+  \begin{scope}[xshift=10.8cm]
+    \node[title, anchor=west] at (0, 3.1) {(c) largest coin first};
+    \foreach \cv/\cx in {4/0.9, 1/3.1, 1/5.1}
+      \node[circle, draw=fgverm, fill=fgverm!15, line width=0.8pt, minimum size=6mm, inner sep=0pt,
+        font=\sffamily\small] at (\cx, 1.9) {\cv};
+    \node[lbl, anchor=west] at (6.4, 1.9) {greedy: 3};
+    \foreach \cv/\cx in {3/0.9, 3/3.1}
+      \node[circle, draw=fggreen, fill=fggreen!15, line width=0.8pt, minimum size=6mm, inner sep=0pt,
+        font=\sffamily\small] at (\cx, 0.6) {\cv};
+    \node[lbl, anchor=west] at (6.4, 0.6) {best: 2};
+    \node[notel, anchor=north west, text width=3.9cm] at (0, -0.3) {Coins $1, 3, 4$ and the amount 6.};
+  \end{scope}
+\end{tikzpicture}
+\caption{Three plausible greedy rules and their counterexamples. Interval scheduling needs the earliest \emph{end}; coin
+change needs dynamic programming unless the coin system is special (such as $1, 2, 5, 10, \ldots$).}
+\label{fig:greedyfail}
+\end{figure}
+
+% ======================================================================================================================
+\section[Classic greedy problems]{Classic greedy problems \hfill \silver}\label{sec:greedy-classics}
+
+A small number of greedy ideas account for a large share of contest problems. This section works through two of them in
+detail, each with its proof, because the proofs transfer: the slope argument for medians reappears in slope trick
+(Chapter~\ref{ch:dpopt}), and the exchange argument behind Huffman's algorithm is the template for every ``merge the two
+smallest'' problem. A catalogue of the other classic rules closes the section.
+
+\subsection{Medians minimise distances}
+
+\begin{problem}{Stick Lengths (CSES)}
+Given $n$ sticks with lengths $p_1, \ldots, p_n$, make all sticks equally long; changing a length by one costs one. Find the
+minimum total cost.
+\solution The cost of the target length $x$ is $f(x) = \sum_i |p_i - x|$. Moving $x$ one unit to the right increases the
+distance to every stick at or left of $x$ and decreases it for every stick right of $x$, so the slope of $f$ is (number of
+sticks to the left) $-$ (number to the right). This slope is negative while fewer than half of the sticks are to the left and
+positive afterwards, so $f$ is minimised at a \emph{median} (Figure~\ref{fig:sticks}). Any median works, and
+\cc{nth_element} finds one in linear time.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[slope/.style={font=\sffamily\scriptsize, text=fgink!80, fill=white, inner sep=1pt,
+    anchor=south east}]
+  \begin{axis}[cpplot, width=10cm, height=5.2cm, xmin=-0.3, xmax=10.3, ymin=8, ymax=30, xlabel={target length $x$},
+      ylabel={total cost $f(x)$}, xtick={0,...,10}, ytick={10,15,20,25,30}]
+    \addplot[fgblue, line width=1.3pt, mark=*, mark size=1.6pt] coordinates {(0,22) (1,17) (2,14) (3,13) (4,14) (5,15)
+      (6,16) (7,17) (8,20) (9,23) (10,28)};
+    \addplot[only marks, mark=*, mark size=3pt, fgverm] coordinates {(3,13)};
+    \node[font=\sffamily\scriptsize, text=fgverm, anchor=north west] at (axis cs:3.2,12.3) {median 3: cost 13};
+    \node[slope, anchor=north east] at (axis cs:0.4,18.7) {$-5$};
+    \node[slope, anchor=north east] at (axis cs:1.4,14.7) {$-3$};
+    \node[slope, anchor=north east] at (axis cs:2.4,12.7) {$-1$};
+    \node[slope, anchor=north west] at (axis cs:5.1,14.2) {$+1$};
+    \node[slope, anchor=north west] at (axis cs:8.1,19.2) {$+3$};
+    \node[slope, anchor=north west] at (axis cs:9.6,24.7) {$+5$};
+  \end{axis}
+\end{tikzpicture}
+\caption{The cost $f(x) = \sum |p_i - x|$ for sticks $1, 2, 3, 7, 9$. It is piecewise linear and convex; its slope (numbers
+on the segments) goes up by 2 at each stick, and changes sign at the median.}
+\label{fig:sticks}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vi p(n);
+    cin >> p;
+    // a median minimises the sum of distances
+    nth_element(p.begin(), p.begin() + n / 2, p.end());
+    ll med = p[n / 2], cost = 0;
+    for (ll x : p) cost += abs(x - med);
+    print(cost);
+}
+\end{code}
+
+The same argument, on each coordinate separately, shows that the point minimising the sum of Manhattan distances to a set of
+points in the plane is the coordinate-wise median. With squared distances instead, the optimum is the mean.
+
+\subsection{Merging with the smallest first: Huffman's algorithm}
+
+\begin{problem}{Stick Divisions (CSES)}
+A stick of length $x$ must be cut into $n$ pieces of given lengths $d_1, \ldots, d_n$ (which sum to $x$). Cutting a stick of
+length $\ell$ into two parts costs $\ell$. Find the minimum total cost.
+\solution Run the process backwards: start from the pieces and \emph{join} two sticks at a time, paying the length of the
+result. The sequence of cuts is a binary tree whose leaves are the pieces and whose internal nodes are the cut sticks, and the
+total cost is the sum of the internal nodes, which equals $\sum_i d_i \cdot \mathrm{depth}_i$ (Figure~\ref{fig:huffman}).
+This is exactly the cost of a prefix code with frequencies $d_i$, and \defn{Huffman's algorithm} minimises it: repeatedly
+join the two shortest sticks.
+\end{problem}
+
+\emph{Why joining the two shortest is safe (exchange argument).} In an optimal tree, take a deepest internal node; its two
+children are leaves at the maximum depth. Swapping these leaves with the two shortest pieces cannot increase
+$\sum d_i\,\mathrm{depth}_i$, since the shortest pieces move deeper and the longer ones move up. So some optimal tree has the
+two shortest pieces as siblings; joining them first and treating the result as a single piece of length $d_a + d_b$ leaves a
+smaller instance of the same problem.
+
+\begin{figure}[htbp]
+\centering
+\begin{forest}
+  for tree={rectangle, rounded corners=2pt, draw=fgblue, fill=fgfill, line width=0.7pt, font=\sffamily\small,
+    minimum width=8mm, minimum height=6mm, inner sep=2pt, s sep=6mm, l sep=6mm, edge={line width=0.8pt,
+    draw=fgline!80!fgink}}
+  [18, cool, label={right:{\scriptsize\sffamily\color{fgblue} cut, cost 18}}
+    [8, warn]
+    [10, cool, label={right:{\scriptsize\sffamily\color{fgblue} cost 10}}
+      [5, cool, label={left:{\scriptsize\sffamily\color{fgblue} cost 5}}
+        [2, warn] [3, warn]]
+      [5, warn]]]
+\end{forest}
+\caption{Cutting a stick of length 18 into pieces $2, 3, 5, 8$ (orange). Huffman's algorithm joins $2 + 3 = 5$, then
+$5 + 5 = 10$, then $10 + 8 = 18$; the cuts (blue) cost $5 + 10 + 18 = 33 = 8 \cdot 1 + 5 \cdot 2 + 2 \cdot 3 + 3 \cdot 3$.}
+\label{fig:huffman}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int x, n;
+    cin >> x >> n;
+    minpq<ll> pq;
+    rep(i, n) {
+        ll d;
+        cin >> d;
+        pq.push(d);
+    }
+    ll cost = 0;
+    while (sz(pq) > 1) {  // undo the cuts: always join the two shortest
+        ll a = pq.top();
+        pq.pop();
+        ll b = pq.top();
+        pq.pop();
+        cost += a + b;  // cutting a + b into a and b costs a + b
+        pq.push(a + b);
+    }
+    print(cost);
+}
+\end{code}
+
+\subsection{A catalogue of classic greedy rules}
+
+Table~\ref{tab:greedyrules} lists the greedy rules that every contestant should know by heart, together with the proof
+technique. Each has been used in countless problems, often in disguise.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}P{5.1cm} P{6.2cm} P{3.4cm}@{}}
+  \toprule
+  \thd{Problem} & \thd{Greedy rule} & \thd{Proof} \\
+  \midrule
+  most disjoint intervals & earliest end first & stays ahead \\
+  fewest points stabbing all intervals & sort by end; a point at the end of each unstabbed interval & stays ahead \\
+  fewest rooms for all meetings & by start time; reuse the room that frees earliest (heap) & depth bound \\
+  minimise the sum of completion times & shortest job first (Smith's rule with weights) & adjacent exchange \\
+  minimise the maximum lateness & earliest deadline first & adjacent exchange \\
+  merge piles, cost = size of result & join the two smallest (Huffman) & exchange \\
+  equalise values, cost = distance & move everything to a median & slope argument \\
+  fractional knapsack & by value per unit of weight & exchange \\
+  coin change, canonical systems & largest coin that fits & special structure \\
+  unit jobs with deadlines and profits & by deadline; keep the best in a heap & exchange (matroid) \\
+  \bottomrule
+\end{tabular}
+\caption{Classic greedy rules. The 0/1 knapsack and coin change with arbitrary coins are \emph{not} solved by greedy rules;
+they need dynamic programming (Part~V).}
+\label{tab:greedyrules}
+\end{table}
+
+% ======================================================================================================================
+\section[Greedy with heaps and ordered sets]{Greedy with heaps and ordered sets \hfill \gold}\label{sec:greedy-ds}
+
+Many greedy algorithms process items in a fixed order (by time, by deadline) and at each step choose among a changing set of
+candidates: the cheapest item so far, the member who became free last. A priority queue or an ordered multiset holds the
+candidates, and the greedy choice becomes a heap operation or a \cc{lower_bound}.
+
+\subsection{Deadlines and profits}
+
+\begin{problem}{Scheduling unit jobs}
+There are $n$ jobs, each taking one day, with deadline $d_i$ and profit $p_i$; a job earns its profit only if it is finished by
+its deadline (on day $d_i$ or earlier), and one job can be done per day. Maximise the total profit.
+\solution A set of jobs can be scheduled if and only if, for every $d$, at most $d$ of them have deadline at most $d$ (then
+doing them in order of deadline works). Scan the jobs in order of deadline and keep the chosen profits in a min-heap. Add each
+job; if the heap now holds more jobs than the current deadline allows, remove the smallest profit (Figure~\ref{fig:jobheap}).
+The removed job is the one that is least useful, and every job still in the heap can be scheduled.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\small
+\begin{tabular}{@{}c c l c l@{}}
+  \toprule
+  \thd{Job $(d, p)$} & \thd{Limit $d$} & \thd{Heap after adding} & \thd{Removed} & \thd{Chosen profits} \\
+  \midrule
+  $(1, 5)$ & 1 & $\{5\}$ & -- & $5$ \\
+  $(2, 3)$ & 2 & $\{3, 5\}$ & -- & $3, 5$ \\
+  $(2, 8)$ & 2 & $\{3, 5, 8\}$ & \textcolor{fgverm}{3} & $5, 8$ \\
+  $(3, 1)$ & 3 & $\{1, 5, 8\}$ & -- & $1, 5, 8$ \\
+  $(3, 6)$ & 3 & $\{1, 5, 6, 8\}$ & \textcolor{fgverm}{1} & $5, 6, 8$ \\
+  $(3, 4)$ & 3 & $\{4, 5, 6, 8\}$ & \textcolor{fgverm}{4} & $5, 6, 8$ \quad (total 19) \\
+  \bottomrule
+\end{tabular}
+\caption{Scheduling unit jobs with a min-heap. Whenever the heap holds more jobs than days available, the cheapest job is
+dropped. The final jobs are done on days 1, 2, 3 in order of deadline: profits 5, 8, 6.}
+\label{fig:jobheap}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vector<pll> job(n);  // (deadline, profit); each job takes one day
+    for (auto& [d, p] : job) cin >> d >> p;
+    sort(all(job));
+    minpq<ll> kept;  // profits of the jobs chosen so far
+    for (auto [d, p] : job) {
+        kept.push(p);
+        if (sz(kept) > d) kept.pop();  // only d jobs fit by day d
+    }
+    ll total = 0;
+    for (; !kept.empty(); kept.pop()) total += kept.top();
+    print(total);
+}
+\end{code}
+
+This problem is the standard example of a \emph{matroid}: the sets of jobs that can be scheduled satisfy the exchange property
+(a smaller schedulable set can always be extended by some job of a larger one), and on every matroid, taking elements in order
+of decreasing weight whenever they keep the set independent is optimal. Kruskal's algorithm for minimum spanning trees
+(Chapter~\ref{ch:dsu}) is the other famous instance.
+
+\subsection{Best fit with an ordered multiset}
+
+\begin{problem}{Movie Festival II (CSES)}
+A club of $k$ members wants to watch as many of $n$ movies as possible (counting each watched movie once); each member can
+watch any number of movies, one at a time, and a movie that ends at time $t$ does not overlap one that starts at time $t$.
+\solution Process the movies by end time, as for a single person. For each movie, some member must be free at its start
+time $a$; among the members who are, give the movie to the one who \emph{became free last} (the largest free time $\le a$).
+This \emph{best fit} leaves the members with earlier free times available for movies that start earlier, and an exchange
+argument shows that it never does worse than any other choice. An ordered multiset of free times finds that member with
+\cc{upper_bound} in $\Oh{\log k}$.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, k;
+    cin >> n >> k;
+    vector<pll> mv(n);  // (end, start), so that sorting orders by end
+    for (auto& [b, a] : mv) cin >> a >> b;
+    sort(all(mv));
+    multiset<ll> freeAt;  // when each club member becomes free
+    rep(i, k) freeAt.insert(0);
+    int watched = 0;
+    for (auto [b, a] : mv) {
+        auto it = freeAt.upper_bound(a);  // first member free after a
+        if (it == freeAt.begin()) continue;  // nobody is free at time a
+        freeAt.erase(prev(it));  // the member who became free last
+        freeAt.insert(b);
+        watched++;
+    }
+    print(watched);
+}
+\end{code}
+
+\subsection{Greedy that can change its mind}
+
+Some problems defeat every fixed greedy rule because an early choice only turns out to be wrong much later. \defn{Regret
+greedy} (also called greedy with undo) keeps that later option open: whenever it makes a choice, it also pushes a special
+candidate into the heap that represents \emph{undoing} the choice, priced so that taking it later has exactly the effect of
+having chosen differently.
+
+\begin{problem}{Buy Low Sell High (Codeforces 865D)}
+The price of a share is known for each of $n$ days. Each day you may buy one share, sell one share, or do nothing; you start
+with no shares. Maximise the profit.
+\solution Keep a min-heap of prices. On each day with price $p$, if the cheapest price $h$ in the heap is below $p$, sell a
+share bought at $h$ for a profit of $p - h$, remove $h$, and push $p$ \emph{twice}. One copy is today as an ordinary buying
+opportunity. The other copy is the regret option: if a later day has price $q > p$, ``buying at $p$ and selling at $q$''
+earns $q - p$, and added to the $p - h$ already earned it gives $q - h$, exactly the profit of selling the share bought at $h$
+on the later day instead. If $h \ge p$, just push $p$ (Figure~\ref{fig:regret}).
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\small
+\begin{tabular}{@{}c l l r@{}}
+  \toprule
+  \thd{Price} & \thd{Action} & \thd{Heap afterwards} & \thd{Profit} \\
+  \midrule
+  3 & heap empty: push 3 & $\{3\}$ & 0 \\
+  1 & $3 \ge 1$: push 1 & $\{1, 3\}$ & 0 \\
+  4 & sell the share bought at 1 ($+3$); push 4 twice & $\{3, 4, 4\}$ & 3 \\
+  5 & sell the share bought at 3 ($+2$); push 5 twice & $\{4, 4, 5, 5\}$ & 5 \\
+  2 & $4 \ge 2$: push 2 & $\{2, 4, 4, 5, 5\}$ & 5 \\
+  6 & sell the share bought at 2 ($+4$); push 6 twice & $\{4, 4, 5, 5, 6, 6\}$ & 9 \\
+  \bottomrule
+\end{tabular}
+\caption{Regret greedy on the prices $3, 1, 4, 5, 2, 6$. The optimal plan buys on days 1, 2 and 5 and sells on days 3, 4
+and 6, for a profit of 9. The duplicated prices are the options to move a sale to a later, better day.}
+\label{fig:regret}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    minpq<ll> pq;  // prices at which we can still buy (or re-sell)
+    ll profit = 0;
+    rep(i, n) {
+        ll p;
+        cin >> p;
+        if (!pq.empty() && pq.top() < p) {
+            profit += p - pq.top();  // sell today what was cheapest
+            pq.pop();
+            pq.push(p);  // allows this sale to be moved to a later day
+        }
+        pq.push(p);  // today as an ordinary buying opportunity
+    }
+    print(profit);
+}
+\end{code}
+
+Regret greedy is a lightweight form of the augmenting paths of min-cost flow (Chapter~\ref{ch:flows}): the ``undo'' candidates
+are the reverse edges of the residual graph. When a problem looks like a flow problem but $n$ is $10^5$ or more, try to find
+the greedy with undo that simulates the flow.
+
+\begin{recognize}
+Greedy is likely when the statement asks to ``maximise the number of'' or ``minimise the maximum'', the limits are large
+($n = 2\cdot10^5$) with no obvious DP state, and brute-force answers on small inputs always agree with some simple rule. The
+first step is almost always to sort by the right key; find the key with an adjacent exchange argument. Greedy is unlikely
+when choices interact in complicated ways (then think of dynamic programming) or when the problem is a known hard problem
+such as 0/1 knapsack or set cover, unless the limits reveal special structure.
+\end{recognize}
+
+\begin{summary}[Chapter summary]
+\begin{itemize}
+  \item After sorting, equal values are adjacent, order statistics are positions, and closest values are neighbours;
+        \texttt{nth\_element} finds a median in linear time and \texttt{partial\_sort} the $k$ smallest.
+  \item Counting sort and radix sort sort integers in linear time and are stable; the template sorts 64-bit integers more
+        than twice as fast as \texttt{sort}.
+  \item Find comparators with adjacent exchange arguments, and make sure they are strict weak orderings, ideally by
+        comparing one key per element.
+  \item Coordinate compression maps huge values to ranks; compress the query values too.
+  \item Prove greedy algorithms by ``greedy stays ahead'' or by exchange arguments, and break wrong ones with small
+        counterexamples.
+  \item Heaps and ordered multisets implement greedy choices among changing candidates; regret greedy pushes undo options
+        into the heap.
+\end{itemize}
+\end{summary}
+
+\begin{practice}
+\ppgroup{Sorting}
+\begin{pplist}
+  \item Distinct Numbers
+  \item Apartments
+  \item Ferris Wheel
+  \item Concert Tickets
+  \item Missing Coin Sum
+  \item Collecting Numbers
+\end{pplist}
+\ppgroup{Greedy}
+\begin{pplist}
+  \item Movie Festival
+  \item Stick Lengths
+  \item Tasks and Deadlines
+  \item Reading Books
+  \item Towers
+  \item Stick Divisions
+\end{pplist}
+\ppgroup{Greedy with data structures}
+\begin{pplist}
+  \item Room Allocation
+  \item Movie Festival II
+  \item Factory Machines
+\end{pplist}
+\end{practice}

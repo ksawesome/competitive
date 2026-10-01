@@ -1,0 +1,147 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\@writefile{toc}{\contentsline {chapter}{\numberline {6}Simulation and Complete Search}{62}{chapter.6}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{ch:search}{{6}{62}{Simulation and Complete Search}{chapter.6}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6.1}Simulation}{62}{section.6.1}\protected@file@percent }
+\newlabel{sec:simulation}{{6.1}{62}{Simulation}{section.6.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1.1}When $T$ is huge: find the cycle}{63}{subsection.6.1.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {6.1}{\ignorespaces A robot run on a $4 \times 5$ grid with three walls (grey), starting at the dot facing up. It goes up, turns right twice at the edge, comes back down (orange tail) and then circles rows 2 and 3 forever (blue cycle). Right: the same run as a sequence of states. The state at time 5 recurs at time 19, so for every $T \ge 5$ the state at time $T$ is the state at time $5 + (T - 5) \bmod  14$.}}{63}{figure.caption.88}\protected@file@percent }
+\newlabel{fig:robot}{{6.1}{63}{A robot run on a $4 \times 5$ grid with three walls (grey), starting at the dot facing up. It goes up, turns right twice at the edge, comes back down (orange tail) and then circles rows 2 and 3 forever (blue cycle). Right: the same run as a sequence of states. The state at time 5 recurs at time 19, so for every $T \ge 5$ the state at time $T$ is the state at time $5 + (T - 5) \bmod 14$}{figure.caption.88}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6.2}Complete search with loops}{64}{section.6.2}\protected@file@percent }
+\newlabel{sec:search-loops}{{6.2}{64}{Complete search with loops}{section.6.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6.2}{\ignorespaces Five intervals. Only the left endpoints (orange dots) are candidate answers: sliding any point to the left until it reaches a left endpoint never loses an interval. The counts below the axis are the numbers of intervals covering each candidate; the best is 4, at $x = 4$.}}{65}{figure.caption.89}\protected@file@percent }
+\newlabel{fig:critical}{{6.2}{65}{Five intervals. Only the left endpoints (orange dots) are candidate answers: sliding any point to the left until it reaches a left endpoint never loses an interval. The counts below the axis are the numbers of intervals covering each candidate; the best is 4, at $x = 4$}{figure.caption.89}{}}
+\@writefile{toc}{\contentsline {paragraph}{How big is the search space?}{65}{paragraph*.90}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6.1}{\ignorespaces Sizes of common search spaces. The third column is the largest $n$ for which the space has about $10^8$ elements; if each candidate costs more than a few operations, reduce it accordingly.}}{65}{table.caption.91}\protected@file@percent }
+\newlabel{tab:searchspaces}{{6.1}{65}{Sizes of common search spaces. The third column is the largest $n$ for which the space has about $10^8$ elements; if each candidate costs more than a few operations, reduce it accordingly}{table.caption.91}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6.3}Generating subsets}{66}{section.6.3}\protected@file@percent }
+\newlabel{sec:subsets}{{6.3}{66}{Generating subsets}{section.6.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6.3}{\ignorespaces The 8 subsets of $\{a, b, c\}$ (bit 0 is $a$, bit 1 is $b$, bit 2 is $c$; blue bits are chosen items). Left: in counting order, one step can change many bits ($3 \to 4$ changes all three). Right: in Gray code order $g_k = k \oplus \lfloor k/2 \rfloor $, every step flips exactly one bit (red), and step $k$ flips bit number $\operatorname  {ctz}(k)$.}}{66}{figure.caption.92}\protected@file@percent }
+\newlabel{fig:bitmasks}{{6.3}{66}{The 8 subsets of $\{a, b, c\}$ (bit 0 is $a$, bit 1 is $b$, bit 2 is $c$; blue bits are chosen items). Left: in counting order, one step can change many bits ($3 \to 4$ changes all three). Right: in Gray code order $g_k = k \oplus \lfloor k/2 \rfloor $, every step flips exactly one bit (red), and step $k$ flips bit number $\operatorname {ctz}(k)$}{figure.caption.92}{}}
+\newlabel{tpl:cpsubsets}{{6.3}{67}{Generating subsets}{section*.93}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.3.1}Faster subset loops}{67}{subsection.6.3.1}\protected@file@percent }
+\newlabel{tpl:cpgray}{{6.3.1}{67}{Faster subset loops}{section*.94}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.3.2}Submasks and $k$-subsets}{67}{subsection.6.3.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6.4}Generating permutations}{68}{section.6.4}\protected@file@percent }
+\newlabel{sec:permutations}{{6.4}{68}{Generating permutations}{section.6.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6.4}{\ignorespaces How \texttt  {next\_permutation} finds the next arrangement in lexicographic order: find the pivot, swap it with its successor in the suffix, reverse the suffix. Only the pivot and the suffix change.}}{68}{figure.caption.95}\protected@file@percent }
+\newlabel{fig:nextperm}{{6.4}{68}{How \texttt {next\_permutation} finds the next arrangement in lexicographic order: find the pivot, swap it with its successor in the suffix, reverse the suffix. Only the pivot and the suffix change}{figure.caption.95}{}}
+\newlabel{tpl:cpperm}{{6.4}{69}{Generating permutations}{section*.96}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6.5}Backtracking and pruning}{69}{section.6.5}\protected@file@percent }
+\newlabel{sec:backtracking}{{6.5}{69}{Backtracking and pruning}{section.6.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6.5}{\ignorespaces Left: the whole backtracking tree for four queens; a node is the column of the queen placed in the next row. Red nodes are dead ends (the following row has no safe square), green nodes complete a solution. Right: the solution $2, 4, 1, 3$; the other one is its mirror image $3, 1, 4, 2$.}}{70}{figure.caption.97}\protected@file@percent }
+\newlabel{fig:queens}{{6.5}{70}{Left: the whole backtracking tree for four queens; a node is the column of the queen placed in the next row. Red nodes are dead ends (the following row has no safe square), green nodes complete a solution. Right: the solution $2, 4, 1, 3$; the other one is its mirror image $3, 1, 4, 2$}{figure.caption.97}{}}
+\newlabel{tpl:cpbacktrack}{{6.5}{71}{Backtracking and pruning}{section*.98}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.5.1}A case study in pruning: Grid Paths}{71}{subsection.6.5.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {6.6}{\ignorespaces Dead partial paths in Grid Paths. The path (red) starts at the dot; the green circle marks the end corner and the red square the current position. Blue squares are free; orange squares are free but can no longer be reached once the path chooses a side. In (b) and (c) the current square is blocked on two opposite sides and free on the other two, which is exactly the test in the code.}}{72}{figure.caption.99}\protected@file@percent }
+\newlabel{fig:gridpaths}{{6.6}{72}{Dead partial paths in Grid Paths. The path (red) starts at the dot; the green circle marks the end corner and the red square the current position. Blue squares are free; orange squares are free but can no longer be reached once the path chooses a side. In (b) and (c) the current square is blocked on two opposite sides and free on the other two, which is exactly the test in the code}{figure.caption.99}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6.2}{\ignorespaces Counting all 88\,418 paths (a description of 48 question marks) with more and more pruning, measured with \texttt  {g++ -O2}. The split rule alone makes the search 230 times faster.}}{72}{table.caption.100}\protected@file@percent }
+\newlabel{tab:gridpruning}{{6.2}{72}{Counting all 88\,418 paths (a description of 48 question marks) with more and more pruning, measured with \texttt {g++ -O2}. The split rule alone makes the search 230 times faster}{table.caption.100}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6.6}Meet in the middle}{73}{section.6.6}\protected@file@percent }
+\newlabel{sec:mitm}{{6.6}{73}{Meet in the middle}{section.6.6}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6.7}{\ignorespaces Meet in the middle for subset sums. $L$ and $R$ hold the $2^{n/2}$ subset sums of each half, sorted. A subset of all items is one sum from each list, so the pairs adding up to $x$ are exactly the subsets with sum $x$.}}{74}{figure.caption.101}\protected@file@percent }
+\newlabel{fig:mitm}{{6.7}{74}{Meet in the middle for subset sums. $L$ and $R$ hold the $2^{n/2}$ subset sums of each half, sorted. A subset of all items is one sum from each list, so the pairs adding up to $x$ are exactly the subsets with sum $x$}{figure.caption.101}{}}
+\newlabel{tpl:cpmitm}{{6.6}{75}{Meet in the middle}{section*.102}{}}
+\@writefile{toc}{\contentsline {paragraph}{Variations.}{75}{paragraph*.103}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6.7}Fracturing search}{75}{section.6.7}\protected@file@percent }
+\newlabel{sec:fracturing}{{6.7}{75}{Fracturing search}{section.6.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6.8}{\ignorespaces The successor tree for $a = 1, 2, 4, 7$; each node shows a subset and its sum. Left children add the next element, right children replace the largest element by the next one. Sums never decrease downwards, so a priority queue pops them in order: $1, 2, 3, 4, 5, 6, 7, 7, \ldots  $ (green: the first eight pops).}}{76}{figure.caption.104}\protected@file@percent }
+\newlabel{fig:fracturing}{{6.8}{76}{The successor tree for $a = 1, 2, 4, 7$; each node shows a subset and its sum. Left children add the next element, right children replace the largest element by the next one. Sums never decrease downwards, so a priority queue pops them in order: $1, 2, 3, 4, 5, 6, 7, 7, \ldots $ (green: the first eight pops)}{figure.caption.104}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6.8}Casework and ad hoc problems}{76}{section.6.8}\protected@file@percent }
+\newlabel{sec:adhoc}{{6.8}{76}{Casework and ad hoc problems}{section.6.8}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6.9}{\ignorespaces Coin Piles for $0 \le a, b \le 12$, computed by brute force. Looking at such a table is often the fastest way to find the rule; proving it afterwards takes two lines.}}{77}{figure.caption.105}\protected@file@percent }
+\newlabel{fig:coinpiles}{{6.9}{77}{Coin Piles for $0 \le a, b \le 12$, computed by brute force. Looking at such a table is often the fastest way to find the rule; proving it afterwards takes two lines}{figure.caption.105}{}}
+\@setckpt{algorithms/05_complete_search}{
+\setcounter{page}{79}
+\setcounter{equation}{0}
+\setcounter{enumi}{2}
+\setcounter{enumii}{0}
+\setcounter{enumiii}{0}
+\setcounter{enumiv}{0}
+\setcounter{footnote}{0}
+\setcounter{mpfootnote}{0}
+\setcounter{part}{2}
+\setcounter{chapter}{6}
+\setcounter{section}{8}
+\setcounter{subsection}{0}
+\setcounter{subsubsection}{0}
+\setcounter{paragraph}{0}
+\setcounter{subparagraph}{0}
+\setcounter{figure}{9}
+\setcounter{table}{2}
+\setcounter{parentequation}{0}
+\setcounter{lstnumber}{11}
+\setcounter{tcbbreakpart}{1}
+\setcounter{tcblayer}{0}
+\setcounter{tcolorbox@number}{245}
+\setcounter{tcblisting}{43}
+\setcounter{tcbrastercolumn}{1}
+\setcounter{tcbrasterrow}{1}
+\setcounter{tcbrasternum}{1}
+\setcounter{tcbraster}{1}
+\setcounter{cpsegfig}{0}
+\setcounter{LT@tables}{0}
+\setcounter{LT@chunks}{0}
+\setcounter{nlinenum}{0}
+\setcounter{ALG@line}{9}
+\setcounter{ALG@rem}{0}
+\setcounter{ALG@nested}{0}
+\setcounter{ALG@Lnr}{2}
+\setcounter{ALG@blocknr}{15}
+\setcounter{ALG@storecount}{0}
+\setcounter{ALG@tmpcounter}{0}
+\setcounter{algpx@codeBoxCount}{0}
+\setcounter{algpx@nestedCBoxCount}{0}
+\setcounter{algpx@startedBoxesCount}{0}
+\setcounter{algpx@endedBoxesCount}{0}
+\setcounter{algpx@nestedBoxedStringCount}{0}
+\setcounter{algpx@nestedBoxedStringMaxCount}{0}
+\setcounter{algpx@indentCount}{4}
+\setcounter{algpx@lastIndentEnded}{3}
+\setcounter{algpx@pageCount}{0}
+\setcounter{algpx@tmpCount}{0}
+\setcounter{caption@flags}{2}
+\setcounter{continuedfloat}{0}
+\setcounter{float@type}{16}
+\setcounter{section@level}{0}
+\setcounter{Item}{8}
+\setcounter{Hfootnote}{0}
+\setcounter{bookmark@seq@number}{0}
+\setcounter{algpx@indentEndPage-0@totc}{0}
+\setcounter{algpx@indentEndPage-1@totc}{0}
+\setcounter{algpx@indentEndPage-2@totc}{0}
+\setcounter{algpx@indentEndPage-3@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-2@totc}{3}
+\setcounter{algpx@indentEndCoordIndex-0@totc}{3}
+\setcounter{algpx@indentEndPage-4@totc}{0}
+\setcounter{algpx@indentEndPage-5@totc}{0}
+\setcounter{algpx@indentEndPage-6@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-4@totc}{6}
+\setcounter{algpx@indentEndPage-7@totc}{0}
+\setcounter{algpx@indentEndPage-8@totc}{0}
+\setcounter{algpx@indentEndPage-9@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-8@totc}{9}
+\setcounter{algpx@indentEndPage-10@totc}{0}
+\setcounter{algpx@indentEndPage-11@totc}{0}
+\setcounter{algpx@indentEndPage-12@totc}{0}
+\setcounter{algpx@indentEndPage-13@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-12@totc}{13}
+\setcounter{algpx@indentEndCoordIndex-10@totc}{13}
+\setcounter{algpx@indentEndPage-14@totc}{0}
+\setcounter{algpx@indentEndPage-15@totc}{0}
+\setcounter{algpx@indentEndPage-16@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-15@totc}{16}
+\setcounter{algpx@indentEndPage-17@totc}{0}
+\setcounter{algpx@indentEndPage-18@totc}{1}
+\setcounter{algpx@indentEndPage-19@totc}{1}
+\setcounter{algpx@indentEndCoordIndex-18@totc}{19}
+\setcounter{lstlisting}{0}
+\setcounter{algpx@indentEndPage-0}{0}
+\setcounter{algpx@indentEndPage-1}{0}
+\setcounter{algpx@indentEndPage-2}{0}
+\setcounter{algpx@indentEndPage-3}{0}
+\setcounter{algpx@indentEndCoordIndex-2}{3}
+\setcounter{algpx@indentEndCoordIndex-0}{3}
+}

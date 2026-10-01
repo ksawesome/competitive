@@ -1,0 +1,3 @@
+C:\msys64\ucrt64\bin\g++.EXE
+g++.EXE (Rev13, Built by MSYS2 project) 15.2.0
+-std=c++17 -O2 -DLOCAL -Wall -Wextra -Wshadow -D_GLIBCXX_DEBUG -IC:/Users/kshit/Desktop/competitive/include

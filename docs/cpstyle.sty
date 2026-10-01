@@ -1,0 +1,256 @@
+% Shared style for docs/guide.tex and docs/algorithms.tex.
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{cpstyle}[2026/09/29 competitive programming handbook style]
+
+% ---------------------------------------------------------------- fonts & page
+\RequirePackage[T1]{fontenc}
+\RequirePackage[utf8]{inputenc}
+\RequirePackage{amsmath, mathtools}
+\RequirePackage{newpxtext,newpxmath}  % provides the AMS symbols too
+\renewcommand{\sfdefault}{qhv}  % TeX Gyre Heros for headings
+\RequirePackage[scale=0.86]{sourcecodepro}
+\RequirePackage[a4paper, top=2.4cm, bottom=2.4cm, left=2.3cm, right=2.3cm, headheight=16pt]{geometry}
+\RequirePackage{microtype}
+\RequirePackage{emptypage}
+\linespread{1.06}
+\raggedbottom  % never stretch vertical space to fill a page
+\setlength{\emergencystretch}{3em}  % long file names and flags in \texttt cannot hyphenate; let the spaces stretch instead
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+
+% ---------------------------------------------------------------- packages
+\RequirePackage{xcolor}
+\RequirePackage{listings}
+\RequirePackage{tcolorbox}
+\tcbuselibrary{skins, breakable, listings, raster}
+% \cpneedspace{len}: start a new page unless at least len is left on this one. needspace's \penalty-100 is a break that
+% \raggedbottom always finds attractive, which leaves pages half empty; a zero penalty is as good as the break before any
+% paragraph, and it still makes TeX finish an overfull page before the check (none right after a heading)
+\newcommand{\cpneedspace}[1]{\par\if@nobreak\penalty\@M\else\penalty\z@\fi
+  \begingroup\dimen@=#1\relax\dimen@ii=\pagegoal\advance\dimen@ii-\pagetotal
+  \ifdim\pagegoal<\maxdimen\ifdim\dimen@ii<\dimen@\newpage\fi\fi\endgroup}
+% "before skip" that also moves the box to the next page when less than #2 is left on this one, so a breakable box is
+% never split right after its first line or two
+\tcbset{keep before/.style 2 args={before={%
+  \ifnum\lastnodetype=-1\relax\else
+    \cpneedspace{#2}%
+    \ifvmode\addvspace{\glueexpr#1-\parskip}\nointerlineskip\fi
+  \fi
+  \lineskip\z@skip\noindent}}}
+\RequirePackage{cpfig}  % TikZ, pgfplots, forest and the figure grammar (palette, styles, figure macros)
+\pgfplotsset{compat=1.18}
+\usetikzlibrary{shadows}
+\RequirePackage{booktabs, tabularx, longtable, array, multirow, makecell, colortbl}
+\RequirePackage{multicol}
+\RequirePackage{algpseudocodex}
+\ifdefined\cpwithindex
+  \RequirePackage[noautomatic]{imakeidx}
+  \makeindex[intoc, columns=2, title=Index, options={-s cpindex.ist}]
+\fi
+\RequirePackage{enumitem}
+\RequirePackage{fancyhdr}
+\RequirePackage{titlesec}
+\RequirePackage[font={small,sf}, labelfont={bf,color=cpblue}]{caption}
+\RequirePackage{float}
+\RequirePackage{wrapfig}
+\RequirePackage{fontawesome5}
+
+% floats: let figures sit at the top or bottom of pages instead of leaving gaps; never split a paragraph's
+% first or last line from the rest
+\renewcommand{\topfraction}{0.85}
+\renewcommand{\bottomfraction}{0.6}
+\renewcommand{\textfraction}{0.12}
+\renewcommand{\floatpagefraction}{0.75}
+\setcounter{topnumber}{3}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{4}
+\widowpenalty=10000
+\clubpenalty=10000
+
+% ---------------------------------------------------------------- colours
+\definecolor{cpblue}{HTML}{1E3A8A}
+\definecolor{cpteal}{HTML}{0F766E}
+\definecolor{cporange}{HTML}{C2410C}
+\definecolor{cpred}{HTML}{B91C1C}
+\definecolor{cpgreen}{HTML}{15803D}
+\definecolor{cppurple}{HTML}{6D28D9}
+\definecolor{cpgold}{HTML}{B45309}
+\definecolor{cpgray}{HTML}{475569}
+\definecolor{cplight}{HTML}{F1F5F9}
+\definecolor{codebg}{HTML}{F8FAFC}
+\definecolor{lvbronze}{HTML}{A15C2E}
+\definecolor{lvsilver}{HTML}{64748B}
+\definecolor{lvgold}{HTML}{CA8A04}
+\definecolor{lvplat}{HTML}{0E7490}
+\definecolor{lvioi}{HTML}{7C3AED}
+
+\colorlet{linkcolor}{cpblue}
+
+% ---------------------------------------------------------------- headings
+% a document can print more on each part page (the handbook adds a description and the roadmap)
+\providecommand{\cppartextra}{}
+\titleformat{\part}[display]{\centering\sffamily\bfseries\color{cpblue}}
+  {\Large\color{cpteal}PART \thepart}{1em}{\Huge}[\cppartextra]
+\titleformat{\chapter}[display]{\sffamily\bfseries\color{cpblue}\raggedright\hyphenpenalty=10000}
+  {\large\color{cpteal}\MakeUppercase{Chapter} \thechapter}{0.3em}{\Huge}[\vspace{2pt}{\color{cpteal}\titlerule[1.4pt]}]
+\titlespacing*{\chapter}{0pt}{-10pt}{22pt}
+\titleformat{\section}{\sffamily\bfseries\Large\color{cpblue}\hyphenpenalty=10000}{\thesection}{0.7em}{}
+\titleformat{\subsection}{\sffamily\bfseries\large\color{cpteal}}{\thesubsection}{0.6em}{}
+\titleformat{\subsubsection}{\sffamily\bfseries\normalsize\color{cpgray}}{}{0em}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}
+\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+% run-in paragraph headings: the default 3.25ex on top of \parskip leaves a visible hole before every \paragraph
+\titlespacing*{\paragraph}{0pt}{0.4em plus 0.2em}{0.8em}
+\setcounter{secnumdepth}{2}
+\setcounter{tocdepth}{1}
+
+% ---------------------------------------------------------------- header / footer
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{{\color{cpteal!60}\hrule width\headwidth height\headrulewidth}}
+\fancyhead[L]{\sffamily\small\color{cpgray}\nouppercase{\leftmark}}
+\fancyhead[R]{\sffamily\small\color{cpgray}\nouppercase{\rightmark}}
+\fancyfoot[C]{\sffamily\small\color{cpblue}\thepage}
+\fancypagestyle{plain}{\fancyhf{}\renewcommand{\headrulewidth}{0pt}\fancyfoot[C]{\sffamily\small\color{cpblue}\thepage}}
+\renewcommand{\chaptermark}[1]{\markboth{\thechapter.\ #1}{}}
+\renewcommand{\sectionmark}[1]{\markright{\thesection\ #1}}
+
+% ---------------------------------------------------------------- lists & tables
+\setlist{itemsep=0.15em, topsep=0.3em, parsep=0.1em}
+\setlist[itemize,1]{label={\color{cpteal}\small$\blacktriangleright$}}
+\setlist[itemize,2]{label={\color{cpgray}\scriptsize$\bullet$}}
+\renewcommand{\arraystretch}{1.18}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}}  % a fixed-width column that never stretches its spaces
+\newcommand{\thd}[1]{\textsf{\textbf{\color{cpblue}#1}}}
+
+% ---------------------------------------------------------------- code
+\lstdefinestyle{cpp}{
+  language=C++, basicstyle=\ttfamily\small, keywordstyle=\color{cpblue}\bfseries,
+  commentstyle=\color{cpgray}\itshape, stringstyle=\color{cporange}, numberstyle=\tiny\color{cpgray},
+  showstringspaces=false, breaklines=true, breakatwhitespace=false, columns=fullflexible, keepspaces=true,
+  tabsize=4, upquote=true,
+  morekeywords={ll, ld, vi, vvi, pii, pll, size_t, uint64_t, int64_t, constexpr, nullptr, auto, signed, override},
+  emph={rep, per, all, rall, sz, dbg, chmin, chmax, print, yn, cdiv, fdiv, minpq}, emphstyle=\color{cpteal}\bfseries,
+  literate={~}{{\textasciitilde}}1,
+}
+\lstdefinestyle{plain}{basicstyle=\ttfamily\small, columns=fullflexible, keepspaces=true, breaklines=true, showstringspaces=false, upquote=true}
+\lstset{style=cpp}
+% no optional argument on purpose: looking ahead for "[" would tokenize a leading "#" of the listing
+\newtcblisting{code}{listing only, enhanced, breakable, colback=codebg, colframe=cpgray!35,
+  boxrule=0.5pt, arc=2pt, left=5pt, right=5pt, top=3pt, bottom=3pt, keep before={6pt}{5\baselineskip}, after skip=8pt,
+  listing options={style=cpp}}
+% the same with line numbers, for longer listings that the text refers to by line
+\newtcblisting{codenum}{listing only, enhanced, breakable, colback=codebg, colframe=cpgray!35,
+  boxrule=0.5pt, arc=2pt, left=17pt, right=5pt, top=3pt, bottom=3pt, keep before={6pt}{5\baselineskip}, after skip=8pt,
+  listing options={style=cpp, numbers=left, numbersep=7pt, numberstyle=\tiny\sffamily\color{fggray}}}
+\newtcblisting{shell}{listing only, enhanced, breakable, colback=cpblue!90!black, colupper=white, colframe=cpblue,
+  boxrule=0pt, arc=2pt, left=6pt, right=6pt, top=3pt, bottom=3pt, before skip=6pt, after skip=8pt,
+  listing options={style=plain, basicstyle=\ttfamily\small\color{white}}}
+% inline code, read verbatim: \cc{x + y} or, when the code contains braces, \cc|v.push_back({a, b})|
+% (like all verbatim commands it cannot sit inside another command's argument, e.g. a table cell)
+\newcommand{\cc}{\lstinline[style=cpp]}
+% (resets size keys so a \key inside a styled TikZ node does not inherit that node's minimum size)
+\DeclareRobustCommand{\key}[1]{\tikz[baseline=(k.base)]\node[rectangle, draw=cpgray!70, fill=cplight, rounded corners=2pt,
+  line width=0.4pt, minimum width=0pt, minimum height=0pt, text width=, inner xsep=3pt, inner ysep=1.5pt,
+  font=\sffamily\scriptsize\bfseries, text=cpblue](k){#1};}
+\DeclareRobustCommand{\file}[1]{\texttt{\color{cpteal}#1}}
+
+% ---------------------------------------------------------------- level badges
+\newtcbox{\lvlbox}[1]{on line, enhanced, colback=#1, colframe=#1, arc=2.2pt, boxsep=0pt,
+  left=3pt, right=3pt, top=1.4pt, bottom=1.2pt, fontupper=\sffamily\bfseries\tiny\color{white}}
+\newcommand{\bronze}{\lvlbox{lvbronze}{BRONZE}}
+\newcommand{\silver}{\lvlbox{lvsilver}{SILVER}}
+\newcommand{\gold}{\lvlbox{lvgold}{GOLD}}
+\newcommand{\plat}{\lvlbox{lvplat}{PLATINUM}}
+\newcommand{\ioi}{\lvlbox{lvioi}{IOI / ADVANCED}}
+
+% ---------------------------------------------------------------- boxes
+\newcommand{\cpbox}[4]{% name, colour, icon, default title
+  \newtcolorbox{#1}[1][#4]{enhanced, breakable, colback=#2!5, colframe=#2, boxrule=0pt, leftrule=3pt,
+    arc=0pt, outer arc=0pt, left=8pt, right=8pt, top=4pt, bottom=4pt, keep before={8pt}{5\baselineskip}, after skip=8pt,
+    fonttitle=\sffamily\bfseries\small, coltitle=#2, colbacktitle=#2!5, attach title to upper,
+    after title={\quad}, title={\textcolor{#2}{#3}\ ##1}}}
+\cpbox{idea}{cpteal}{\faKey}{Key idea}
+\cpbox{recognize}{cpblue}{\faSearch}{How to recognize it}
+\cpbox{pitfall}{cpred}{\faExclamationTriangle}{Pitfall}
+\cpbox{tip}{cpgreen}{\faLightbulb}{Tip}
+\cpbox{trick}{cppurple}{\faChessKnight}{Pro trick}
+\cpbox{fact}{cpgold}{\faInfoCircle}{Fact}
+\cpbox{templ}{cporange}{\faCode}{Template}
+
+\newtcolorbox{problem}[1]{enhanced, breakable, colback=white, colframe=cpblue!70, boxrule=0.6pt, arc=3pt,
+  fonttitle=\sffamily\bfseries\small, colbacktitle=cpblue!8, coltitle=cpblue,
+  title={\faPuzzlePiece\ \ Example: #1}, left=8pt, right=8pt, top=5pt, bottom=5pt, keep before={10pt}{7\baselineskip},
+  after skip=10pt}
+\newcommand{\solution}{\par\smallskip{\sffamily\bfseries\small\color{cpteal}Solution.}\ }
+
+% worked problems: \begin{statement}{title}{source} ... \sample{in line 1\\in line 2}{out} \end{statement}
+\newtcolorbox{statement}[2]{enhanced, colback=cpblue!3, colframe=cpblue!70, boxrule=0.6pt, arc=3pt,
+  fonttitle=\sffamily\bfseries\small, colbacktitle=cpblue!10, coltitle=cpblue,
+  title={\faPuzzlePiece\ \ #1\hfill{\normalfont\scriptsize #2}}, left=8pt, right=8pt, top=5pt, bottom=5pt,
+  before skip=8pt, after skip=10pt}
+\newcommand{\sample}[2]{\par\smallskip\noindent{\renewcommand{\arraystretch}{1}%
+  \begin{tabular}[t]{@{}p{0.48\linewidth}@{}p{0.48\linewidth}@{}}
+  {\sffamily\scriptsize\bfseries\color{cpgray}SAMPLE INPUT} & {\sffamily\scriptsize\bfseries\color{cpgray}SAMPLE OUTPUT}\\
+  \ttfamily\small\begin{tabular}[t]{@{}l@{}}#1\end{tabular} & \ttfamily\small\begin{tabular}[t]{@{}l@{}}#2\end{tabular}
+  \end{tabular}}\par}
+\newcommand{\wstep}[1]{\par\medskip\noindent{\sffamily\bfseries\color{cpblue}\faAngleRight\ #1}\quad}
+
+\newtcolorbox{summary}[1][Summary]{enhanced, breakable, colback=cplight, colframe=cpgray!50, boxrule=0.5pt, arc=3pt,
+  fonttitle=\sffamily\bfseries, coltitle=cpblue, colbacktitle=cplight, title={\faListUl\ \ #1},
+  left=8pt, right=8pt, top=4pt, bottom=4pt}
+
+% the template shortcut line used throughout the handbook
+\newcommand{\usetemplate}[3]{% name, keys, prefix (or several, comma separated)
+  \par\smallskip\noindent{\sffamily\small\color{cporange}\faCode\ \textbf{Template:} #1 \quad \key{#2}\quad prefix \texttt{#3}}\par
+  \cptplmark{#3}}
+% the first mention of each prefix gets a label tpl:<prefix> for the template index (Appendix C); arguments that are
+% not a plain list of prefixes (formatting inside) are skipped
+\ExplSyntaxOn
+\NewDocumentCommand{\cptplmark}{m}{
+  \regex_match:nnT { \A [a-zA-Z0-9,\s]+ \Z } {#1}
+    { \clist_map_inline:nn {#1}
+        { \cs_if_exist:cF {cptpl@##1} { \cs_gset:cpn {cptpl@##1} {} \phantomsection \label{tpl:##1} } } }
+}
+\ExplSyntaxOff
+% page of a template's explanation in the handbook, or a dash if the book never mentions it
+\newcommand{\tplpage}[1]{\ifcsname r@tpl:#1\endcsname\pageref{tpl:#1}\else--\fi}
+
+% ---------------------------------------------------------------- pseudocode
+% \begin{pseudo}{Dijkstra} \begin{algorithmic}[1] \State ... \end{algorithmic} \end{pseudo}
+\newtcolorbox{pseudo}[1]{enhanced, breakable, colback=white, colframe=fgblue!60, boxrule=0.5pt, leftrule=2.5pt, arc=0pt,
+  outer arc=0pt, left=8pt, right=8pt, top=3pt, bottom=4pt, keep before={8pt}{8\baselineskip}, after skip=8pt,
+  fonttitle=\sffamily\bfseries\small, coltitle=fgblue, colbacktitle=white, title={\faStream\ \ Algorithm: #1},
+  toptitle=3pt, bottomtitle=0pt, titlerule=0pt}
+\algrenewcommand\alglinenumber[1]{{\sffamily\tiny\color{fggray}#1}}
+
+% ---------------------------------------------------------------- chapter openers and closers
+% \begin{chapterintro}{level badges}{prerequisites} \item goal ... \end{chapterintro}
+\newtcolorbox{chapterintro}[2]{enhanced, colback=fgpaper, colframe=fgline!70, boxrule=0.4pt, arc=2pt,
+  left=10pt, right=10pt, top=7pt, bottom=7pt, before skip=2pt, after skip=14pt,
+  before upper={{\sffamily\bfseries\small\color{cpteal}\faCompass\ \ IN THIS CHAPTER}\hfill #1\par\vspace{3pt}%
+    \begin{itemize}[leftmargin=1.3em, itemsep=1pt]},
+  after upper={\end{itemize}\par\vspace{3pt}{\sffamily\footnotesize\color{fggray}\textbf{Before you start:} #2}}}
+% \begin{practice} \ppgroup{Warm-up} \begin{pplist} \item Name \end{pplist} ... \end{practice}
+\newtcolorbox{practice}[1][Practice problems (CSES Problem Set)]{enhanced, breakable, colback=white,
+  colframe=fggreen!70!black, boxrule=0.5pt, arc=2pt, left=8pt, right=8pt, top=4pt, bottom=5pt,
+  keep before={12pt}{8\baselineskip},
+  fonttitle=\sffamily\bfseries\small, coltitle=white, colbacktitle=fggreen!70!black, title={\faDumbbell\ \ #1}}
+\newcommand{\ppgroup}[1]{\par\smallskip{\sffamily\bfseries\scriptsize\color{fggray}\MakeUppercase{#1}}\par\vspace{-2pt}}
+\newenvironment{pplist}[1][3]{\begin{multicols}{#1}\raggedright\begin{itemize}[leftmargin=1em, itemsep=0pt,
+  label={\color{fggreen}\tiny$\blacksquare$}]\small}{\end{itemize}\end{multicols}\vspace{-4pt}}
+\newcommand{\related}[1]{\par\smallskip{\sffamily\footnotesize\color{fggray}\faLink\ \textbf{See also:} #1}\par}
+
+% ---------------------------------------------------------------- misc
+\newcommand{\Oh}[1]{\ensuremath{\mathcal{O}(#1)}}
+% \defn{term} or \defn[index entry]{term}: a defined term, indexed in the handbook
+\NewDocumentCommand{\defn}{om}{\textbf{\color{cpblue}#2}%
+  \ifdefined\cpwithindex\IfNoValueTF{#1}{\index{#2}}{\index{#1}}\fi}
+\newcommand{\tagline}[1]{{\sffamily\small\color{cpgray}#1}}
+
+\RequirePackage[colorlinks=true, linkcolor=cpblue, urlcolor=cpteal, citecolor=cpteal, bookmarksnumbered=true,
+  pdfborder={0 0 0}]{hyperref}
+\RequirePackage{bookmark}
+\endinput

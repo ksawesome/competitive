@@ -1,0 +1,3146 @@
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.19)  1 OCT 2026 15:08
+entering extended mode
+ restricted \write18 enabled.
+ %&-line parsing enabled.
+**\def\cponly{algorithms/27_geometry}\input{algorithms.tex}
+(./algorithms.tex (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/base/book.cls
+Document Class: book 2025/01/22 v1.4n Standard LaTeX document class
+(c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/base/bk11.clo
+File: bk11.clo 2025/01/22 v1.4n Standard LaTeX file (size option)
+)
+\c@part=\count275
+\c@chapter=\count276
+\c@section=\count277
+\c@subsection=\count278
+\c@subsubsection=\count279
+\c@paragraph=\count280
+\c@subparagraph=\count281
+\c@figure=\count282
+\c@table=\count283
+\abovecaptionskip=\skip49
+\belowcaptionskip=\skip50
+\bibindent=\dimen148
+) (./cpstyle.sty
+Package: cpstyle 2026/09/29 competitive programming handbook style
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/base/fontenc.sty
+Package: fontenc 2025/07/18 v2.1d Standard LaTeX package
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/base/inputenc.sty
+Package: inputenc 2024/02/08 v1.3d Input encoding file
+\inpenc@prehook=\toks17
+\inpenc@posthook=\toks18
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/amsmath/amsmath.sty
+Package: amsmath 2025/07/09 v2.17z AMS math features
+\@mathmargin=\skip51
+
+For additional information on amsmath, use the `?' option.
+(c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/amsmath/amstext.sty
+Package: amstext 2024/11/17 v2.01 AMS text
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/amsmath/amsgen.sty
+File: amsgen.sty 1999/11/30 v2.0 generic functions
+\@emptytoks=\toks19
+\ex@=\dimen149
+)) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/amsmath/amsbsy.sty
+Package: amsbsy 1999/11/29 v1.2d Bold Symbols
+\pmbraise@=\dimen150
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/amsmath/amsopn.sty
+Package: amsopn 2022/04/08 v2.04 operator names
+)
+\inf@bad=\count284
+LaTeX Info: Redefining \frac on input line 233.
+\uproot@=\count285
+\leftroot@=\count286
+LaTeX Info: Redefining \overline on input line 398.
+LaTeX Info: Redefining \colon on input line 409.
+\classnum@=\count287
+\DOTSCASE@=\count288
+LaTeX Info: Redefining \ldots on input line 495.
+LaTeX Info: Redefining \dots on input line 498.
+LaTeX Info: Redefining \cdots on input line 619.
+\Mathstrutbox@=\box53
+\strutbox@=\box54
+LaTeX Info: Redefining \big on input line 721.
+LaTeX Info: Redefining \Big on input line 722.
+LaTeX Info: Redefining \bigg on input line 723.
+LaTeX Info: Redefining \Bigg on input line 724.
+\big@size=\dimen151
+LaTeX Font Info:    Redeclaring font encoding OML on input line 742.
+LaTeX Font Info:    Redeclaring font encoding OMS on input line 743.
+\macc@depth=\count289
+LaTeX Info: Redefining \bmod on input line 904.
+LaTeX Info: Redefining \pmod on input line 909.
+LaTeX Info: Redefining \smash on input line 939.
+LaTeX Info: Redefining \relbar on input line 969.
+LaTeX Info: Redefining \Relbar on input line 970.
+\c@MaxMatrixCols=\count290
+\dotsspace@=\muskip17
+\c@parentequation=\count291
+\dspbrk@lvl=\count292
+\tag@help=\toks20
+\row@=\count293
+\column@=\count294
+\maxfields@=\count295
+\andhelp@=\toks21
+\eqnshift@=\dimen152
+\alignsep@=\dimen153
+\tagshift@=\dimen154
+\tagwidth@=\dimen155
+\totwidth@=\dimen156
+\lineht@=\dimen157
+\@envbody=\toks22
+\multlinegap=\skip52
+\multlinetaggap=\skip53
+\mathdisplay@stack=\toks23
+LaTeX Info: Redefining \[ on input line 2950.
+LaTeX Info: Redefining \] on input line 2951.
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/mathtools/mathtools.sty
+Package: mathtools 2024/10/04 v1.31 mathematical typesetting tools
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/graphics/keyval.sty
+Package: keyval 2022/05/29 v1.15 key=value parser (DPC)
+\KV@toks@=\toks24
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/tools/calc.sty
+Package: calc 2025/03/01 v4.3b Infix arithmetic (KKT,FJ)
+\calc@Acount=\count296
+\calc@Bcount=\count297
+\calc@Adimen=\dimen158
+\calc@Bdimen=\dimen159
+\calc@Askip=\skip54
+\calc@Bskip=\skip55
+LaTeX Info: Redefining \setlength on input line 86.
+LaTeX Info: Redefining \addtolength on input line 87.
+\calc@Ccount=\count298
+\calc@Cskip=\skip56
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/mathtools/mhsetup.sty
+Package: mhsetup 2021/03/18 v1.4 programming setup (MH)
+)
+\g_MT_multlinerow_int=\count299
+\l_MT_multwidth_dim=\dimen160
+\origjot=\skip57
+\l_MT_shortvdotswithinadjustabove_dim=\dimen161
+\l_MT_shortvdotswithinadjustbelow_dim=\dimen162
+\l_MT_above_intertext_sep=\dimen163
+\l_MT_below_intertext_sep=\dimen164
+\l_MT_above_shortintertext_sep=\dimen165
+\l_MT_below_shortintertext_sep=\dimen166
+\xmathstrut@box=\box55
+\xmathstrut@dim=\dimen167
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/newpx/newpxtext.sty
+Package: newpxtext 2025/06/07 v1.542 LaTeX and unicode LaTeX support for TeXGyrePagellaX (Michael Sharpe)
+ `newpxtext' v1.542, 2025/06/07 Text macros taking advantage of TeXGyre Pagella and its extensions (msharpe) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/base/fontenc.sty
+Package: fontenc 2025/07/18 v2.1d Standard LaTeX package
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/xcolor/xcolor.sty
+Package: xcolor 2024/09/29 v3.02 LaTeX color extensions (UK)
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/graphics-cfg/color.cfg
+File: color.cfg 2016/01/02 v1.6 sample color configuration
+)
+Package xcolor Info: Driver file: pdftex.def on input line 274.
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/graphics-def/pdftex.def
+File: pdftex.def 2025/09/29 v1.2d Graphics/color driver for pdftex
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/graphics/mathcolor.ltx)
+Package xcolor Info: Model `cmy' substituted by `cmy0' on input line 1349.
+Package xcolor Info: Model `hsb' substituted by `rgb' on input line 1353.
+Package xcolor Info: Model `RGB' extended on input line 1365.
+Package xcolor Info: Model `HTML' substituted by `rgb' on input line 1367.
+Package xcolor Info: Model `Hsb' substituted by `hsb' on input line 1368.
+Package xcolor Info: Model `tHsb' substituted by `hsb' on input line 1369.
+Package xcolor Info: Model `HSB' substituted by `hsb' on input line 1370.
+Package xcolor Info: Model `Gray' substituted by `gray' on input line 1371.
+Package xcolor Info: Model `wave' substituted by `hsb' on input line 1372.
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/xpatch/xpatch.sty (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/l3kernel/expl3.sty
+Package: expl3 2026-01-19 L3 programming layer (loader) 
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
+File: l3backend-pdftex.def 2025-10-09 L3 backend support: PDF output (pdfTeX)
+\l__color_backend_stack_int=\count300
+))
+Package: xpatch 2020/03/25 v0.3a Extending etoolbox patching commands
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/l3packages/xparse/xparse.sty
+Package: xparse 2025-10-09 L3 Experimental document command parser
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/etoolbox/etoolbox.sty
+Package: etoolbox 2025/10/02 v2.5m e-TeX tools for LaTeX (JAW)
+\etb@tempcnta=\count301
+)) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/iftex/iftex.sty
+Package: iftex 2024/12/12 v1.0g TeX engine tests
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/xkeyval/xkeyval.sty
+Package: xkeyval 2025/11/04 v2.10 package option processing (HA)
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/xkeyval/xkeyval.tex (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/xkeyval/xkvutils.tex
+\XKV@toks=\toks25
+\XKV@tempa@toks=\toks26
+\XKV@tempb@toks=\toks27
+)
+\XKV@depth=\count302
+File: xkeyval.tex 2014/12/03 v2.7a key=value parser (HA)
+)) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/base/textcomp.sty
+Package: textcomp 2024/04/24 v2.1b Standard LaTeX package
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/xstring/xstring.sty (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/xstring/xstring.tex
+\xs_counta=\count303
+\xs_countb=\count304
+)
+Package: xstring 2023/08/22 v1.86 String manipulations (CT)
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/base/ifthen.sty
+Package: ifthen 2024/03/16 v1.1e Standard LaTeX ifthen package (DPC)
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/carlisle/scalefnt.sty)
+LaTeX Font Info:    Setting zplLF sub-encoding to TS1/0 on input line 40.
+LaTeX Font Info:    Setting zplTLF sub-encoding to TS1/0 on input line 40.
+LaTeX Font Info:    Setting zplOsF sub-encoding to TS1/0 on input line 40.
+LaTeX Font Info:    Setting zplTOsF sub-encoding to TS1/0 on input line 40.
+\zpl@cnt=\count305
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/fontaxes/fontaxes.sty
+Package: fontaxes 2026-01-02 v2.0.2 Font selection axes (deprecated)
+Applying: [0000-00-00] Fall back to v1 on input line 76.
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/fontaxes/fontaxes-v1.sty
+Package: fontaxes 2020/07/21 v1.0e Font selection axes
+LaTeX Info: Redefining \upshape on input line 29.
+LaTeX Info: Redefining \itshape on input line 31.
+LaTeX Info: Redefining \slshape on input line 33.
+LaTeX Info: Redefining \swshape on input line 35.
+LaTeX Info: Redefining \scshape on input line 37.
+LaTeX Info: Redefining \sscshape on input line 39.
+LaTeX Info: Redefining \ulcshape on input line 41.
+LaTeX Info: Redefining \textsw on input line 47.
+LaTeX Info: Redefining \textssc on input line 48.
+LaTeX Info: Redefining \textulc on input line 49.
+))
+\zpl@sixem=\dimen168
+\zpl@y=\dimen169
+\zpl@x=\dimen170
+\zpl@tmpdima=\dimen171
+\zpl@tmpdimb=\dimen172
+\zpl@tmpdimc=\dimen173
+\zpl@tmpdimd=\dimen174
+\zpl@tmpdime=\dimen175
+\zpl@tmpdimf=\dimen176
+\zpl@dimA=\dimen177
+\zpl@dimAA=\dimen178
+\zpl@dimB=\dimen179
+\zpl@dimBB=\dimen180
+\zpl@dimC=\dimen181
+LaTeX Info: Redefining \oldstylenums on input line 807.
+LaTeX Font Info:    Trying to load font information for T1+zplLF on input line 815.
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/newpx/t1zpllf.fd
+File: t1zpllf.fd 2021/05/25 v1.0 font definition file for T1/zpl/lf
+)
+LaTeX Font Info:    Trying to load font information for T1+zplTLF on input line 816.
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/newpx/t1zpltlf.fd
+File: t1zpltlf.fd 2021/05/25 v1.0 font definition file for T1/zpl/tlf
+)
+LaTeX Font Info:    Trying to load font information for T1+zplOsF on input line 817.
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/newpx/t1zplosf.fd
+File: t1zplosf.fd 2021/05/25 v1.0 font definition file for T1/zpl/osf
+)
+LaTeX Font Info:    Trying to load font information for T1+zplTOsF on input line 818.
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/newpx/t1zpltosf.fd
+File: t1zpltosf.fd 2021/05/25 v1.0 font definition file for T1/zpl/tosf
+)) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/newpx/newpxmath.sty
+Package: newpxmath 2025/10/30 v1.551 LaTeX math support for newpx (Michael Sharpe)
+ `newpxmath' v1.551, 2025/10/30 Math macros based on pxfonts (msharpe) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/kastrup/binhex.tex) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/oberdiek/centernot.sty
+Package: centernot 2016/05/16 v1.4 Centers the not symbol horizontally (HO)
+)
+\px@tA=\toks28
+\px@tB=\toks29
+\px@su=\read2
+\px@Isdigit=\count306
+
+amsthm NOT loaded
+LaTeX Font Info:    Redeclaring symbol font `operators' on input line 224.
+LaTeX Font Info:    Overwriting symbol font `operators' in version `normal'
+(Font)                  OT1/cmr/m/n --> OT1/minzpl/m/n on input line 224.
+LaTeX Font Info:    Overwriting symbol font `operators' in version `bold'
+(Font)                  OT1/cmr/bx/n --> OT1/minzpl/m/n on input line 224.
+LaTeX Font Info:    Overwriting symbol font `operators' in version `bold'
+(Font)                  OT1/minzpl/m/n --> OT1/minzpl/b/n on input line 225.
+LaTeX Font Info:    Redeclaring math alphabet \mathsf on input line 228.
+LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `normal'
+(Font)                  OT1/cmss/m/n --> T1/qhv/m/n on input line 228.
+LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `bold'
+(Font)                  OT1/cmss/bx/n --> T1/qhv/m/n on input line 228.
+LaTeX Font Info:    Redeclaring math alphabet \mathit on input line 229.
+LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `normal'
+(Font)                  OT1/cmr/m/it --> OT1/minzpl/m/it on input line 229.
+LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `bold'
+(Font)                  OT1/cmr/bx/it --> OT1/minzpl/m/it on input line 229.
+LaTeX Font Info:    Redeclaring math alphabet \mathtt on input line 230.
+LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `normal'
+(Font)                  OT1/cmtt/m/n --> T1/npxtt/m/n on input line 230.
+LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `bold'
+(Font)                  OT1/cmtt/m/n --> T1/npxtt/m/n on input line 230.
+LaTeX Font Info:    Redeclaring math alphabet \mathbf on input line 232.
+LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `normal'
+(Font)                  OT1/cmr/bx/n --> OT1/minzpl/b/n on input line 232.
+LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `bold'
+(Font)                  OT1/cmr/bx/n --> OT1/minzpl/b/n on input line 232.
+LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `bold'
+(Font)                  OT1/minzpl/m/it --> OT1/minzpl/b/it on input line 233.
+LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `bold'
+(Font)                  T1/qhv/m/n --> T1/qhv/b/n on input line 235.
+LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `bold'
+(Font)                  T1/npxtt/m/n --> T1/npxtt/b/n on input line 236.
+LaTeX Font Info:    Redeclaring symbol font `letters' on input line 247.
+LaTeX Font Info:    Overwriting symbol font `letters' in version `normal'
+(Font)                  OML/cmm/m/it --> OML/npxmi/m/it on input line 247.
+LaTeX Font Info:    Overwriting symbol font `letters' in version `bold'
+(Font)                  OML/cmm/b/it --> OML/npxmi/m/it on input line 247.
+LaTeX Font Info:    Overwriting symbol font `letters' in version `bold'
+(Font)                  OML/npxmi/m/it --> OML/npxmi/b/it on input line 248.
+\symlettersA=\mathgroup4
+LaTeX Font Info:    Overwriting symbol font `lettersA' in version `bold'
+(Font)                  U/npxmia/m/it --> U/npxmia/b/it on input line 266.
+Now handling font encoding LMS ...
+... no UTF-8 mapping file for font encoding LMS
+LaTeX Font Info:    Redeclaring symbol font `symbols' on input line 276.
+LaTeX Font Info:    Encoding `OMS' has changed to `LMS' for symbol font
+(Font)              `symbols' in the math version `normal' on input line 276.
+LaTeX Font Info:    Overwriting symbol font `symbols' in version `normal'
+(Font)                  OMS/cmsy/m/n --> LMS/npxsy/m/n on input line 276.
+LaTeX Font Info:    Encoding `OMS' has changed to `LMS' for symbol font
+(Font)              `symbols' in the math version `bold' on input line 276.
+LaTeX Font Info:    Overwriting symbol font `symbols' in version `bold'
+(Font)                  OMS/cmsy/b/n --> LMS/npxsy/m/n on input line 276.
+LaTeX Font Info:    Overwriting symbol font `symbols' in version `bold'
+(Font)                  LMS/npxsy/m/n --> LMS/npxsy/b/n on input line 277.
+\symAMSm=\mathgroup5
+LaTeX Font Info:    Overwriting symbol font `AMSm' in version `bold'
+(Font)                  U/npxsym/m/n --> U/npxsym/b/n on input line 297.
+\symsymbolsC=\mathgroup6
+LaTeX Font Info:    Overwriting symbol font `symbolsC' in version `bold'
+(Font)                  U/npxsyc/m/n --> U/npxsyc/b/n on input line 319.
+Now handling font encoding LMX ...
+... no UTF-8 mapping file for font encoding LMX
+LaTeX Font Info:    Redeclaring symbol font `largesymbols' on input line 339.
+LaTeX Font Info:    Encoding `OMX' has changed to `LMX' for symbol font
+(Font)              `largesymbols' in the math version `normal' on input line 339.
+LaTeX Font Info:    Overwriting symbol font `largesymbols' in version `normal'
+(Font)                  OMX/cmex/m/n --> LMX/npxexx/m/n on input line 339.
+LaTeX Font Info:    Encoding `OMX' has changed to `LMX' for symbol font
+(Font)              `largesymbols' in the math version `bold' on input line 339.
+LaTeX Font Info:    Overwriting symbol font `largesymbols' in version `bold'
+(Font)                  OMX/cmex/m/n --> LMX/npxexx/m/n on input line 339.
+LaTeX Font Info:    Overwriting symbol font `largesymbols' in version `bold'
+(Font)                  LMX/npxexx/m/n --> LMX/npxexx/b/n on input line 340.
+\symlargesymbolsPXA=\mathgroup7
+LaTeX Font Info:    Overwriting symbol font `largesymbolsPXA' in version `bold'
+(Font)                  U/npxexa/m/n --> U/npxexa/b/n on input line 347.
+\px@cntz=\count307
+\px@IsAlNum=\count308
+\px@sbptoks=\toks30
+LaTeX Font Info:    Redeclaring math delimiter \lfloor on input line 502.
+LaTeX Font Info:    Redeclaring math delimiter \rfloor on input line 503.
+LaTeX Font Info:    Redeclaring math delimiter \lceil on input line 504.
+LaTeX Font Info:    Redeclaring math delimiter \rceil on input line 505.
+LaTeX Font Info:    Redeclaring math delimiter \lbrace on input line 510.
+LaTeX Font Info:    Redeclaring math delimiter \rbrace on input line 511.
+LaTeX Font Info:    Redeclaring math delimiter \langle on input line 513.
+LaTeX Font Info:    Redeclaring math delimiter \rangle on input line 515.
+LaTeX Font Info:    Redeclaring math delimiter \arrowvert on input line 519.
+LaTeX Font Info:    Redeclaring math delimiter \vert on input line 520.
+LaTeX Font Info:    Redeclaring math symbol \parallel on input line 521.
+LaTeX Font Info:    Redeclaring math delimiter \Arrowvert on input line 522.
+LaTeX Font Info:    Redeclaring math symbol \hbar on input line 548.
+LaTeX Font Info:    Redeclaring math accent \grave on input line 562.
+LaTeX Font Info:    Redeclaring math accent \acute on input line 563.
+LaTeX Font Info:    Redeclaring math accent \hat on input line 564.
+LaTeX Font Info:    Redeclaring math accent \tilde on input line 565.
+LaTeX Font Info:    Redeclaring math accent \bar on input line 566.
+LaTeX Font Info:    Redeclaring math accent \breve on input line 567.
+LaTeX Font Info:    Redeclaring math accent \mathring on input line 568.
+LaTeX Font Info:    Redeclaring math accent \check on input line 569.
+LaTeX Font Info:    Redeclaring math accent \dot on input line 573.
+LaTeX Font Info:    Redeclaring math accent \ddot on input line 574.
+LaTeX Font Info:    Redeclaring math accent \vec on input line 1631.
+LaTeX Info: Redefining \Bbbk on input line 2208.
+LaTeX Info: Redefining \not on input line 2548.
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/sourcecodepro/sourcecodepro.sty
+Package: sourcecodepro 2025/04/06 v2.8 Adobe's Source Code Pro typeface
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/iftex/ifxetex.sty
+Package: ifxetex 2019/10/25 v0.7 ifxetex legacy package. Use iftex instead.
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/iftex/ifluatex.sty
+Package: ifluatex 2019/10/25 v1.5 ifluatex legacy package. Use iftex instead.
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/base/fontenc.sty
+Package: fontenc 2025/07/18 v2.1d Standard LaTeX package
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/ly1/ly1enc.def
+File: ly1enc.def 2022/06/11 v0.8 TeX 'n ANSI encoding (DPC/KB)
+Now handling font encoding LY1 ...
+... processing UTF-8 mapping file for font encoding LY1
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/base/ly1enc.dfu
+File: ly1enc.dfu 2022/06/07 v1.3c UTF-8 support
+   defining Unicode char U+00A0 (decimal 160)
+   defining Unicode char U+00A1 (decimal 161)
+   defining Unicode char U+00A2 (decimal 162)
+   defining Unicode char U+00A3 (decimal 163)
+   defining Unicode char U+00A4 (decimal 164)
+   defining Unicode char U+00A5 (decimal 165)
+   defining Unicode char U+00A6 (decimal 166)
+   defining Unicode char U+00A7 (decimal 167)
+   defining Unicode char U+00AA (decimal 170)
+   defining Unicode char U+00AB (decimal 171)
+   defining Unicode char U+00AD (decimal 173)
+   defining Unicode char U+00AE (decimal 174)
+   defining Unicode char U+00B0 (decimal 176)
+   defining Unicode char U+00B5 (decimal 181)
+   defining Unicode char U+00B6 (decimal 182)
+   defining Unicode char U+00B7 (decimal 183)
+   defining Unicode char U+00BA (decimal 186)
+   defining Unicode char U+00BB (decimal 187)
+   defining Unicode char U+00BC (decimal 188)
+   defining Unicode char U+00BD (decimal 189)
+   defining Unicode char U+00BE (decimal 190)
+   defining Unicode char U+00BF (decimal 191)
+   defining Unicode char U+00C0 (decimal 192)
+   defining Unicode char U+00C1 (decimal 193)
+   defining Unicode char U+00C2 (decimal 194)
+   defining Unicode char U+00C3 (decimal 195)
+   defining Unicode char U+00C4 (decimal 196)
+   defining Unicode char U+00C5 (decimal 197)
+   defining Unicode char U+00C6 (decimal 198)
+   defining Unicode char U+00C7 (decimal 199)
+   defining Unicode char U+00C8 (decimal 200)
+   defining Unicode char U+00C9 (decimal 201)
+   defining Unicode char U+00CA (decimal 202)
+   defining Unicode char U+00CB (decimal 203)
+   defining Unicode char U+00CC (decimal 204)
+   defining Unicode char U+00CD (decimal 205)
+   defining Unicode char U+00CE (decimal 206)
+   defining Unicode char U+00CF (decimal 207)
+   defining Unicode char U+00D0 (decimal 208)
+   defining Unicode char U+00D1 (decimal 209)
+   defining Unicode char U+00D2 (decimal 210)
+   defining Unicode char U+00D3 (decimal 211)
+   defining Unicode char U+00D4 (decimal 212)
+   defining Unicode char U+00D5 (decimal 213)
+   defining Unicode char U+00D6 (decimal 214)
+   defining Unicode char U+00D8 (decimal 216)
+   defining Unicode char U+00D9 (decimal 217)
+   defining Unicode char U+00DA (decimal 218)
+   defining Unicode char U+00DB (decimal 219)
+   defining Unicode char U+00DC (decimal 220)
+   defining Unicode char U+00DD (decimal 221)
+   defining Unicode char U+00DE (decimal 222)
+   defining Unicode char U+00DF (decimal 223)
+   defining Unicode char U+00E0 (decimal 224)
+   defining Unicode char U+00E1 (decimal 225)
+   defining Unicode char U+00E2 (decimal 226)
+   defining Unicode char U+00E3 (decimal 227)
+   defining Unicode char U+00E4 (decimal 228)
+   defining Unicode char U+00E5 (decimal 229)
+   defining Unicode char U+00E6 (decimal 230)
+   defining Unicode char U+00E7 (decimal 231)
+   defining Unicode char U+00E8 (decimal 232)
+   defining Unicode char U+00E9 (decimal 233)
+   defining Unicode char U+00EA (decimal 234)
+   defining Unicode char U+00EB (decimal 235)
+   defining Unicode char U+00EC (decimal 236)
+   defining Unicode char U+00ED (decimal 237)
+   defining Unicode char U+00EE (decimal 238)
+   defining Unicode char U+00EF (decimal 239)
+   defining Unicode char U+00F0 (decimal 240)
+   defining Unicode char U+00F1 (decimal 241)
+   defining Unicode char U+00F2 (decimal 242)
+   defining Unicode char U+00F3 (decimal 243)
+   defining Unicode char U+00F4 (decimal 244)
+   defining Unicode char U+00F5 (decimal 245)
+   defining Unicode char U+00F6 (decimal 246)
+   defining Unicode char U+00F8 (decimal 248)
+   defining Unicode char U+00F9 (decimal 249)
+   defining Unicode char U+00FA (decimal 250)
+   defining Unicode char U+00FB (decimal 251)
+   defining Unicode char U+00FC (decimal 252)
+   defining Unicode char U+00FD (decimal 253)
+   defining Unicode char U+00FE (decimal 254)
+   defining Unicode char U+00FF (decimal 255)
+   defining Unicode char U+0131 (decimal 305)
+   defining Unicode char U+0141 (decimal 321)
+   defining Unicode char U+0142 (decimal 322)
+   defining Unicode char U+0152 (decimal 338)
+   defining Unicode char U+0153 (decimal 339)
+   defining Unicode char U+0160 (decimal 352)
+   defining Unicode char U+0161 (decimal 353)
+   defining Unicode char U+0174 (decimal 372)
+   defining Unicode char U+0175 (decimal 373)
+   defining Unicode char U+0176 (decimal 374)
+   defining Unicode char U+0177 (decimal 375)
+   defining Unicode char U+0178 (decimal 376)
+   defining Unicode char U+017D (decimal 381)
+   defining Unicode char U+017E (decimal 382)
+   defining Unicode char U+0192 (decimal 402)
+   defining Unicode char U+0218 (decimal 536)
+   defining Unicode char U+0219 (decimal 537)
+   defining Unicode char U+021A (decimal 538)
+   defining Unicode char U+021B (decimal 539)
+   defining Unicode char U+0237 (decimal 567)
+   defining Unicode char U+02C6 (decimal 710)
+   defining Unicode char U+02DC (decimal 732)
+   defining Unicode char U+2013 (decimal 8211)
+   defining Unicode char U+2014 (decimal 8212)
+   defining Unicode char U+201C (decimal 8220)
+   defining Unicode char U+201D (decimal 8221)
+   defining Unicode char U+2020 (decimal 8224)
+   defining Unicode char U+2021 (decimal 8225)
+   defining Unicode char U+2022 (decimal 8226)
+   defining Unicode char U+2026 (decimal 8230)
+   defining Unicode char U+2030 (decimal 8240)
+   defining Unicode char U+2039 (decimal 8249)
+   defining Unicode char U+203A (decimal 8250)
+   defining Unicode char U+2122 (decimal 8482)
+   defining Unicode char U+FB00 (decimal 64256)
+   defining Unicode char U+FB01 (decimal 64257)
+   defining Unicode char U+FB02 (decimal 64258)
+   defining Unicode char U+FB03 (decimal 64259)
+   defining Unicode char U+FB04 (decimal 64260)
+   defining Unicode char U+FB05 (decimal 64261)
+   defining Unicode char U+FB06 (decimal 64262)
+))
+LaTeX Font Info:    Trying to load font information for T1+minzpl on input line 116.
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/newpx/t1minzpl.fd
+File: t1minzpl.fd 2021/05/25 v1.0 font definition file for T1/minzpl/TLF
+)
+LaTeX Font Info:    Font shape `T1/minzpl/m/n' will be
+(Font)              scaled to size 10.95pt on input line 116.
+)) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/geometry/geometry.sty
+Package: geometry 2026/03/07 v6.0 Page Geometry
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/iftex/ifvtex.sty
+Package: ifvtex 2019/10/25 v1.7 ifvtex legacy package. Use iftex instead.
+)
+\Gm@cnth=\count309
+\Gm@cntv=\count310
+\c@Gm@tempcnt=\count311
+\Gm@bindingoffset=\dimen182
+\Gm@wd@mp=\dimen183
+\Gm@odd@mp=\dimen184
+\Gm@even@mp=\dimen185
+\Gm@layoutwidth=\dimen186
+\Gm@layoutheight=\dimen187
+\Gm@layouthoffset=\dimen188
+\Gm@layoutvoffset=\dimen189
+\Gm@dimlist=\toks31
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/microtype/microtype.sty
+Package: microtype 2026/03/01 v3.2d Micro-typographical refinements (RS)
+\MT@toks=\toks32
+\MT@tempbox=\box56
+\MT@count=\count312
+LaTeX Info: Redefining \noprotrusionifhmode on input line 1084.
+LaTeX Info: Redefining \leftprotrusion on input line 1085.
+\MT@prot@toks=\toks33
+LaTeX Info: Redefining \rightprotrusion on input line 1104.
+LaTeX Info: Redefining \textls on input line 1449.
+\MT@outer@kern=\dimen190
+LaTeX Info: Redefining \microtypecontext on input line 2053.
+LaTeX Info: Redefining \textmicrotypecontext on input line 2070.
+\MT@listname@count=\count313
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/microtype/microtype-pdftex.def
+File: microtype-pdftex.def 2026/03/01 v3.2d Definitions specific to pdftex (RS)
+LaTeX Info: Redefining \lsstyle on input line 944.
+LaTeX Info: Redefining \lslig on input line 944.
+\MT@outer@space=\skip58
+)
+Package microtype Info: Loading configuration file microtype.cfg.
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/microtype/microtype.cfg
+File: microtype.cfg 2026/03/01 v3.2d microtype main configuration file (RS)
+)
+LaTeX Info: Redefining \microtypesetup on input line 3065.
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/emptypage/emptypage.sty
+Package: emptypage 2010/05/30 v1.2 Suppress page numbers and headings on empty pages
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/listings/listings.sty
+\lst@mode=\count314
+\lst@gtempboxa=\box57
+\lst@token=\toks34
+\lst@length=\count315
+\lst@currlwidth=\dimen191
+\lst@column=\count316
+\lst@pos=\count317
+\lst@lostspace=\dimen192
+\lst@width=\dimen193
+\lst@newlines=\count318
+\lst@lineno=\count319
+\lst@maxwidth=\dimen194
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/listings/lstpatch.sty
+File: lstpatch.sty 2025/11/14 1.11b (Carsten Heinz)
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/listings/lstmisc.sty
+File: lstmisc.sty 2025/11/14 1.11b (Carsten Heinz)
+\c@lstnumber=\count320
+\lst@skipnumbers=\count321
+\lst@framebox=\box58
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/listings/listings.cfg
+File: listings.cfg 2025/11/14 1.11b listings configuration
+))
+Package: listings 2025/11/14 1.11b (Carsten Heinz)
+
+==> First Aid for listings.sty no longer applied!
+    Expected:
+        2024/09/23 1.10c (Carsten Heinz)
+    but found:
+        2025/11/14 1.11b (Carsten Heinz)
+    so I'm assuming it got fixed.
+(c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/tcolorbox/tcolorbox.sty
+Package: tcolorbox 2025/11/28 version 6.9.0 text color boxes
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/pgf/frontendlayer/tikz.sty (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/pgf/basiclayer/pgf.sty (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/pgf/utilities/pgfrcs.sty (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/utilities/pgfutil-common.tex
+\pgfutil@everybye=\toks35
+\pgfutil@tempdima=\dimen195
+\pgfutil@tempdimb=\dimen196
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/utilities/pgfutil-latex.def
+\pgfutil@abb=\box59
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/utilities/pgfrcs.code.tex (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/pgf.revision.tex)
+Package: pgfrcs 2025-08-29 v3.1.11a (3.1.11a)
+))
+Package: pgf 2025-08-29 v3.1.11a (3.1.11a)
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/pgf/basiclayer/pgfcore.sty (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/graphics/graphicx.sty
+Package: graphicx 2024/12/31 v1.2e Enhanced LaTeX Graphics (DPC,SPQR)
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/graphics/graphics.sty
+Package: graphics 2024/08/06 v1.4g Standard LaTeX Graphics (DPC,SPQR)
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/graphics/trig.sty
+Package: trig 2023/12/02 v1.11 sin cos tan (DPC)
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/graphics-cfg/graphics.cfg
+File: graphics.cfg 2016/06/04 v1.11 sample graphics configuration
+)
+Package graphics Info: Driver file: pdftex.def on input line 106.
+)
+\Gin@req@height=\dimen197
+\Gin@req@width=\dimen198
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/pgf/systemlayer/pgfsys.sty (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/systemlayer/pgfsys.code.tex
+Package: pgfsys 2025-08-29 v3.1.11a (3.1.11a)
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/utilities/pgfkeys.code.tex
+\pgfkeys@pathtoks=\toks36
+\pgfkeys@temptoks=\toks37
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/utilities/pgfkeyslibraryfiltered.code.tex
+\pgfkeys@tmptoks=\toks38
+))
+\pgf@x=\dimen199
+\pgf@y=\dimen256
+\pgf@xa=\dimen257
+\pgf@ya=\dimen258
+\pgf@xb=\dimen259
+\pgf@yb=\dimen260
+\pgf@xc=\dimen261
+\pgf@yc=\dimen262
+\pgf@xd=\dimen263
+\pgf@yd=\dimen264
+\w@pgf@writea=\write3
+\r@pgf@reada=\read3
+\c@pgf@counta=\count322
+\c@pgf@countb=\count323
+\c@pgf@countc=\count324
+\c@pgf@countd=\count325
+\t@pgf@toka=\toks39
+\t@pgf@tokb=\toks40
+\t@pgf@tokc=\toks41
+\pgf@sys@id@count=\count326
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/systemlayer/pgf.cfg
+File: pgf.cfg 2025-08-29 v3.1.11a (3.1.11a)
+)
+Driver file for pgf: pgfsys-pdftex.def
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/systemlayer/pgfsys-pdftex.def
+File: pgfsys-pdftex.def 2025-08-29 v3.1.11a (3.1.11a)
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/systemlayer/pgfsys-common-pdf.def
+File: pgfsys-common-pdf.def 2025-08-29 v3.1.11a (3.1.11a)
+))) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/systemlayer/pgfsyssoftpath.code.tex
+File: pgfsyssoftpath.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+\pgfsyssoftpath@smallbuffer@items=\count327
+\pgfsyssoftpath@bigbuffer@items=\count328
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/systemlayer/pgfsysprotocol.code.tex
+File: pgfsysprotocol.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+)) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcore.code.tex
+Package: pgfcore 2025-08-29 v3.1.11a (3.1.11a)
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/math/pgfmath.code.tex (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/math/pgfmathutil.code.tex) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/math/pgfmathparser.code.tex
+\pgfmath@dimen=\dimen265
+\pgfmath@count=\count329
+\pgfmath@box=\box60
+\pgfmath@toks=\toks42
+\pgfmath@stack@operand=\toks43
+\pgfmath@stack@operation=\toks44
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.code.tex) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.basic.code.tex) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.trigonometric.code.tex) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.random.code.tex) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.comparison.code.tex) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.base.code.tex) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.round.code.tex) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.misc.code.tex) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.integerarithmetics.code.tex) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/math/pgfmathcalc.code.tex) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/math/pgfmathfloat.code.tex
+\c@pgfmathroundto@lastzeros=\count330
+)) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/math/pgfint.code.tex) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcorepoints.code.tex
+File: pgfcorepoints.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+\pgf@picminx=\dimen266
+\pgf@picmaxx=\dimen267
+\pgf@picminy=\dimen268
+\pgf@picmaxy=\dimen269
+\pgf@pathminx=\dimen270
+\pgf@pathmaxx=\dimen271
+\pgf@pathminy=\dimen272
+\pgf@pathmaxy=\dimen273
+\pgf@xx=\dimen274
+\pgf@xy=\dimen275
+\pgf@yx=\dimen276
+\pgf@yy=\dimen277
+\pgf@zx=\dimen278
+\pgf@zy=\dimen279
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcorepathconstruct.code.tex
+File: pgfcorepathconstruct.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+\pgf@path@lastx=\dimen280
+\pgf@path@lasty=\dimen281
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcorepathusage.code.tex
+File: pgfcorepathusage.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+\pgf@shorten@end@additional=\dimen282
+\pgf@shorten@start@additional=\dimen283
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcorescopes.code.tex
+File: pgfcorescopes.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+\pgfpic=\box61
+\pgf@hbox=\box62
+\pgf@layerbox@main=\box63
+\pgf@picture@serial@count=\count331
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcoregraphicstate.code.tex
+File: pgfcoregraphicstate.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+\pgflinewidth=\dimen284
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcoretransformations.code.tex
+File: pgfcoretransformations.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+\pgf@pt@x=\dimen285
+\pgf@pt@y=\dimen286
+\pgf@pt@temp=\dimen287
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcorequick.code.tex
+File: pgfcorequick.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcoreobjects.code.tex
+File: pgfcoreobjects.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcorepathprocessing.code.tex
+File: pgfcorepathprocessing.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcorearrows.code.tex
+File: pgfcorearrows.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+\pgfarrowsep=\dimen288
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcoreshade.code.tex
+File: pgfcoreshade.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+\pgf@max=\dimen289
+\pgf@sys@shading@range@num=\count332
+\pgf@shadingcount=\count333
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcoreimage.code.tex
+File: pgfcoreimage.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcoreexternal.code.tex
+File: pgfcoreexternal.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+\pgfexternal@startupbox=\box64
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcorelayers.code.tex
+File: pgfcorelayers.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcoretransparency.code.tex
+File: pgfcoretransparency.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcorepatterns.code.tex
+File: pgfcorepatterns.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcorerdf.code.tex
+File: pgfcorerdf.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+))) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/modules/pgfmoduleshapes.code.tex
+File: pgfmoduleshapes.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+\pgfnodeparttextbox=\box65
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/modules/pgfmoduleplot.code.tex
+File: pgfmoduleplot.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/pgf/compatibility/pgfcomp-version-0-65.sty
+Package: pgfcomp-version-0-65 2025-08-29 v3.1.11a (3.1.11a)
+\pgf@nodesepstart=\dimen290
+\pgf@nodesepend=\dimen291
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/pgf/compatibility/pgfcomp-version-1-18.sty
+Package: pgfcomp-version-1-18 2025-08-29 v3.1.11a (3.1.11a)
+)) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/pgf/utilities/pgffor.sty (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/pgf/utilities/pgfkeys.sty (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/utilities/pgfkeys.code.tex)) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/pgf/math/pgfmath.sty (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/math/pgfmath.code.tex)) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/utilities/pgffor.code.tex
+Package: pgffor 2025-08-29 v3.1.11a (3.1.11a)
+\pgffor@iter=\dimen292
+\pgffor@skip=\dimen293
+\pgffor@stack=\toks45
+\pgffor@toks=\toks46
+)) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/frontendlayer/tikz/tikz.code.tex
+Package: tikz 2025-08-29 v3.1.11a (3.1.11a)
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/libraries/pgflibraryplothandlers.code.tex
+File: pgflibraryplothandlers.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+\pgf@plot@mark@count=\count334
+\pgfplotmarksize=\dimen294
+)
+\tikz@lastx=\dimen295
+\tikz@lasty=\dimen296
+\tikz@lastxsaved=\dimen297
+\tikz@lastysaved=\dimen298
+\tikz@lastmovetox=\dimen299
+\tikz@lastmovetoy=\dimen300
+\tikzleveldistance=\dimen301
+\tikzsiblingdistance=\dimen302
+\tikz@figbox=\box66
+\tikz@figbox@bg=\box67
+\tikz@tempbox=\box68
+\tikz@tempbox@bg=\box69
+\tikztreelevel=\count335
+\tikznumberofchildren=\count336
+\tikznumberofcurrentchild=\count337
+\tikz@fig@count=\count338
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/modules/pgfmodulematrix.code.tex
+File: pgfmodulematrix.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+\pgfmatrixcurrentrow=\count339
+\pgfmatrixcurrentcolumn=\count340
+\pgf@matrix@numberofcolumns=\count341
+)
+\tikz@expandcount=\count342
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tikzlibrarytopaths.code.tex
+File: tikzlibrarytopaths.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+))) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/tools/verbatim.sty
+Package: verbatim 2024-01-22 v1.5x LaTeX2e package for verbatim enhancements
+\every@verbatim=\toks47
+\verbatim@line=\toks48
+\verbatim@in@stream=\read4
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/environ/environ.sty
+Package: environ 2014/05/04 v0.3 A new way to define environments
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/trimspaces/trimspaces.sty
+Package: trimspaces 2009/09/17 v1.1 Trim spaces around a token list
+))
+\tcb@titlebox=\box70
+\tcb@upperbox=\box71
+\tcb@lowerbox=\box72
+\tcb@phantombox=\box73
+\c@tcbbreakpart=\count343
+\c@tcblayer=\count344
+\c@tcolorbox@number=\count345
+\l__tcobox_tmpa_box=\box74
+\l__tcobox_tmpa_dim=\dimen303
+\tcb@temp=\box75
+\tcb@temp=\box76
+\tcb@temp=\box77
+\tcb@temp=\box78
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/tcolorbox/tcbskins.code.tex
+Library (tcolorbox): 'tcbskins.code.tex' version '6.9.0'
+(c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/tikzfill/tikzfill.image.sty
+Package: tikzfill.image 2026/04/23 v1.2.0 Image filling library for TikZ
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/tikzfill/tikzlibraryfill.image.code.tex
+File: tikzlibraryfill.image.code.tex 2026/04/23 v1.2.0 Image filling library
+\l__tikzfill_tmpa_dim=\dimen304
+\l__tikzfill_tmpb_dim=\dimen305
+\l__tikzfill_img_box=\box79
+)) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/tcolorbox/tcbskinsjigsaw.code.tex
+Library (tcolorbox): 'tcbskinsjigsaw.code.tex' version '6.9.0'
+)) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/tcolorbox/tcbbreakable.code.tex
+Library (tcolorbox): 'tcbbreakable.code.tex' version '6.9.0'
+(c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/pdfcol/pdfcol.sty
+Package: pdfcol 2026-06-20 v1.8 Handle new color stacks for pdfTeX (HO)
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/ltxcmds/ltxcmds.sty
+Package: ltxcmds 2023-12-04 v1.26 LaTeX kernel commands for general use (HO)
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/infwarerr/infwarerr.sty
+Package: infwarerr 2019/12/03 v1.5 Providing info/warning/error messages (HO)
+))
+Package pdfcol Info: New color stack `tcb@breakable' = 1 on input line 23.
+\tcb@testbox=\box80
+\tcb@totalupperbox=\box81
+\tcb@totallowerbox=\box82
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/tcolorbox/tcblistings.code.tex
+Library (tcolorbox): 'tcblistings.code.tex' version '6.9.0'
+(c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/tcolorbox/tcblistingscore.code.tex
+Library (tcolorbox): 'tcblistingscore.code.tex' version '6.9.0'
+(c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/tcolorbox/tcbprocessing.code.tex
+Library (tcolorbox): 'tcbprocessing.code.tex' version '6.9.0'
+)
+\c@tcblisting=\count346
+)) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/tcolorbox/tcbraster.code.tex
+Library (tcolorbox): 'tcbraster.code.tex' version '6.9.0'
+\c@tcbrastercolumn=\count347
+\c@tcbrasterrow=\count348
+\c@tcbrasternum=\count349
+\c@tcbraster=\count350
+) (./cpfig.sty
+Package: cpfig 2026/09/30 figure grammar for the competitive programming handbook
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/pgfplots/pgfplots.sty (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgfplots/pgfplots.revision.tex)
+Package: pgfplots 2025/08/14 v1.18.2 Data Visualization (1.18.2)
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgfplots/pgfplots.code.tex (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgfplots/pgfplotscore.code.tex
+\t@pgfplots@toka=\toks49
+\t@pgfplots@tokb=\toks50
+\t@pgfplots@tokc=\toks51
+\pgfplots@tmpa=\dimen306
+\c@pgfplots@coordindex=\count351
+\c@pgfplots@scanlineindex=\count352
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgfplots/sys/pgfplotssysgeneric.code.tex)) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgfplots/libs/pgfplotslibrary.code.tex) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgfplots/oldpgfcompatib/pgfplotsoldpgfsupp_loader.code.tex (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/libraries/pgflibraryfpu.code.tex) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgfplots/oldpgfcompatib/pgfplotsoldpgfsupp_pgfutil-common-lists.tex)) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgfplots/util/pgfplotsutil.code.tex (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgfplots/liststructure/pgfplotsliststructure.code.tex) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgfplots/liststructure/pgfplotsliststructureext.code.tex) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgfplots/liststructure/pgfplotsarray.code.tex
+\c@pgfplotsarray@tmp=\count353
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgfplots/liststructure/pgfplotsmatrix.code.tex) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgfplots/numtable/pgfplotstableshared.code.tex
+\c@pgfplotstable@counta=\count354
+\t@pgfplotstable@a=\toks52
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgfplots/liststructure/pgfplotsdeque.code.tex) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgfplots/util/pgfplotsbinary.code.tex (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgfplots/util/pgfplotsbinary.data.code.tex)) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgfplots/util/pgfplotsutil.verb.code.tex) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgfplots/libs/pgflibrarypgfplots.surfshading.code.tex
+\c@pgfplotslibrarysurf@no=\count355
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgfplots/sys/pgflibrarypgfplots.surfshading.pgfsys-pdftex.def))) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgfplots/util/pgfplotscolormap.code.tex (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgfplots/util/pgfplotscolor.code.tex)) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgfplots/pgfplotsstackedplots.code.tex) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgfplots/pgfplotsplothandlers.code.tex (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgfplots/pgfplotsmeshplothandler.code.tex (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgfplots/pgfplotsmeshplotimage.code.tex))) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgfplots/pgfplots.scaling.code.tex) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgfplots/pgfplotscoordprocessing.code.tex) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgfplots/pgfplots.errorbars.code.tex) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgfplots/pgfplots.markers.code.tex) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgfplots/pgfplotsticks.code.tex) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgfplots/pgfplots.paths.code.tex) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tikzlibrarydecorations.code.tex (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/modules/pgfmoduledecorations.code.tex
+\pgfdecoratedcompleteddistance=\dimen307
+\pgfdecoratedremainingdistance=\dimen308
+\pgfdecoratedinputsegmentcompleteddistance=\dimen309
+\pgfdecoratedinputsegmentremainingdistance=\dimen310
+\pgf@decorate@distancetomove=\dimen311
+\pgf@decorate@repeatstate=\count356
+\pgfdecorationsegmentamplitude=\dimen312
+\pgfdecorationsegmentlength=\dimen313
+)
+\tikz@lib@dec@box=\box83
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tikzlibrarydecorations.pathmorphing.code.tex (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/libraries/decorations/pgflibrarydecorations.pathmorphing.code.tex)) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tikzlibrarydecorations.pathreplacing.code.tex (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/libraries/decorations/pgflibrarydecorations.pathreplacing.code.tex)) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgfplots/libs/tikzlibrarypgfplots.contourlua.code.tex)
+\pgfplots@numplots=\count357
+\pgfplots@xmin@reg=\dimen314
+\pgfplots@xmax@reg=\dimen315
+\pgfplots@ymin@reg=\dimen316
+\pgfplots@ymax@reg=\dimen317
+\pgfplots@zmin@reg=\dimen318
+\pgfplots@zmax@reg=\dimen319
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tikzlibraryplotmarks.code.tex
+File: tikzlibraryplotmarks.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/libraries/pgflibraryplotmarks.code.tex
+File: pgflibraryplotmarks.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+))) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/forest/forest.sty
+Package: forest 2017/07/14 v2.1.5 Drawing (linguistic) trees
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tikzlibraryshapes.code.tex
+File: tikzlibraryshapes.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tikzlibraryshapes.geometric.code.tex
+File: tikzlibraryshapes.geometric.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/libraries/shapes/pgflibraryshapes.geometric.code.tex
+File: pgflibraryshapes.geometric.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+)) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tikzlibraryshapes.misc.code.tex
+File: tikzlibraryshapes.misc.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/libraries/shapes/pgflibraryshapes.misc.code.tex
+File: pgflibraryshapes.misc.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+)) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tikzlibraryshapes.symbols.code.tex
+File: tikzlibraryshapes.symbols.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/libraries/shapes/pgflibraryshapes.symbols.code.tex
+File: pgflibraryshapes.symbols.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+)) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tikzlibraryshapes.arrows.code.tex
+File: tikzlibraryshapes.arrows.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/libraries/shapes/pgflibraryshapes.arrows.code.tex
+File: pgflibraryshapes.arrows.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+)) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tikzlibraryshapes.callouts.code.tex (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/libraries/shapes/pgflibraryshapes.callouts.code.tex)) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tikzlibraryshapes.multipart.code.tex
+File: tikzlibraryshapes.multipart.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/libraries/shapes/pgflibraryshapes.multipart.code.tex
+File: pgflibraryshapes.multipart.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+\pgfnodepartlowerbox=\box84
+\pgfnodeparttwobox=\box85
+\pgfnodepartthreebox=\box86
+\pgfnodepartfourbox=\box87
+\pgfnodeparttwentybox=\box88
+\pgfnodepartnineteenbox=\box89
+\pgfnodeparteighteenbox=\box90
+\pgfnodepartseventeenbox=\box91
+\pgfnodepartsixteenbox=\box92
+\pgfnodepartfifteenbox=\box93
+\pgfnodepartfourteenbox=\box94
+\pgfnodepartthirteenbox=\box95
+\pgfnodeparttwelvebox=\box96
+\pgfnodepartelevenbox=\box97
+\pgfnodeparttenbox=\box98
+\pgfnodepartninebox=\box99
+\pgfnodeparteightbox=\box100
+\pgfnodepartsevenbox=\box101
+\pgfnodepartsixbox=\box102
+\pgfnodepartfivebox=\box103
+))) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tikzlibraryfit.code.tex
+File: tikzlibraryfit.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tikzlibrarycalc.code.tex
+File: tikzlibrarycalc.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/libraries/pgflibraryintersections.code.tex
+\pgf@intersect@solutions=\count358
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/pgfopts/pgfopts.sty
+Package: pgfopts 2014/07/10 v2.1a LaTeX package options with pgfkeys
+\pgfopts@list@add@a@toks=\toks53
+\pgfopts@list@add@b@toks=\toks54
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/elocalloc/elocalloc.sty
+Package: elocalloc 2016/12/15 v0.03 local allocation for LaTeX 2015+ (DPC)
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/inlinedef/inlinedef.sty
+Package: inlinedef 2008/07/10 v1.0 Inlined expansions within definitions
+\ID@toks=\toks55
+\ID@count=\count359
+)
+\ID@usercommands=\toks56
+\safeloop@depth=\count360
+\safeRKloop@depth=\count361
+\forest@temp@dimen=\dimen320
+\forest@temp@count=\count362
+\forest@n=\count363
+\forest@temp@global@count=\count364
+\forest@temp@toks=\toks57
+\forest@temparray@M=\count365
+\forest@temparray@N=\count366
+\forest@global@temparray@M=\count367
+\forest@global@temparray@N=\count368
+\forest@isnum@count=\count369
+\forest@isdim@nonintpart=\count370
+\forest@isdim@dimen=\dimen321
+\forest@sort@m=\count371
+\forest@sort@k=\count372
+\forest@sort@p=\count373
+\bracket@content=\toks58
+\bracket@afterthought=\toks59
+\forest@node@maxid=\count374
+\forest@process@left@M=\count375
+\forest@process@left@N=\count376
+\forest@process@right@M=\count377
+\forest@process@right@N=\count378
+\forest@process@saved@M=\count379
+\forest@process@saved@N=\count380
+\forest@process@result@M=\count381
+\forest@process@result@N=\count382
+\forest@process@n=\count383
+\forest@nodewalk@branch@toks=\toks60
+\forest@nodewalk@shortsteps@resolution=\toks61
+\forest@do@dynamics=\toks62
+\forest@box=\box104
+\forest@xg=\dimen322
+\forest@yg=\dimen323
+\forest@xs=\dimen324
+\forest@ys=\dimen325
+\forest@pi@toks=\toks63
+\forest@segment@toks=\toks64
+\forest@PIi@toks=\toks65
+\forest@PIii@toks=\toks66
+\forest@copy@in=\read5
+\forest@copy@out=\write4
+\forest@externalize@max@outer@n=\count384
+\forest@externalize@inner@n=\count385
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/libraries/pgflibraryarrows.meta.code.tex
+File: pgflibraryarrows.meta.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+\pgfarrowinset=\dimen326
+\pgfarrowlength=\dimen327
+\pgfarrowwidth=\dimen328
+\pgfarrowlinewidth=\dimen329
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tikzlibrarypositioning.code.tex
+File: tikzlibrarypositioning.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tikzlibrarybackgrounds.code.tex
+File: tikzlibrarybackgrounds.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+\pgf@layerbox@background=\box105
+\pgf@layerboxsaved@background=\box106
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tikzlibrarydecorations.markings.code.tex (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/libraries/decorations/pgflibrarydecorations.markings.code.tex)) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tikzlibrarypatterns.code.tex
+File: tikzlibrarypatterns.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/libraries/pgflibrarypatterns.code.tex
+File: pgflibrarypatterns.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+)) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tikzlibrarymatrix.code.tex
+File: tikzlibrarymatrix.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tikzlibrarychains.code.tex
+File: tikzlibrarychains.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tikzlibrarybending.code.tex
+File: tikzlibrarybending.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/modules/pgfmodulebending.code.tex
+File: pgfmodulebending.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/modules/pgfmodulenonlineartransformations.code.tex
+File: pgfmodulenonlineartransformations.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+\pgftransformnonlinearflatness=\dimen330
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/libraries/pgflibrarycurvilinear.code.tex
+File: pgflibrarycurvilinear.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+\pgf@curvilinear@time@a=\dimen331
+\pgf@curvilinear@length@a=\dimen332
+\pgf@curvilinear@length@b=\dimen333
+\pgf@curvilinear@length@c=\dimen334
+\pgf@curvilinear@length@d=\dimen335
+)
+\pgf@arrows@the@rigidity=\dimen336
+)) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tikzlibraryintersections.code.tex) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tikzlibrarythrough.code.tex
+File: tikzlibrarythrough.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+)
+\c@cpsegfig=\count386
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tikzlibraryshadows.code.tex
+File: tikzlibraryshadows.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tikzlibraryfadings.code.tex
+File: tikzlibraryfadings.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pgf/libraries/pgflibraryfadings.code.tex
+File: pgflibraryfadings.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+))) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/booktabs/booktabs.sty
+Package: booktabs 2020/01/12 v1.61803398 Publication quality tables
+\heavyrulewidth=\dimen337
+\lightrulewidth=\dimen338
+\cmidrulewidth=\dimen339
+\belowrulesep=\dimen340
+\belowbottomsep=\dimen341
+\aboverulesep=\dimen342
+\abovetopsep=\dimen343
+\cmidrulesep=\dimen344
+\cmidrulekern=\dimen345
+\defaultaddspace=\dimen346
+\@cmidla=\count387
+\@cmidlb=\count388
+\@aboverulesep=\dimen347
+\@belowrulesep=\dimen348
+\@thisruleclass=\count389
+\@lastruleclass=\count390
+\@thisrulewidth=\dimen349
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/tools/tabularx.sty
+Package: tabularx 2023/12/11 v2.12a `tabularx' package (DPC)
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/tools/array.sty
+Package: array 2025/09/25 v2.6n Tabular extension package (FMi)
+\col@sep=\dimen350
+\ar@mcellbox=\box107
+\extrarowheight=\dimen351
+\NC@list=\toks67
+\extratabsurround=\skip59
+\backup@length=\skip60
+\ar@cellbox=\box108
+)
+\TX@col@width=\dimen352
+\TX@old@table=\dimen353
+\TX@old@col=\dimen354
+\TX@target=\dimen355
+\TX@delta=\dimen356
+\TX@cols=\count391
+\TX@ftn=\toks68
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/tools/longtable.sty
+Package: longtable 2025-10-13 v4.24 Multi-page Table package (DPC)
+\LTleft=\skip61
+\LTright=\skip62
+\LTpre=\skip63
+\LTpost=\skip64
+\LTchunksize=\count392
+\LTcapwidth=\dimen357
+\LT@head=\box109
+\LT@firsthead=\box110
+\LT@foot=\box111
+\LT@lastfoot=\box112
+\LT@gbox=\box113
+\LT@cols=\count393
+\LT@rows=\count394
+\c@LT@tables=\count395
+\c@LT@chunks=\count396
+\LT@p@ftn=\toks69
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/multirow/multirow.sty
+Package: multirow 2024/11/12 v2.9 Span multiple rows of a table
+\multirow@colwidth=\skip65
+\multirow@cntb=\count397
+\multirow@dima=\skip66
+\bigstrutjot=\dimen358
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/makecell/makecell.sty
+Package: makecell 2009/08/03 V0.1e Managing of Tab Column Heads and Cells
+\rotheadsize=\dimen359
+\c@nlinenum=\count398
+\TeXr@lab=\toks70
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/colortbl/colortbl.sty
+Package: colortbl 2024/10/29 v1.0k Color table columns (DPC)
+\everycr=\toks71
+\minrowclearance=\skip67
+\rownum=\count399
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/tools/multicol.sty
+Package: multicol 2025/10/21 v2.0b multicolumn formatting (FMi)
+\c@tracingmulticols=\count400
+\mult@box=\box114
+\multicol@leftmargin=\dimen360
+\c@unbalance=\count401
+\c@collectmore=\count402
+\doublecol@number=\count403
+\multicoltolerance=\count404
+\multicolpretolerance=\count405
+\full@width=\dimen361
+\page@free=\dimen362
+\premulticols=\dimen363
+\postmulticols=\dimen364
+\multicolsep=\skip68
+\multicolbaselineskip=\skip69
+\partial@page=\box115
+\last@line=\box116
+\mc@boxedresult=\box117
+\maxbalancingoverflow=\dimen365
+\mult@rightbox=\box118
+\mult@grightbox=\box119
+\mult@firstbox=\box120
+\mult@gfirstbox=\box121
+\@tempa=\box122
+\@tempa=\box123
+\@tempa=\box124
+\@tempa=\box125
+\@tempa=\box126
+\@tempa=\box127
+\@tempa=\box128
+\@tempa=\box129
+\@tempa=\box130
+\@tempa=\box131
+\@tempa=\box132
+\@tempa=\box133
+\@tempa=\box134
+\@tempa=\box135
+\@tempa=\box136
+\@tempa=\box137
+\@tempa=\box138
+\@tempa=\box139
+\@tempa=\box140
+\@tempa=\box141
+\@tempa=\box142
+\@tempa=\box143
+\@tempa=\box144
+\@tempa=\box145
+\@tempa=\box146
+\@tempa=\box147
+\@tempa=\box148
+\@tempa=\box149
+\@tempa=\box150
+\@tempa=\box151
+\@tempa=\box152
+\@tempa=\box153
+\@tempa=\box154
+\@tempa=\box155
+\@tempa=\box156
+\@tempa=\box157
+\c@minrows=\count406
+\c@columnbadness=\count407
+\c@finalcolumnbadness=\count408
+\last@try=\dimen366
+\multicolovershoot=\dimen367
+\multicolundershoot=\dimen368
+\mult@nat@firstbox=\box158
+\colbreak@box=\box159
+\mc@col@check@num=\count409
+\g__mc_curr_col_int=\count410
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/algpseudocodex/algpseudocodex.sty
+Package: algpseudocodex 2025-04-16 v1.2.0 pseudocode typesetting
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/kvoptions/kvoptions.sty
+Package: kvoptions 2022-06-15 v3.15 Key value format for package options (HO)
+
+(c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/kvsetkeys/kvsetkeys.sty
+Package: kvsetkeys 2022-10-05 v1.19 Key value parser (HO)
+)) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/algorithmicx/algorithmicx.sty
+Package: algorithmicx 2005/04/27 v1.2 Algorithmicx
+
+Document Style algorithmicx 1.2 - a greatly improved `algorithmic' style
+\c@ALG@line=\count411
+\c@ALG@rem=\count412
+\c@ALG@nested=\count413
+\ALG@tlm=\skip70
+\ALG@thistlm=\skip71
+\c@ALG@Lnr=\count414
+\c@ALG@blocknr=\count415
+\c@ALG@storecount=\count416
+\c@ALG@tmpcounter=\count417
+\ALG@tmplength=\skip72
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/fifo-stack/fifo-stack.sty
+Package: fifo-stack 2014/03/24 v1.0 Multi-FIFO/stack system
+\tmp@fifo@stack@top=\count418
+\tmp@fifo@stack@bottom=\count419
+\tmp@fifo@stack@size=\count420
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/varwidth/varwidth.sty
+Package: varwidth 2009/03/30 ver 0.92;  Variable-width minipages
+\@vwid@box=\box160
+\sift@deathcycles=\count421
+\@vwid@loff=\dimen369
+\@vwid@roff=\dimen370
+)
+==> First Aid for varwidth.sty applied!
+(c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/tabto-ltx/tabto.sty
+Package: tabto 2018/12/28  v 1.4  Another tabbing mechanism
+\CurrentLineWidth=\dimen371
+\TabPrevPos=\dimen372
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/totcount/totcount.sty
+Package: totcount 2011/01/25 v1.2 package for gettingthe total value of LaTeX counters
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/tikzmark/tikzlibrarytikzmark.code.tex
+File: tikzlibrarytikzmark.code.tex 2026/05/31 v1.16 TikZ library for marking positions in a document
+\l__sn_x_dim=\dimen373
+\l__sn_y_dim=\dimen374
+\l__sn_xa_dim=\dimen375
+\l__sn_ya_dim=\dimen376
+)
+\algpx@codeBoxInnerSep=\skip73
+\algpx@codeBoxSep=\skip74
+\algpx@codeBoxOuterSep=\skip75
+\algpx@indShiftX=\skip76
+\algpx@indStartShiftY=\skip77
+\algpx@indEndShiftY=\skip78
+\algpx@indXLineLength=\skip79
+\algpx@minIndDist=\skip80
+\algpx@oldPos=\skip81
+\algpx@newPos=\skip82
+\algpx@tmpLen=\skip83
+\algpx@currentLineskiplimit=\skip84
+\algpx@currentLineskip=\skip85
+\algpx@indStartY=\skip86
+\algpx@indEndY=\skip87
+\algpx@indStartX=\skip88
+\algpx@extraShiftX=\skip89
+\algpx@minTopPageHeight=\skip90
+\algpx@minBotPageDepth=\skip91
+LaTeX Font Info:    Font shape `T1/minzpl/m/n' will be
+(Font)              scaled to size 9.0pt on input line 103.
+\c@algpx@codeBoxCount=\count422
+\c@algpx@nestedCBoxCount=\count423
+\c@algpx@startedBoxesCount=\count424
+\c@algpx@endedBoxesCount=\count425
+\c@algpx@nestedBoxedStringCount=\count426
+\c@algpx@nestedBoxedStringMaxCount=\count427
+\c@algpx@indentCount=\count428
+\c@algpx@lastIndentEnded=\count429
+\c@algpx@pageCount=\count430
+\c@algpx@tmpCount=\count431
+\algpx@boxedStringBox=\box161
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/imakeidx/imakeidx.sty
+Package: imakeidx 2016/10/15 v1.3e Package for typesetting indices in a synchronous mode
+)
+\algorithms@idxfile=\write5
+\openout5 = `algorithms.idx'.
+
+
+Writing index file algorithms.idx
+(c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/enumitem/enumitem.sty
+Package: enumitem 2025/02/06 v3.11 Customized lists
+\labelindent=\skip92
+\enit@outerparindent=\dimen377
+\enit@toks=\toks72
+\enit@inbox=\box162
+\enit@count@id=\count432
+\enitdp@description=\count433
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/fancyhdr/fancyhdr.sty
+Package: fancyhdr 2025/02/07 v5.2 Extensive control of page headers and footers
+\f@nch@headwidth=\skip93
+\f@nch@offset@elh=\skip94
+\f@nch@offset@erh=\skip95
+\f@nch@offset@olh=\skip96
+\f@nch@offset@orh=\skip97
+\f@nch@offset@elf=\skip98
+\f@nch@offset@erf=\skip99
+\f@nch@offset@olf=\skip100
+\f@nch@offset@orf=\skip101
+\f@nch@height=\skip102
+\f@nch@footalignment=\skip103
+\f@nch@widthL=\skip104
+\f@nch@widthC=\skip105
+\f@nch@widthR=\skip106
+\@temptokenb=\toks73
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/titlesec/titlesec.sty
+Package: titlesec 2025/01/04 v2.17 Sectioning titles
+\ttl@box=\box163
+\beforetitleunit=\skip107
+\aftertitleunit=\skip108
+\ttl@plus=\dimen378
+\ttl@minus=\dimen379
+\ttl@toksa=\toks74
+\titlewidth=\dimen380
+\titlewidthlast=\dimen381
+\titlewidthfirst=\dimen382
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/caption/caption.sty
+Package: caption 2023/08/05 v3.6o Customizing captions (AR)
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/caption/caption3.sty
+Package: caption3 2023/07/31 v2.4d caption3 kernel (AR)
+\caption@tempdima=\dimen383
+\captionmargin=\dimen384
+\caption@leftmargin=\dimen385
+\caption@rightmargin=\dimen386
+\caption@width=\dimen387
+\caption@indent=\dimen388
+\caption@parindent=\dimen389
+\caption@hangindent=\dimen390
+Package caption Info: Standard document class detected.
+)
+\c@caption@flags=\count434
+\c@continuedfloat=\count435
+Package caption Info: listings package is loaded.
+Package caption Info: longtable package is loaded.
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/caption/ltcaption.sty
+Package: ltcaption 2021/01/08 v1.4c longtable captions (AR)
+)) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/float/float.sty
+Package: float 2001/11/08 v1.3d Float enhancements (AL)
+\c@float@type=\count436
+\float@exts=\toks75
+\float@box=\box164
+\@float@everytoks=\toks76
+\@floatcapt=\box165
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/wrapfig/wrapfig.sty
+\wrapoverhang=\dimen391
+\WF@size=\dimen392
+\c@WF@wrappedlines=\count437
+\WF@box=\box166
+\WF@everypar=\toks77
+Package: wrapfig 2003/01/31  v 3.6
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/fontawesome5/fontawesome5.sty
+Package: fontawesome5 2022/05/02 v5.15.4 Font Awesome 5
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/l3packages/l3keys2e/l3keys2e.sty
+Package: l3keys2e 2025-10-09 LaTeX2e option processing using LaTeX3 keys
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/fontawesome5/fontawesome5-generic-helper.sty
+Package: fontawesome5-generic-helper 2022/05/02 v5.15.4 non-uTeX helper for fontawesome5
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/fontawesome5/fontawesome5-mapping.def))) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/listings/lstlang1.sty
+File: lstlang1.sty 2025/11/14 1.11b listings language file
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/listings/lstlang1.sty
+File: lstlang1.sty 2025/11/14 1.11b listings language file
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/listings/lstmisc.sty
+File: lstmisc.sty 2025/11/14 1.11b (Carsten Heinz)
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/hyperref/hyperref.sty
+Package: hyperref 2026-01-29 v7.01p Hypertext links for LaTeX
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/kvdefinekeys/kvdefinekeys.sty
+Package: kvdefinekeys 2019-12-19 v1.6 Define keys (HO)
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pdfescape/pdfescape.sty
+Package: pdfescape 2019/12/09 v1.15 Implements pdfTeX's escape features (HO)
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/pdftexcmds/pdftexcmds.sty
+Package: pdftexcmds 2020-06-27 v0.33 Utility functions of pdfTeX for LuaTeX (HO)
+Package pdftexcmds Info: \pdf@primitive is available.
+Package pdftexcmds Info: \pdf@ifprimitive is available.
+Package pdftexcmds Info: \pdfdraftmode found.
+)) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/hycolor/hycolor.sty
+Package: hycolor 2020-01-27 v1.10 Color options for hyperref/bookmark (HO)
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/hyperref/nameref.sty
+Package: nameref 2026-01-29 v2.58 Cross-referencing by name of section
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/refcount/refcount.sty
+Package: refcount 2019/12/15 v3.6 Data extraction from label references (HO)
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/gettitlestring/gettitlestring.sty
+Package: gettitlestring 2019/12/15 v1.6 Cleanup title references (HO)
+)
+\c@section@level=\count438
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/stringenc/stringenc.sty
+Package: stringenc 2019/11/29 v1.12 Convert strings between diff. encodings (HO)
+)
+\@linkdim=\dimen393
+\Hy@linkcounter=\count439
+\Hy@pagecounter=\count440
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/hyperref/pd1enc.def
+File: pd1enc.def 2026-01-29 v7.01p Hyperref: PDFDocEncoding definition (HO)
+Now handling font encoding PD1 ...
+... no UTF-8 mapping file for font encoding PD1
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/intcalc/intcalc.sty
+Package: intcalc 2019/12/15 v1.3 Expandable calculations with integers (HO)
+)
+\Hy@SavedSpaceFactor=\count441
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/hyperref/puenc.def
+File: puenc.def 2026-01-29 v7.01p Hyperref: PDF Unicode definition (HO)
+Now handling font encoding PU ...
+... no UTF-8 mapping file for font encoding PU
+)
+Package hyperref Info: Option `colorlinks' set `true' on input line 4072.
+Package hyperref Info: Option `bookmarksnumbered' set `true' on input line 4072.
+Package hyperref Info: Hyper figures OFF on input line 4201.
+Package hyperref Info: Link nesting OFF on input line 4206.
+Package hyperref Info: Hyper index ON on input line 4209.
+Package hyperref Info: Plain pages OFF on input line 4216.
+Package hyperref Info: Backreferencing OFF on input line 4221.
+Package hyperref Info: Implicit mode ON; LaTeX internals redefined.
+Package hyperref Info: Bookmarks ON on input line 4468.
+\c@Hy@tempcnt=\count442
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/url/url.sty
+\Urlmuskip=\muskip18
+Package: url 2013/09/16  ver 3.4  Verb mode for urls, etc.
+)
+LaTeX Info: Redefining \url on input line 4807.
+\XeTeXLinkMargin=\dimen394
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/bitset/bitset.sty
+Package: bitset 2019/12/09 v1.3 Handle bit-vector datatype (HO)
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/bigintcalc/bigintcalc.sty
+Package: bigintcalc 2019/12/15 v1.5 Expandable calculations on big integers (HO)
+))
+\Fld@menulength=\count443
+\Field@Width=\dimen395
+\Fld@charsize=\dimen396
+Package hyperref Info: Hyper figures OFF on input line 6084.
+Package hyperref Info: Link nesting OFF on input line 6089.
+Package hyperref Info: Hyper index ON on input line 6092.
+Package hyperref Info: backreferencing OFF on input line 6099.
+Package hyperref Info: Link coloring ON on input line 6102.
+Package hyperref Info: Link coloring with OCG OFF on input line 6109.
+Package hyperref Info: PDF/A mode OFF on input line 6114.
+\Hy@abspage=\count444
+\c@Item=\count445
+\c@Hfootnote=\count446
+)
+Package hyperref Info: Driver (autodetected): hpdftex.
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/hyperref/hpdftex.def
+File: hpdftex.def 2026-01-29 v7.01p Hyperref driver for pdfTeX
+\Fld@listcount=\count447
+\c@bookmark@seq@number=\count448
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/rerunfilecheck/rerunfilecheck.sty
+Package: rerunfilecheck 2025-06-21 v1.11 Rerun checks for auxiliary files (HO)
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/uniquecounter/uniquecounter.sty
+Package: uniquecounter 2019/12/15 v1.4 Provide unlimited unique counter (HO)
+)
+Package uniquecounter Info: New unique counter `rerunfilecheck' on input line 284.
+)
+\Hy@SectionHShift=\skip109
+) (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/bookmark/bookmark.sty
+Package: bookmark 2023-12-10 v1.31 PDF bookmarks (HO)
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/bookmark/bkm-pdftex.def
+File: bkm-pdftex.def 2023-12-10 v1.31 bookmark driver for pdfTeX and luaTeX (HO)
+\BKM@id=\count449
+))) (./algorithms/roadmap.tex)
+LaTeX Font Info:    Font shape `T1/zpltlf/m/n' will be
+(Font)              scaled to size 10.95pt on input line 20.
+ (C:\Users\kshit\Desktop\competitive\docs\build/algorithms.aux (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/00_preface.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/01_approach.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/01b_patterns.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/02_complexity.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/03_cpp_stl.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/04_data_structures.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/05_complete_search.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/06_sorting_greedy.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/07_binary_search.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/08_prefix_two_pointers.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/09_bits_rectangles.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/10_graph_basics.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/11_shortest_paths.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/12_dsu_mst_topo.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/13_connectivity.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/14_flows.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/15_tree_techniques.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/16_tree_decompositions.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/17_dp_fundamentals.aux
+
+LaTeX Warning: Label `fig:gridpaths' multiply defined.
+
+) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/18_dp_patterns.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/19_dp_optimizations.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/20_static_queries.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/21_fenwick_segment.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/22_advanced_ds.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/23_number_theory.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/24_combinatorics.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/25_linear_algebra_poly.aux
+
+LaTeX Warning: Label `tpl:cpmatrix' multiply defined.
+
+
+LaTeX Warning: Label `tpl:cpxorbasis' multiply defined.
+
+) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/26_strings.aux
+
+LaTeX Warning: Label `tpl:cpxortrie' multiply defined.
+
+) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/27_geometry.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/28_special_topics.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/29_contest_craft.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/31_tricks.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/30_worked_problems.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/A_cheatsheets.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/B_notation.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/C_templates.aux))
+\openout1 = `algorithms.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/npxmi/m/it on input line 20.
+LaTeX Font Info:    Trying to load font information for OML+npxmi on input line 20.
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/newpx/omlnpxmi.fd
+File: omlnpxmi.fd 2013/03/21 Fontinst v1.933 font definitions for OML/npxmi.
+)
+LaTeX Font Info:    ... okay on input line 20.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 20.
+LaTeX Font Info:    ... okay on input line 20.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 20.
+LaTeX Font Info:    ... okay on input line 20.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 20.
+LaTeX Font Info:    ... okay on input line 20.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 20.
+LaTeX Font Info:    ... okay on input line 20.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 20.
+LaTeX Font Info:    ... okay on input line 20.
+LaTeX Font Info:    Checking defaults for U/npxexa/m/n on input line 20.
+LaTeX Font Info:    Trying to load font information for U+npxexa on input line 20.
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/newpx/unpxexa.fd
+File: unpxexa.fd 2013/03/24 Fontinst v1.933 font definitions for U/npxexa.
+)
+LaTeX Font Info:    ... okay on input line 20.
+LaTeX Font Info:    Checking defaults for LMS/npxsy/m/n on input line 20.
+LaTeX Font Info:    Trying to load font information for LMS+npxsy on input line 20.
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/newpx/lmsnpxsy.fd
+File: lmsnpxsy.fd 2016/07/04 Fontinst v1.933 font definitions for LMS/npxsy.
+)
+LaTeX Font Info:    ... okay on input line 20.
+LaTeX Font Info:    Checking defaults for LMX/npxexx/m/n on input line 20.
+LaTeX Font Info:    Trying to load font information for LMX+npxexx on input line 20.
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/newpx/lmxnpxexx.fd
+File: lmxnpxexx.fd 2016/07/04 Fontinst v1.933 font definitions for LMX/npxexx.
+)
+LaTeX Font Info:    ... okay on input line 20.
+LaTeX Font Info:    Checking defaults for LY1/ptm/m/n on input line 20.
+LaTeX Font Info:    Trying to load font information for LY1+ptm on input line 20.
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/ly1/ly1ptm.fd
+File: ly1ptm.fd 2001/02/01 font definitions for LY1/ptm using Berry names.
+)
+LaTeX Font Info:    ... okay on input line 20.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 20.
+LaTeX Font Info:    ... okay on input line 20.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 20.
+LaTeX Font Info:    ... okay on input line 20.
+LaTeX Info: Command `\dddot' is already robust on input line 20.
+LaTeX Info: Command `\ddddot' is already robust on input line 20.
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/epstopdf-pkg/epstopdf-base.sty
+Package: epstopdf-base 2020-01-24 v2.11 Base part for package epstopdf
+Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 485.
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg
+File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Live
+))
+\c@mv@tabular=\count450
+\c@mv@boldtabular=\count451
+
+*geometry* driver: auto-detecting
+*geometry* detected driver: pdftex
+*geometry* verbose mode - [ preamble ] result:
+* driver: pdftex
+* paper: a4paper
+* layout: <same size as paper>
+* layoutoffset:(h,v)=(0.0pt,0.0pt)
+* modes: twoside 
+* h-part:(L,W,R)=(65.44142pt, 466.62503pt, 65.44142pt)
+* v-part:(T,H,B)=(68.28644pt, 708.47397pt, 68.28644pt)
+* \paperwidth=597.50787pt
+* \paperheight=845.04684pt
+* \textwidth=466.62503pt
+* \textheight=708.47397pt
+* \oddsidemargin=-6.82857pt
+* \evensidemargin=-6.82857pt
+* \topmargin=-39.85735pt
+* \headheight=16.0pt
+* \headsep=19.8738pt
+* \topskip=11.0pt
+* \footskip=27.46295pt
+* \marginparwidth=116.0pt
+* \marginparsep=7.0pt
+* \columnsep=10.0pt
+* \skip\footins=10.0pt plus 4.0pt minus 2.0pt
+* \hoffset=0.0pt
+* \voffset=0.0pt
+* \mag=1000
+* \@twocolumnfalse
+* \@twosidetrue
+* \@mparswitchtrue
+* \@reversemarginfalse
+* (1in=72.27pt=25.4mm, 1cm=28.453pt)
+
+Package microtype Info: Patching varwidth to enable character protrusion.
+\MT@vwid@leftmargin=\dimen397
+\MT@vwid@rightmargin=\dimen398
+LaTeX Info: Redefining \microtypecontext on input line 20.
+Package microtype Info: Applying patch `item' on input line 20.
+Package microtype Info: Applying patch `toc' on input line 20.
+Package microtype Info: Applying patch `eqnum' on input line 20.
+Package microtype Info: Applying patch `footnote' on input line 20.
+Package microtype Info: Applying patch `verbatim' on input line 20.
+LaTeX Info: Redefining \microtypesetup on input line 20.
+Package microtype Info: Generating PDF output.
+Package microtype Info: Character protrusion enabled (level 2).
+Package microtype Info: Using default protrusion set `alltext'.
+Package microtype Info: Automatic font expansion enabled (level 2),
+(microtype)             stretch: 20, shrink: 20, step: 1, non-selected.
+Package microtype Info: Using default expansion set `alltext-nott'.
+Package microtype Info: Patching command `\showhyphens'.
+Package microtype Info: No adjustment of tracking.
+Package microtype Info: No adjustment of interword spacing.
+Package microtype Info: No adjustment of character kerning.
+(c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/microtype/mt-ppl.cfg
+File: mt-ppl.cfg 2005/11/16 v1.6 microtype config. file: Palatino (RS)
+)
+\c@lstlisting=\count452
+
+Package pgfplots notification 'compat/show suggested version=true': document has been generated with the most recent feature set (\pgfplotsset{compat=1.18}).
+
+Package caption Info: Begin \AtBeginDocument code.
+Package caption Info: float package is loaded.
+Package caption Info: hyperref package is loaded.
+Package caption Info: wrapfig package is loaded.
+Package caption Info: End \AtBeginDocument code.
+Package hyperref Info: Link coloring ON on input line 20.
+(./algorithms/cover.tex
+\cpCoverMap=\box167
+LaTeX Font Info:    Trying to load font information for T1+qhv on input line 4.
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/tex-gyre/t1qhv.fd
+File: t1qhv.fd 2009/09/25 v1.2 font definition file for T1/qhv
+)
+LaTeX Font Info:    Font shape `T1/qhv/m/n' will be
+(Font)              scaled to size 10.29301pt on input line 4.
+Package microtype Info: Loading generic protrusion settings for font family
+(microtype)             `qhv' (encoding: T1).
+(microtype)             For optimal results, create family-specific settings.
+(microtype)             See the microtype manual for details.
+LaTeX Font Info:    Font shape `T1/qhv/m/n' will be
+(Font)              scaled to size 5.64001pt on input line 4.
+LaTeX Font Info:    Font shape `T1/qhv/b/n' will be
+(Font)              scaled to size 5.64001pt on input line 4.
+LaTeX Font Info:    Font shape `T1/qhv/m/n' will be
+(Font)              scaled to size 8.46002pt on input line 4.
+LaTeX Font Info:    Font shape `T1/qhv/b/n' will be
+(Font)              scaled to size 8.46002pt on input line 4.
+LaTeX Font Info:    Font shape `T1/qhv/m/n' will be
+(Font)              scaled to size 7.52002pt on input line 4.
+LaTeX Font Info:    Font shape `T1/qhv/m/it' will be
+(Font)              scaled to size 7.52002pt on input line 4.
+\cpCoverLegend=\box168
+LaTeX Font Info:    Font shape `T1/qhv/b/n' will be
+(Font)              scaled to size 10.29301pt on input line 11.
+LaTeX Font Info:    Font shape `T1/qhv/b/n' will be
+(Font)              scaled to size 33.84009pt on input line 11.
+LaTeX Font Info:    Font shape `T1/qhv/m/n' will be
+(Font)              scaled to size 11.28003pt on input line 14.
+LaTeX Font Info:    Font shape `T1/qhv/m/n' will be
+(Font)              scaled to size 9.40002pt on input line 16.
+LaTeX Font Info:    Font shape `T1/qhv/b/n' will be
+(Font)              scaled to size 9.40002pt on input line 16.
+LaTeX Font Info:    Trying to load font information for TS1+qhv on input line 16.
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/tex-gyre/ts1qhv.fd
+File: ts1qhv.fd 2009/09/25 v1.2 font definition file for TS1/qhv
+)
+LaTeX Font Info:    Font shape `TS1/qhv/b/n' will be
+(Font)              scaled to size 9.40002pt on input line 16.
+Package microtype Info: Loading generic protrusion settings for font family
+(microtype)             `qhv' (encoding: TS1).
+(microtype)             For optimal results, create family-specific settings.
+(microtype)             See the microtype manual for details.
+LaTeX Font Info:    Font shape `T1/qhv/b/n' will be
+(Font)              scaled to size 11.28003pt on input line 22.
+LaTeX Font Info:    Trying to load font information for T1+SourceCodePro-TLF on input line 24.
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/sourcecodepro/T1SourceCodePro-TLF.fd
+File: T1SourceCodePro-TLF.fd 2025/04/07 (autoinst) Font definitions for T1/SourceCodePro-TLF.
+)
+LaTeX Font Info:    Font shape `T1/SourceCodePro-TLF/regular/n' aliased to
+(Font)              `T1/SourceCodePro-TLF/m/n' on input line 24.
+LaTeX Font Info:    Font shape `T1/SourceCodePro-TLF/m/n' will be
+(Font)              scaled to size 8.6pt on input line 24.
+Package microtype Info: Loading generic protrusion settings for font family
+(microtype)             `SourceCodePro-TLF' (encoding: T1).
+(microtype)             For optimal results, create family-specific settings.
+(microtype)             See the microtype manual for details.
+ [1
+
+
+
+{c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/fonts/enc/dvips/tex-gyre/q-ec.enc}{c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/fonts/enc/dvips/tex-gyre/q-ts1.enc}{c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/fonts/enc/dvips/sourcecodepro/a_rzhnou.enc}]) (./algorithms/about.tex
+LaTeX Font Info:    Font shape `T1/qhv/b/n' will be
+(Font)              scaled to size 23.38725pt on input line 5.
+ [2]
+LaTeX Font Info:    Font shape `T1/zpltlf/m/n' will be
+(Font)              scaled to size 10.0pt on input line 13.
+LaTeX Font Info:    Font shape `T1/zpltlf/b/n' will be
+(Font)              scaled to size 10.0pt on input line 16.
+LaTeX Font Info:    Font shape `T1/zpltlf/m/it' will be
+(Font)              scaled to size 10.0pt on input line 21.
+LaTeX Font Info:    Font shape `T1/SourceCodePro-TLF/bold/n' aliased to
+(Font)              `T1/SourceCodePro-TLF/b/n' on input line 27.
+LaTeX Font Info:    Font shape `T1/SourceCodePro-TLF/b/n' will be
+(Font)              scaled to size 8.6pt on input line 27.
+LaTeX Font Info:    Trying to load font information for OT1+minzpl on input line 31.
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/newpx/ot1minzpl.fd
+File: ot1minzpl.fd 2021/05/25 v1.0 font definition file for OT1/minzpl/TLF
+)
+LaTeX Font Info:    Font shape `OT1/minzpl/m/n' will be
+(Font)              scaled to size 10.0pt on input line 31.
+Package microtype Info: Loading generic protrusion settings for font family
+(microtype)             `minzpl' (encoding: OT1).
+(microtype)             For optimal results, create family-specific settings.
+(microtype)             See the microtype manual for details.
+LaTeX Font Info:    Font shape `OT1/minzpl/m/n' will be
+(Font)              scaled to size 7.3pt on input line 31.
+LaTeX Font Info:    Font shape `OT1/minzpl/m/n' will be
+(Font)              scaled to size 5.5pt on input line 31.
+LaTeX Font Info:    Trying to load font information for U+npxmia on input line 31.
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/newpx/unpxmia.fd
+File: unpxmia.fd 2013/03/24 Fontinst v1.933 font definitions for U/npxmia.
+)
+LaTeX Font Info:    Trying to load font information for U+npxsym on input line 31.
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/newpx/unpxsym.fd
+File: unpxsym.fd 2023/08/16 Fontinst v1.933 font definitions for U/npxsym.
+)
+LaTeX Font Info:    Trying to load font information for U+npxsyc on input line 31.
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/newpx/unpxsyc.fd
+File: unpxsyc.fd 2013/03/24 Fontinst v1.933 font definitions for U/npxsyc.
+)
+LaTeX Font Info:    Font shape `T1/zpltlf/m/n' will be
+(Font)              scaled to size 7.3pt on input line 31.
+ [3
+
+{c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/fonts/enc/dvips/newtx/ntx-ec-tlf.enc}]) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms.toc
+LaTeX Font Info:    Font shape `T1/zpltlf/b/n' will be
+(Font)              scaled to size 10.95pt on input line 1.
+LaTeX Font Info:    Font shape `T1/zpltlf/m/n' will be
+(Font)              scaled to size 12.0pt on input line 2.
+LaTeX Font Info:    Font shape `T1/zpltlf/b/n' will be
+(Font)              scaled to size 12.0pt on input line 2.
+LaTeX Font Info:    Font shape `OT1/minzpl/m/n' will be
+(Font)              scaled to size 10.95pt on input line 4.
+LaTeX Font Info:    Font shape `OT1/minzpl/m/n' will be
+(Font)              scaled to size 8.0pt on input line 4.
+LaTeX Font Info:    Font shape `OT1/minzpl/m/n' will be
+(Font)              scaled to size 6.1pt on input line 4.
+ [4
+
+
+] [5] [6] [7] [8] [9] [10] [11] [12] [13])
+\tf@toc=\write6
+\openout6 = `algorithms.toc'.
+
+ [14] [16
+
+
+]
+LaTeX Font Info:    Font shape `T1/qhv/b/n' will be
+(Font)              scaled to size 13.53603pt on input line 30.
+LaTeX Font Info:    Font shape `T1/zpltlf/m/n' will be
+(Font)              scaled to size 24.88pt on input line 30.
+ [1
+
+] [61
+
+
+
+
+
+
+] [132
+
+
+
+
+
+
+] [206
+
+
+
+
+
+
+] [249
+
+
+
+] [294
+
+
+
+
+] [334
+
+
+
+
+] [388
+
+
+
+
+]
+\openout2 = `algorithms/27_geometry.aux'.
+
+ (./algorithms/27_geometry.tex
+Chapter 28.
+LaTeX Font Info:    Trying to load font information for U+fontawesomefree0 on input line 10.
+(c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/fontawesome5/ufontawesomefree0.fd)
+LaTeX Font Info:    Font shape `OT1/minzpl/m/n' will be
+(Font)              scaled to size 6.2pt on input line 42.
+LaTeX Font Info:    Font shape `OT1/minzpl/m/n' will be
+(Font)              scaled to size 9.0pt on input line 52.
+LaTeX Font Info:    Font shape `T1/qhv/b/n' will be
+(Font)              scaled to size 7.52002pt on input line 60.
+LaTeX Font Info:    Trying to load font information for U+fontawesomefree2 on input line 62.
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/fontawesome5/ufontawesomefree2.fd)
+\g__tcobox_out_iow=\write7
+\openout7 = `algorithms.listing'.
+
+LaTeX Font Info:    Font shape `T1/SourceCodePro-TLF/regular/n' aliased to
+(Font)              `T1/SourceCodePro-TLF/m/n' on input line 79.
+LaTeX Font Info:    Font shape `T1/SourceCodePro-TLF/m/n' will be
+(Font)              scaled to size 9.41699pt on input line 79.
+ (C:\Users\kshit\Desktop\competitive\docs\build/algorithms.listing
+LaTeX Font Info:    Font shape `T1/SourceCodePro-TLF/regular/it' aliased to
+(Font)              `T1/SourceCodePro-TLF/m/it' on input line 1.
+LaTeX Font Info:    Font shape `T1/SourceCodePro-TLF/m/it' will be
+(Font)              scaled to size 8.6pt on input line 1.
+) [404
+
+
+
+{c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/fonts/enc/dvips/fontawesome5/fa5free0.enc}{c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/fonts/enc/dvips/newpx/px-lms.enc}{c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/fonts/enc/dvips/newtx/ntx-ot1-tlf.enc}{c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/fonts/enc/dvips/fontawesome5/fa5free2.enc}]
+LaTeX Font Info:    Trying to load font information for U+fontawesomefree1 on input line 81.
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/fontawesome5/ufontawesomefree1.fd)
+LaTeX Font Info:    Font shape `T1/zpltlf/m/it' will be
+(Font)              scaled to size 10.95pt on input line 97.
+ [405{c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/fonts/enc/dvips/fontawesome5/fa5free1.enc}]
+\openout7 = `algorithms.listing'.
+
+ (C:\Users\kshit\Desktop\competitive\docs\build/algorithms.listing) [406]
+\openout7 = `algorithms.listing'.
+
+ (C:\Users\kshit\Desktop\competitive\docs\build/algorithms.listing)
+\openout7 = `algorithms.listing'.
+
+ (C:\Users\kshit\Desktop\competitive\docs\build/algorithms.listing) [407]
+\openout7 = `algorithms.listing'.
+
+ (C:\Users\kshit\Desktop\competitive\docs\build/algorithms.listing
+LaTeX Font Info:    Trying to load font information for TS1+SourceCodePro-TLF on input line 7.
+ (c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/sourcecodepro/TS1SourceCodePro-TLF.fd
+File: TS1SourceCodePro-TLF.fd 2025/04/07 (autoinst) Font definitions for TS1/SourceCodePro-TLF.
+)
+LaTeX Font Info:    Font shape `TS1/SourceCodePro-TLF/regular/it' aliased to
+(Font)              `TS1/SourceCodePro-TLF/m/it' on input line 7.
+LaTeX Font Info:    Font shape `TS1/SourceCodePro-TLF/m/it' will be
+(Font)              scaled to size 8.6pt on input line 7.
+Package microtype Info: Loading generic protrusion settings for font family
+(microtype)             `SourceCodePro-TLF' (encoding: TS1).
+(microtype)             For optimal results, create family-specific settings.
+(microtype)             See the microtype manual for details.
+) [408{c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/fonts/enc/dvips/sourcecodepro/a_sxfixz.enc}]
+\openout7 = `algorithms.listing'.
+
+ (C:\Users\kshit\Desktop\competitive\docs\build/algorithms.listing) [409]
+\openout7 = `algorithms.listing'.
+
+ (C:\Users\kshit\Desktop\competitive\docs\build/algorithms.listing) [410]
+\openout7 = `algorithms.listing'.
+
+ (C:\Users\kshit\Desktop\competitive\docs\build/algorithms.listing) [411]
+\openout7 = `algorithms.listing'.
+
+ (C:\Users\kshit\Desktop\competitive\docs\build/algorithms.listing)
+\openout7 = `algorithms.listing'.
+
+ (C:\Users\kshit\Desktop\competitive\docs\build/algorithms.listing
+LaTeX Font Info:    Font shape `TS1/SourceCodePro-TLF/regular/n' aliased to
+(Font)              `TS1/SourceCodePro-TLF/m/n' on input line 13.
+LaTeX Font Info:    Font shape `TS1/SourceCodePro-TLF/m/n' will be
+(Font)              scaled to size 8.6pt on input line 13.
+) [412]
+\openout7 = `algorithms.listing'.
+
+ (C:\Users\kshit\Desktop\competitive\docs\build/algorithms.listing) [413] [414]
+\openout7 = `algorithms.listing'.
+
+ (C:\Users\kshit\Desktop\competitive\docs\build/algorithms.listing) [415]
+\openout7 = `algorithms.listing'.
+
+ (C:\Users\kshit\Desktop\competitive\docs\build/algorithms.listing)
+LaTeX Font Info:    Font shape `T1/zpltlf/m/n' will be
+(Font)              scaled to size 6.0pt on input line 733.
+LaTeX Font Info:    Font shape `OT1/minzpl/m/n' will be
+(Font)              scaled to size 6.5pt on input line 733.
+ [416]) [417] [418
+
+
+
+]
+pdfTeX warning (ext4): destination with the same identifier (name{page.334}) has been already used, duplicate ignored
+<to be read again> 
+                   \relax 
+l.95 \part{Practice}
+                     [334
+
+
+
+
+] (C:\Users\kshit\Desktop\competitive\docs\build/algorithms.ind [369
+
+
+
+
+
+
+
+] [370]) [371]
+
+Package imakeidx Warning: Remember to run (pdf)latex again after calling
+(imakeidx)                `makeindex -s cpindex.ist algorithms.idx'.
+
+(C:\Users\kshit\Desktop\competitive\docs\build/algorithms.aux (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/00_preface.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/01_approach.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/01b_patterns.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/02_complexity.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/03_cpp_stl.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/04_data_structures.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/05_complete_search.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/06_sorting_greedy.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/07_binary_search.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/08_prefix_two_pointers.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/09_bits_rectangles.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/10_graph_basics.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/11_shortest_paths.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/12_dsu_mst_topo.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/13_connectivity.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/14_flows.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/15_tree_techniques.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/16_tree_decompositions.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/17_dp_fundamentals.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/18_dp_patterns.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/19_dp_optimizations.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/20_static_queries.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/21_fenwick_segment.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/22_advanced_ds.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/23_number_theory.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/24_combinatorics.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/25_linear_algebra_poly.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/26_strings.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/27_geometry.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/28_special_topics.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/29_contest_craft.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/31_tricks.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/30_worked_problems.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/A_cheatsheets.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/B_notation.aux) (C:\Users\kshit\Desktop\competitive\docs\build/algorithms/C_templates.aux))
+ ***********
+LaTeX2e <2025-11-01>
+L3 programming layer <2020/03/25>
+ ***********
+
+
+LaTeX Warning: There were multiply-defined labels.
+
+ ) 
+Here is how much of TeX's memory you used:
+ 64605 strings out of 469515
+ 1510806 string characters out of 5467662
+ 2469984 words of memory out of 5000000
+ 91172 multiletter control sequences out of 15000+600000
+ 769287 words of font info for 292 fonts, out of 8000000 for 9000
+ 14 hyphenation exceptions out of 8191
+ 135i,13n,138p,1861b,2067s stack positions out of 10000i,1000n,20000p,200000b,200000s
+
+pdfTeX warning (dest): name{page.167} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.243} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.102} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.48} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.120} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.338} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.319} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.353} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.303} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.247} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.159} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.272} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.321} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.11} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.39} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.51} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.83} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.285} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.220} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.91} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.23} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.295} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.172} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.170} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.357} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.318} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.33} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.22} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.200} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.104} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.19} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.139} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.21} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.96} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.202} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.168} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.197} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.252} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.328} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.34} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.278} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.258} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.246} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.314} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.320} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.169} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.171} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.179} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.174} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.337} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.20} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.17} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.88} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.241} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.230} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.54} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.43} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.312} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.85} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.127} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.67} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.68} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.204} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.75} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.161} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.356} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.186} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.190} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.245} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.208} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.203} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.188} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.238} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.191} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.348} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.165} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.101} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.152} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.346} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.108} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.209} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.53} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.135} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.128} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.50} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.63} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.195} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.84} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.315} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.14} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.343} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.177} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.64} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.207} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.234} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.210} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.146} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.137} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.73} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.66} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.142} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.124} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.341} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.358} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.213} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.44} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.345} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.157} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.69} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.193} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.57} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.201} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.183} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.81} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.133} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.198} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.225} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.134} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.149} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.185} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.181} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.350} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.140} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{page.30} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{appendix.B} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.A.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.A.2} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.A.1} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{appendix.A} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.31.19} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.31.18} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.31.17} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.31.16} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.31.15} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.31.14} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.31.13} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.31.12} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.31.11} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.31.10} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.31.9} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.31.8} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.31.7} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.31.6} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.31.5} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.31.4} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.31.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.31.2} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.31.1} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{chapter.31} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.30.5} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.30.4} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.30.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.30.2} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.30.1} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{chapter.30} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.29.7} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.29.6} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.29.5} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.29.4} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.29.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.29.2} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.29.1} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{chapter.29} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.27.10} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.27.9} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.27.8} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.27.7} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.27.6} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.27.5} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.27.4} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.27.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.27.2} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.27.1} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{chapter.27} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.26.8} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.26.7} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.26.6} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.26.5} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.26.4} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.26.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.26.2} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.26.1} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{chapter.26} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.25.11} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.25.10} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.25.9} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.25.8} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.25.7} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.25.6} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.25.5} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.25.4} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.25.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.25.2} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.25.1} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{chapter.25} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.24.14} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.24.13} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.24.12} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.24.11} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.24.10} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.24.9} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.24.8} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.24.7} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.24.6} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.24.5} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.24.4} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.24.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.24.2} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.24.1} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{chapter.24} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.23.6} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.23.5} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.23.4} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.23.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.23.2} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.23.1} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{chapter.23} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.22.10} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.22.9} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.22.8} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.22.7} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.22.6} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.22.5} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.22.4} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.22.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.22.2} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.22.1} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{chapter.22} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.21.5} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.21.4} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.21.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.21.2} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.21.1} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{chapter.21} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.20.9} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.20.8} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.20.7} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.20.6} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.20.5} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.20.4} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.20.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.20.2} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.20.1} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{chapter.20} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.19.9} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.19.8} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.19.7} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.19.6} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.19.5} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.19.4} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.19.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.19.2} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.19.1} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{chapter.19} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.18.9} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.18.8} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.18.7} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.18.6} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.18.5} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.18.4} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.18.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.18.2} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.18.1} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{chapter.18} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.17.7} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.17.6} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.17.5} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.17.4} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.17.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.17.2} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.17.1} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{chapter.17} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.16.10} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.16.9} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.16.8} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.16.7} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.16.6} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.16.5} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.16.4} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.16.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.16.2} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.16.1} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{chapter.16} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.15.10} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.15.9} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.15.8} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.15.7} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.15.6} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.15.5} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.15.4} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.15.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.15.2} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.15.1} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{chapter.15} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.14.7} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.14.6} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.14.5} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.14.4} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.14.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.14.2} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.14.1} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{chapter.14} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.13.4} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.13.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.13.2} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.13.1} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{chapter.13} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.12.8} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.12.7} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.12.6} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.12.5} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.12.4} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.12.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.12.2} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.12.1} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{chapter.12} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.11.9} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.11.8} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.11.7} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.11.6} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.11.5} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.11.4} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.11.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.11.2} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.11.1} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{chapter.11} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.10.6} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.10.5} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.10.4} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.10.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.10.2} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.10.1} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{chapter.10} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.9.6} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.9.5} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.9.4} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.9.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.9.2} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.9.1} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{chapter.9} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.8.6} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.8.5} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.8.4} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.8.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.8.2} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.8.1} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{chapter.8} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.7.7} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.7.6} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.7.5} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.7.4} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.7.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.7.2} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.7.1} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{chapter.7} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.6.8} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.6.7} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.6.6} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.6.5} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.6.4} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.6.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.6.2} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.6.1} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{chapter.6} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.5.8} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.5.7} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.5.6} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.5.5} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.5.4} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.5.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.5.2} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.5.1} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{chapter.5} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.4.9} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.4.8} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.4.7} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.4.6} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.4.5} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.4.4} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.4.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.4.2} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.4.1} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{chapter.4} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.3.10} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.3.9} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.3.8} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.3.7} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.3.6} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.3.5} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.3.4} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.3.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.3.2} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.3.1} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{chapter.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.2.14} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.2.13} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.2.12} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.2.11} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.2.10} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.2.9} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.2.8} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.2.7} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.2.6} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.2.5} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.2.4} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.2.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.2.2} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.2.1} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{chapter.2} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.1.8} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.1.7} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.1.6} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.1.5} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.1.4} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.1.3} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.1.2} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.1.1} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{chapter.1} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{chapter*.2} has been referenced but does not exist, replaced by a fixed one
+
+<c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/fontawesome5/FontAwesome5Free-Solid.pfb><c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/newpx/NewPXMI.pfb><c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/newpx/NewPXMI_gnu.pfb><c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/adobe/sourcecodepro/SourceCodePro-Bold.pfb><c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/adobe/sourcecodepro/SourceCodePro-It.pfb><c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/adobe/sourcecodepro/SourceCodePro-Regular.pfb><c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/newpx/pxmiaX.pfb><c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/newpx/pxsys.pfb><c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/tex-gyre/qhvb.pfb><c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/tex-gyre/qhvr.pfb><c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/tex-gyre/qhvri.pfb><c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/newtx/txexs.pfb><c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/newtx/txsym.pfb><c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/newpx/zplb.pfb><c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/newpx/zplr.pfb><c:/Users/kshit/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/newpx/zplri.pfb>
+Output written on C:\Users\kshit\Desktop\competitive\docs\build/algorithms.pdf (42 pages, 596322 bytes).
+PDF statistics:
+ 1723 PDF objects out of 1728 (max. 8388607)
+ 1608 compressed objects within 17 object streams
+ 689 named destinations out of 1000 (max. 500000)
+ 65309 words of extra memory for PDF output out of 74296 (max. 10000000)
+

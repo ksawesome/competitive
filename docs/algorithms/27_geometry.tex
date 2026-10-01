@@ -1,0 +1,750 @@
+\chapter{Computational Geometry}\label{ch:geometry}
+
+Geometry problems are mostly a few robust primitives used with care. The golden rule: \textbf{stay in integers whenever the input is
+integral}. Orientation tests, areas, convex hulls and closest pairs need only additions, multiplications and comparisons, and then they
+are exact. Floating point enters only with circles, angles and intersection points, and there it needs tolerances and a healthy
+suspicion. This chapter builds the primitives, the classic algorithms on top of them (hulls, rotating calipers, closest pairs, sweeps),
+and two randomised and incremental gems: half-plane intersection and the minimum enclosing circle.
+
+\begin{chapterintro}{\gold\ \plat\ \ioi}{Chapter~\ref{ch:cpp} (integer overflow) and Chapter~\ref{ch:segtree} (Fenwick trees for
+sweeps).}
+  \item compute orientations, segment intersections, areas and lattice-point counts exactly with cross products;
+  \item build convex hulls with the monotone chain, and measure them with rotating calipers;
+  \item find the closest pair by a sweep, and handle Manhattan distances by rotating the plane;
+  \item design sweep-line algorithms around events and an active set;
+  \item intersect half-planes, and find the minimum enclosing circle in expected linear time.
+\end{chapterintro}
+
+% ======================================================================================================================
+\section[Vectors and the cross product]{Vectors and the cross product \hfill \gold}\label{sec:vectors}
+
+A point is a vector $(x, y)$, and two products of vectors do almost all the work:
+\begin{itemize}
+  \item the \defn{dot product} $a \cdot b = a_x b_x + a_y b_y = |a|\,|b| \cos\theta$ is positive when the angle between $a$ and $b$ is
+        acute, zero when they are perpendicular, negative when it is obtuse;
+  \item the \defn{cross product} $a \times b = a_x b_y - a_y b_x = |a|\,|b| \sin\theta$ is positive when $b$ is counter-clockwise from
+        $a$, negative when it is clockwise, zero when they are collinear; $|a \times b|$ is the area of the parallelogram they span
+        (Figure~\ref{fig:cross}).
+\end{itemize}
+The \defn{orientation} of three points, $\mathrm{orient}(a, b, c) = \mathrm{sign}\bigl((b - a) \times (c - a)\bigr)$, says whether the
+path $a \to b \to c$ turns left ($+1$), right ($-1$), or goes straight (0). It is the single most important primitive of the chapter.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \begin{scope}
+    \coordinate (O) at (0, 0);
+    \coordinate (A) at (2.4, 0.4);
+    \coordinate (B) at (0.9, 1.8);
+    \fill[fgsky!25] (O) -- (A) -- ($(A)+(B)$) -- (B) -- cycle;
+    \draw[->, line width=1.3pt, draw=fgblue] (O) -- (A) node[right, font=\small] {$a$};
+    \draw[->, line width=1.3pt, draw=fgorange!85!black] (O) -- (B) node[above, font=\small] {$b$};
+    \node[font=\sffamily\scriptsize, text=fgblue] at (1.65, 1.1) {area $= a \times b > 0$};
+  \end{scope}
+  \begin{scope}[xshift=6cm]
+    \node[vtxs] (p) at (0, 0) {$a$};
+    \node[vtxs] (q) at (2.4, 0.5) {$b$};
+    \node[vtxs, good] (l) at (1.1, 1.6) {$c$};
+    \node[vtxs, hot] (r) at (1.6, -1.2) {$c'$};
+    \draw[ded, line width=1pt] (p) -- (q);
+    \draw[line width=0.6pt, draw=fggreen, dashed] (q) -- (l);
+    \draw[line width=0.6pt, draw=fgverm, dashed] (q) -- (r);
+    \node[notel, anchor=west, text width=4.6cm] at (3, 0.2) {$\mathrm{orient}(a, b, c) = +1$: the path turns left to $c$ (green);
+      $\mathrm{orient}(a, b, c') = -1$: it turns right (red). Points on the line through $a$ and $b$ give 0.};
+  \end{scope}
+\end{tikzpicture}
+\caption{The cross product is a signed area, and its sign is an orientation.}
+\label{fig:cross}
+\end{figure}
+
+\usetemplate{Geometry primitives}{Ctrl+Alt+T, Shift+3}{cppoint}
+
+\begin{problem}{Point Location Test (CSES)}
+For each of $10^5$ tests, decide whether a point lies to the left of, to the right of, or on the line through two other points
+(coordinates up to $10^9$).
+\solution One orientation per test: 0.14\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // Point, orient (cppoint) are pasted above solve()
+    int t;
+    cin >> t;
+    while (t--) {
+        Point a, b, c;
+        cin >> a >> b >> c;
+        int o = orient(a, b, c);  // the sign of (b - a) x (c - a)
+        print(o > 0 ? "LEFT" : o < 0 ? "RIGHT" : "TOUCH");
+    }
+}
+\end{code}
+
+\begin{pitfall}[Precision and overflow]
+Coordinates up to $10^9$ give differences up to $2 \cdot 10^9$ and cross products up to $8 \cdot 10^{18}$: they fit in a \cc{long long},
+barely. Anything that multiplies three coordinates does not; use \cc{__int128} there. When floating point is unavoidable (circles,
+angles, intersection points), use \cc{long double}, compare with a tolerance such as $10^{-9}$ scaled to the magnitudes involved, and
+replace \cc{sqrt} and \cc{atan2} by comparisons of squared lengths and cross products wherever possible.
+\end{pitfall}
+
+\begin{trick}[Sorting by angle without atan2]
+To sort vectors by polar angle exactly, split them into two half-planes, the upper one ($y > 0$, or $y = 0$ and $x > 0$) and the rest;
+compare the halves first, and within a half put $a$ before $b$ when $a \times b > 0$. The comparison is integer-exact, it is the basis of
+angular sweeps (``the most points inside a $90^\circ$ wedge''), and it also sorts the half-planes of Section~\ref{sec:halfplane}.
+\end{trick}
+
+% ======================================================================================================================
+\section[Segment intersection]{Segment intersection \hfill \gold}\label{sec:segments}
+
+Segments $ab$ and $cd$ cross properly exactly when $c$ and $d$ lie strictly on opposite sides of the line $ab$ \emph{and} $a$ and $b$ lie
+strictly on opposite sides of the line $cd$: $\mathrm{orient}(a, b, c) \cdot \mathrm{orient}(a, b, d) < 0$ and $\mathrm{orient}(c, d, a)
+\cdot \mathrm{orient}(c, d, b) < 0$. Every other way of sharing a point puts an endpoint of one segment on the other segment, which is
+checked directly; collinear segments that do not overlap must be rejected even though all four orientations are 0
+(Figure~\ref{fig:seginter}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{sg/.style={line width=1.4pt, line cap=round}, sp/.style={circle, fill=fgink, inner sep=1.3pt}}
+  \foreach \px/\ttx in {0/{proper crossing}, 3.4/{an endpoint on a segment}, 6.8/{collinear, overlapping}, 10.2/{collinear, apart}}
+    \node[lbl] at (\px + 1.1, -1.25) {\ttx};
+  \draw[sg, draw=fgblue] (0, 0) -- (2.2, 1.0);
+  \draw[sg, draw=fgorange!85!black] (0.3, 1.1) -- (1.9, -0.2);
+  \draw[sg, draw=fgblue] (3.4, 0) -- (5.6, 0.9);
+  \draw[sg, draw=fgorange!85!black] (4.5, 0.45) -- (4.9, -0.5);
+  \node[sp] at (4.5, 0.45) {};
+  \draw[sg, draw=fgblue] (6.8, 0) -- (8.6, 0.72);
+  \draw[sg, draw=fgorange!85!black, dash pattern=on 6pt off 2pt] (7.6, 0.32) -- (9.0, 0.88);
+  \draw[sg, draw=fgblue] (10.2, 0) -- (11.0, 0.32);
+  \draw[sg, draw=fgorange!85!black] (11.5, 0.52) -- (12.4, 0.88);
+  \node[font=\sffamily\scriptsize\bfseries, text=fggreen] at (1.1, 1.45) {YES};
+  \node[font=\sffamily\scriptsize\bfseries, text=fggreen] at (4.5, 1.45) {YES};
+  \node[font=\sffamily\scriptsize\bfseries, text=fggreen] at (7.9, 1.45) {YES};
+  \node[font=\sffamily\scriptsize\bfseries, text=fgverm] at (11.3, 1.45) {NO};
+\end{tikzpicture}
+\caption{The cases of segment intersection. Only the first is decided by the signs alone; the others need ``does an endpoint lie on the
+other segment'', and the last shows why collinearity alone is not enough.}
+\label{fig:seginter}
+\end{figure}
+
+\usetemplate{Segment intersection}{Ctrl+Alt+Y, 7}{cpseginter}
+
+\begin{problem}{Line Segment Intersection (CSES)}
+For each of $10^5$ pairs of segments with integer coordinates up to $10^9$, decide whether they share a point.
+\solution Four orientations and four ``point on segment'' tests per pair, all exact: 0.17\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // Point (cppoint), segments_intersect (cpseginter) pasted above
+    int t;
+    cin >> t;
+    while (t--) {
+        Point a, b, c, d;
+        cin >> a >> b >> c >> d;
+        yn(segments_intersect(a, b, c, d));
+    }
+}
+\end{code}
+
+When the intersection \emph{point} is needed, solve $a + t(b - a) = c + u(d - c)$: with $r = b - a$ and $s = d - c$, $t = \frac{(c - a)
+\times s}{r \times s}$. The point has rational coordinates, so keep the numerator and the denominator as integers if it must be compared
+exactly, and only convert to floating point for printing.
+
+% ======================================================================================================================
+\section[Polygons]{Polygons \hfill \gold}\label{sec:polygons}
+
+\paragraph{Area.} For a polygon with vertices $p_0, \dots, p_{n-1}$ in order, the \textbf{shoelace formula} gives twice its signed area:
+\[
+  2A = \sum_{i=0}^{n-1} p_i \times p_{i+1} \qquad (p_n = p_0),
+\]
+positive for counter-clockwise order. Each term is twice the signed area of the triangle formed by the origin and one edge; triangles
+of edges seen counter-clockwise from the origin count positively and the others negatively, and everything outside the polygon cancels
+(Figure~\ref{fig:shoelace}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[scale=0.62]
+  \coordinate (O) at (0, 0);
+  \coordinate (A) at (2, 1);
+  \coordinate (B) at (6, 1.5);
+  \coordinate (C) at (6.5, 4);
+  \coordinate (D) at (3, 4.5);
+  \fill[fgsky!35, opacity=0.8] (O) -- (A) -- (B) -- cycle;
+  \fill[fgsky!35, opacity=0.8] (O) -- (B) -- (C) -- cycle;
+  \fill[fgsky!35, opacity=0.8] (O) -- (C) -- (D) -- cycle;
+  \fill[fgverm!30, opacity=0.8] (O) -- (D) -- (A) -- cycle;
+  \draw[line width=0.4pt, draw=fgline] (O) -- (A) (O) -- (B) (O) -- (C) (O) -- (D);
+  \draw[line width=1.4pt, draw=fgink] (A) -- (B) -- (C) -- (D) -- cycle;
+  \fill[fgink] (O) circle (2pt) node[below left, lbl] {origin};
+  \foreach \pn in {A, B, C, D} \fill[fgink] (\pn) circle (2pt);
+  \node[font=\small, below] at (A) {$A$};
+  \node[font=\small, below right] at (B) {$B$};
+  \node[font=\small, right] at (C) {$C$};
+  \node[font=\small, above] at (D) {$D$};
+  \node[notel, anchor=west, text width=6.4cm] at (7.6, 2.3) {The polygon $ABCD$ (counter-clockwise). The triangles $OAB$, $OBC$ and
+    $OCD$ (blue) have positive signed area, $ODA$ (red) negative; the red one exactly cancels the part of the blue ones that lies
+    outside the polygon.};
+\end{tikzpicture}
+\caption{The shoelace formula as a sum of signed triangles.}
+\label{fig:shoelace}
+\end{figure}
+
+\usetemplate{Polygon: area, point inside, lattice points}{Ctrl+Alt+Y, 8}{cppolygon}
+
+\begin{problem}{Polygon Area (CSES)}
+Print twice the area of a polygon given by its vertices, with coordinates up to $10^9$.
+\solution The absolute value of the shoelace sum: twice the area is an integer, so print it without dividing.
+\end{problem}
+
+\begin{code}
+void solve() {  // Point (cppoint), area2 (cppolygon) are pasted above solve()
+    int n;
+    cin >> n;
+    vector<Point> poly(n);
+    for (auto& p : poly) cin >> p;
+    print(llabs(area2(poly)));  // the shoelace sum is twice the signed area
+}
+\end{code}
+
+\paragraph{Point in polygon.} Cast a ray from the point to the right and count the edges it crosses: an odd count means inside
+(Figure~\ref{fig:raycast}). Check ``on the boundary'' first, and count an edge only when the point's $y$ lies in the half-open range
+$[\min(y_1, y_2), \max(y_1, y_2))$ of the edge, so that a ray through a vertex is counted once, and a horizontal edge never.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[scale=0.55]
+  \fill[fgfill] (0, 0) -- (6, 0) -- (6, 4) -- (4, 4) -- (4, 2) -- (2, 2) -- (2, 4) -- (0, 4) -- cycle;
+  \draw[line width=1.2pt, draw=fgink] (0, 0) -- (6, 0) -- (6, 4) -- (4, 4) -- (4, 2) -- (2, 2) -- (2, 4) -- (0, 4) -- cycle;
+  \draw[->, line width=0.9pt, draw=fggreen] (1, 3) -- (8, 3);
+  \draw[->, line width=0.9pt, draw=fgverm, dashed] (3, 3.3) -- (8, 3.3);
+  \fill[fggreen] (1, 3) circle (4pt);
+  \fill[fgverm] (3, 3.3) circle (4pt);
+  \foreach \cx/\cy in {2/3, 4/3, 6/3} \draw[line width=0.8pt, draw=fggreen] (\cx - 0.2, \cy - 0.2) -- (\cx + 0.2, \cy + 0.2);
+  \foreach \cx/\cy in {4/3.3, 6/3.3} \draw[line width=0.8pt, draw=fgverm] (\cx - 0.2, \cy + 0.4) -- (\cx + 0.2, \cy);
+  \node[notel, anchor=west, text width=6.4cm] at (8.6, 2.4) {The green point is inside: its ray crosses three edges. The red point,
+    in the notch, is outside: its ray crosses two. Only the parity matters, whatever the shape.};
+\end{tikzpicture}
+\caption{Ray casting: an odd number of crossings means inside.}
+\label{fig:raycast}
+\end{figure}
+
+\begin{problem}{Point in Polygon (CSES)}
+For $m \le 1000$ points and a polygon with $n \le 1000$ vertices, print INSIDE, OUTSIDE or BOUNDARY for every point.
+\solution Ray casting in $\Oh{n}$ per point.
+\end{problem}
+
+\begin{code}
+void solve() {  // Point (cppoint), in_polygon (cppolygon) pasted above
+    int n, m;
+    cin >> n >> m;
+    vector<Point> poly(n);
+    for (auto& p : poly) cin >> p;
+    while (m--) {
+        Point q;
+        cin >> q;
+        int w = in_polygon(poly, q);  // parity of ray crossings
+        print(w > 0 ? "INSIDE" : w < 0 ? "OUTSIDE" : "BOUNDARY");
+    }
+}
+\end{code}
+
+\paragraph{Lattice points.} \textbf{Pick's theorem}: a simple polygon whose vertices are lattice points has area $A = I + \frac{B}{2} - 1$,
+where $I$ counts the lattice points strictly inside and $B$ those on the boundary (Figure~\ref{fig:pick}). An edge from $p$ to $q$ contains
+$\gcd(|q_x - p_x|, |q_y - p_y|)$ lattice points, counting $q$ but not $p$, so $B$ is a sum of gcds, and $I = (2A - B + 2) / 2$ follows
+without enumerating any point.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[scale=0.6]
+  \fill[fgsky!18] (0, 0) -- (6, 0) -- (6, 2) -- (3, 5) -- (0, 3) -- cycle;
+  \draw[line width=1.2pt, draw=fgblue] (0, 0) -- (6, 0) -- (6, 2) -- (3, 5) -- (0, 3) -- cycle;
+  \foreach \xx in {0, ..., 6} \foreach \yy in {0, ..., 5} \fill[fgline] (\xx, \yy) circle (1.4pt);
+  \foreach \xx/\yy in {1/1, 1/2, 1/3, 2/1, 2/2, 2/3, 2/4, 3/1, 3/2, 3/3, 3/4, 4/1, 4/2, 4/3, 5/1, 5/2}
+    \fill[fggreen] (\xx, \yy) circle (3.2pt);
+  \foreach \xx/\yy in {0/0, 0/1, 0/2, 0/3, 1/0, 2/0, 3/0, 3/5, 4/0, 4/4, 5/0, 5/3, 6/0, 6/1, 6/2}
+    \fill[fgverm] (\xx, \yy) circle (3.2pt);
+  \node[notel, anchor=west, text width=6.6cm] at (7.3, 2.5) {The pentagon $(0,0), (6,0), (6,2), (3,5), (0,3)$ has $2A = 45$. Its
+    boundary carries $B = 15$ lattice points (red), so $I = (45 - 15 + 2)/2 = 16$ lie inside (green): $A = 16 + 7.5 - 1 = 22.5$.};
+\end{tikzpicture}
+\caption{Pick's theorem counts lattice points from the area and the boundary.}
+\label{fig:pick}
+\end{figure}
+
+\begin{problem}{Polygon Lattice Points (CSES)}
+Count the lattice points strictly inside and on the boundary of a polygon with $n \le 10^5$ vertices and coordinates up to $10^9$.
+\solution Pick's theorem with the shoelace area and a gcd per edge: 0.09\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // Point, area2, boundary_points (cppoint, cppolygon) pasted
+    int n;
+    cin >> n;
+    vector<Point> poly(n);
+    for (auto& p : poly) cin >> p;
+    ll twice = llabs(area2(poly)), b = boundary_points(poly);
+    print((twice - b + 2) / 2, b);  // Pick's theorem: A = I + B / 2 - 1
+}
+\end{code}
+
+% ======================================================================================================================
+\section[Convex hull]{Convex hull \hfill \plat}\label{sec:hull}
+
+The \defn{convex hull} of a point set is the smallest convex polygon that contains it: a rubber band stretched around the points.
+Andrew's \textbf{monotone chain} sorts the points by $x$ (then $y$) and builds the lower hull from left to right: append each point, but
+first pop the last point of the chain while the last two chain points and the new one do not turn left. The upper hull is the same
+scan from right to left, and the two chains together form the hull (Figure~\ref{fig:hull}). A popped point lies inside the triangle formed
+by its neighbours and a point below it, so it can never return, and every point is pushed and popped at most once per chain: $\Oh{n}$
+after the $\Oh{n \log n}$ sort.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[scale=0.85]
+  \foreach \px/\py in {3/3, 2/2, 4/3, 1/2, 4/1}
+    \fill[fgline] (\px, \py) circle (2.6pt);
+  \draw[line width=1.5pt, draw=fgblue] (0, 1) -- (2, 0) -- (6, 2);
+  \draw[line width=1.5pt, draw=fgorange!85!black] (6, 2) -- (5, 4) -- (1, 4) -- (0, 1);
+  \foreach \px/\py in {0/1, 2/0, 6/2, 5/4, 1/4} \fill[fgink] (\px, \py) circle (3pt);
+  \draw[line width=0.7pt, draw=fgverm, dashed] (2, 0) -- (4, 1) -- (6, 2);
+  \node[font=\sffamily\scriptsize, text=fgverm, anchor=north west] at (4.05, 0.95) {collinear};
+  \node[notel, anchor=west, text width=6.4cm] at (7, 2) {Lower hull (blue) from left to right, upper hull (orange) from right to
+    left. The point $(4, 1)$ lies on the segment from $(2, 0)$ to $(6, 2)$: the template pops it, which gives the hull's vertices;
+    popping only on strict right turns keeps it, which lists every point on the boundary.};
+\end{tikzpicture}
+\caption{The monotone chain on ten points: lower and upper hull.}
+\label{fig:hull}
+\end{figure}
+
+\usetemplate{Convex hull}{Ctrl+Alt+T, Shift+V}{cphull}
+
+\begin{problem}{Convex Hull (CSES)}
+Print all of the $n \le 2 \cdot 10^5$ points that lie on the boundary of the convex hull, collinear points included.
+\solution The monotone chain, popping only on strict right turns so that collinear points stay. If all the points are collinear, both
+chains list all of them; sorting and removing duplicates at the end handles that case and the two shared endpoints. 0.13\,s.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vector<pll> p(n);
+    for (auto& [x, y] : p) cin >> x >> y;
+    sort(all(p));
+    auto cross = [](pll o, pll a, pll b) {  // > 0: o -> a -> b turns left
+        ll ax = a.first - o.first, ay = a.second - o.second;
+        return ax * (b.second - o.second) - ay * (b.first - o.first);
+    };
+    vector<pll> h;
+    rep(pass, 2) {  // lower hull left to right, then upper hull back
+        int b0 = sz(h);  // where this chain starts
+        for (auto q : p) {
+            while (sz(h) >= b0 + 2 && cross(h[sz(h) - 2], h.back(), q) < 0)
+                h.pop_back();  // pop only right turns: collinear points stay
+            h.push_back(q);
+        }
+        reverse(all(p));
+    }
+    sort(all(h));  // the chains share their ends; collinear inputs repeat too
+    h.erase(unique(all(h)), h.end());
+    print(sz(h));
+    for (auto [x, y] : h) print(x, y);
+}
+\end{code}
+
+\begin{trick}[What to do with a hull]
+\begin{itemize}
+  \item A linear function $ax + by$ is maximised at a hull vertex; with the hull's edge directions sorted, a binary search finds it in
+        $\Oh{\log h}$ per query. The convex hull trick of Section~\ref{sec:cht} is this idea for lines.
+  \item A point is inside a convex polygon iff it lies in the wedge at vertex 0 found by binary search, on the inner side of that wedge's
+        edge: $\Oh{\log n}$.
+  \item The farthest pair, the width, and the smallest enclosing rectangle are found by rotating calipers (next section).
+\end{itemize}
+\end{trick}
+
+% ======================================================================================================================
+\section[Rotating calipers]{Rotating calipers \hfill \ioi}\label{sec:calipers}
+
+The two farthest points of a set are both vertices of its convex hull, and they are \emph{antipodal}: some pair of parallel lines through
+them encloses the whole hull. \textbf{Rotating calipers} enumerate all antipodal pairs in $\Oh{h}$: for every edge of the hull, in order,
+advance a second pointer to the vertex farthest from that edge's line (the area of the triangle grows and then shrinks, so the pointer
+only moves forward), and test the distances from the edge's endpoints to that vertex (Figure~\ref{fig:calipers}). The same walk gives the
+width of the polygon, the smallest distance between two parallel lines enclosing it, which always has one line flush with an edge.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[scale=0.85]
+  \fill[fgfill] (0, 1) -- (2, 0) -- (6, 2) -- (5, 4) -- (1, 4) -- cycle;
+  \draw[line width=1.2pt, draw=fgink] (0, 1) -- (2, 0) -- (6, 2) -- (5, 4) -- (1, 4) -- cycle;
+  \draw[line width=1pt, draw=fgblue] ($(0, 1)!-0.7!(2, 0)$) -- ($(0, 1)!1.9!(2, 0)$);
+  \draw[line width=1pt, draw=fgblue] ($(5, 4)+(-2, 1)$) -- ($(5, 4)+(2.2, -1.1)$);
+  \draw[line width=0.8pt, draw=fgblue, dashed] (0, 1) -- (5, 4) (2, 0) -- (5, 4);
+  \draw[line width=1.6pt, draw=fgverm] (0, 1) -- (6, 2);
+  \foreach \px/\py in {0/1, 2/0, 6/2, 5/4, 1/4} \fill[fgink] (\px, \py) circle (2.6pt);
+  \node[font=\sffamily\scriptsize, text=fgverm, above] at (3.2, 1.55) {diameter $\sqrt{37}$};
+  \node[notel, anchor=west, text width=5.8cm] at (7.6, 2) {For the edge from $(0, 1)$ to $(2, 0)$ the farthest vertex is $(5, 4)$, and
+    the two blue lines are calipers enclosing the hull. Testing the pairs (dashed) for every edge finds the farthest pair, $(0, 1)$
+    and $(6, 2)$ (red).};
+\end{tikzpicture}
+\caption{Rotating calipers on a convex pentagon.}
+\label{fig:calipers}
+\end{figure}
+
+\usetemplate{Rotating calipers}{Ctrl+Alt+U, 5}{cpcalipers}
+
+\begin{problem}{Farthest pair}
+Find the largest squared distance between two of $n \le 2 \cdot 10^5$ points with coordinates up to $10^9$.
+\solution The convex hull, then rotating calipers over its vertices: 0.13\,s, against $\Oh{n^2}$ for all pairs.
+\end{problem}
+
+\begin{code}
+void solve() {  // convex_hull (cphull), hull_diameter2 (cpcalipers) pasted
+    int n;
+    cin >> n;
+    vector<pll> p(n);
+    for (auto& [x, y] : p) cin >> x >> y;
+    print(hull_diameter2(convex_hull(p)));  // both ends are hull vertices
+}
+\end{code}
+
+% ======================================================================================================================
+\section[The closest pair of points]{The closest pair of points \hfill \plat}\label{sec:closest}
+
+Sort the points by $x$ and sweep from left to right, keeping the best squared distance $d^2$ found so far and, in a set ordered by $y$,
+the points whose $x$ is within $d$ of the sweep line. A new point $p$ can only improve the answer with points of that set whose $y$ lies in
+$[p_y - d, p_y + d]$: a $d \times 2d$ box (Figure~\ref{fig:closest}). The points in the box are pairwise at least $d$ apart, so at most 8
+of them fit, and each step costs $\Oh{\log n}$: the whole sweep is $\Oh{n \log n}$, with exact integer distances.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[scale=0.6]
+  \fill[fgsky!18] (3.5, 0) rectangle (6, 6);
+  \fill[fgorange!25] (3.5, 0.75) rectangle (6, 5.75);
+  \draw[line width=0.8pt, draw=fgorange!85!black] (3.5, 0.75) rectangle (6, 5.75);
+  \draw[line width=1pt, draw=fgverm, dashed] (6, -0.3) -- (6, 6.3);
+  \foreach \px/\py in {0.5/1.2, 1.2/4.6, 2.0/2.5, 2.8/5.6, 3.0/0.6, 4.1/2.2, 4.6/4.4, 5.2/0.4, 5.5/3.9}
+    \fill[fgline!80!fgink] (\px, \py) circle (3pt);
+  \fill[fgverm] (6, 3.25) circle (4pt) node[right=2pt, font=\sffamily\scriptsize, text=fgverm] {$p$};
+  \draw[<->, line width=0.7pt, draw=fgink!70] (3.5, -0.5) -- node[below, lbl] {$d$} (6, -0.5);
+  \draw[<->, line width=0.7pt, draw=fgink!70] (7.3, 0.75) -- node[right, lbl] {$2d$} (7.3, 5.75);
+  \node[notel, anchor=west, text width=6.4cm] at (8.6, 3) {Only the points left of the sweep line by less than $d$ (blue strip) are
+    kept, and of those only the ones in the orange box can be closer to $p$ than $d$. Points at mutual distance at least $d$ fit
+    into a $d \times 2d$ box at most eight at a time.};
+\end{tikzpicture}
+\caption{The closest-pair sweep checks a constant number of candidates per point.}
+\label{fig:closest}
+\end{figure}
+
+\usetemplate{Closest pair}{Ctrl+Alt+Y, 9}{cpclosest}
+
+\begin{problem}{Minimum Euclidean Distance (CSES)}
+Print the smallest squared distance between two of $n \le 2 \cdot 10^5$ points.
+\solution The sweep, in exact integers: 0.13\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // Point (cppoint), closest_pair (cpclosest) pasted above
+    int n;
+    cin >> n;
+    vector<Point> p(n);
+    for (auto& q : p) cin >> q;
+    print(closest_pair(p));  // squared, so it stays exact
+}
+\end{code}
+
+% ======================================================================================================================
+\section[Manhattan distances]{Manhattan distances \hfill \gold}\label{sec:manhattan}
+
+The Manhattan distance $|x_1 - x_2| + |y_1 - y_2|$ becomes much easier after rotating the plane by $45^\circ$. With $u = x + y$ and $v
+= x - y$,
+\[
+  |x_1 - x_2| + |y_1 - y_2| = \max(|u_1 - u_2|, |v_1 - v_2|),
+\]
+because $|a| + |b| = \max(|a + b|, |a - b|)$. The diamond of points within Manhattan distance $r$ becomes an axis-parallel square
+(Figure~\ref{fig:manhattan}), and the two coordinates separate: the farthest pair, nearest-neighbour queries and ``all points within
+distance $r$'' become independent questions about $u$ and $v$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[scale=0.55]
+  \begin{scope}
+    \draw[->, line width=0.5pt, draw=fgink!60] (-3, 0) -- (3.2, 0) node[right, lbl] {$x$};
+    \draw[->, line width=0.5pt, draw=fgink!60] (0, -3) -- (0, 3.2) node[above, lbl] {$y$};
+    \fill[fgsky!30] (2, 0) -- (0, 2) -- (-2, 0) -- (0, -2) -- cycle;
+    \draw[line width=1.2pt, draw=fgblue] (2, 0) -- (0, 2) -- (-2, 0) -- (0, -2) -- cycle;
+    \node[lbl] at (0, -3.6) {$|x| + |y| \le 2$};
+  \end{scope}
+  \draw[->, line width=1pt, draw=fgink!60] (4.5, 0) -- node[above, lbl] {$u = x + y$, $v = x - y$} (8.4, 0);
+  \begin{scope}[xshift=12.4cm]
+    \draw[->, line width=0.5pt, draw=fgink!60] (-3, 0) -- (3.2, 0) node[right, lbl] {$u$};
+    \draw[->, line width=0.5pt, draw=fgink!60] (0, -3) -- (0, 3.2) node[above, lbl] {$v$};
+    \fill[fgsky!30] (-2, -2) rectangle (2, 2);
+    \draw[line width=1.2pt, draw=fgblue] (-2, -2) rectangle (2, 2);
+    \node[lbl] at (0, -3.6) {$\max(|u|, |v|) \le 2$};
+  \end{scope}
+\end{tikzpicture}
+\caption{Rotating by $45^\circ$ turns Manhattan balls into squares.}
+\label{fig:manhattan}
+\end{figure}
+
+\begin{problem}{Maximum Manhattan Distances (CSES)}
+Points arrive one at a time ($n \le 2 \cdot 10^5$); after each, print the largest Manhattan distance between two points so far.
+\solution In rotated coordinates the answer is $\max(u_{\max} - u_{\min}, v_{\max} - v_{\min})$: four running extremes. 0.14\,s.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    ll umin = INF, umax = -INF, vmin = INF, vmax = -INF;
+    rep(i, n) {
+        ll x, y;
+        cin >> x >> y;
+        ll u = x + y, v = x - y;  // |dx| + |dy| = max(|du|, |dv|)
+        chmin(umin, u), chmax(umax, u), chmin(vmin, v), chmax(vmax, v);
+        print(max(umax - umin, vmax - vmin));
+    }
+}
+\end{code}
+
+\paragraph{Sums of distances.} The \emph{sum} of Manhattan distances over all pairs separates by axis without any rotation: sort the
+$x$-coordinates, and the $i$-th smallest contributes $x_i$ for each of the $i$ smaller ones minus their sum, the contribution technique of
+Chapter~\ref{ch:patterns}.
+
+\begin{problem}{All Manhattan Distances (CSES)}
+Sum the Manhattan distances between all pairs of $n \le 2 \cdot 10^5$ points with coordinates up to $10^9$ in absolute value.
+\solution Sort each axis and add up the contributions. The total reaches $2.7 \cdot 10^{19}$ on random inputs at the limits, more than a
+\cc{long long} holds, so the sum is kept in \cc{__int128} and printed by hand. 0.15\,s.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vi xs(n), ys(n);
+    rep(i, n) cin >> xs[i] >> ys[i];
+    __int128 total = 0;  // can exceed 64 bits: up to about 4e19
+    for (vi* c : {&xs, &ys}) {  // |dx| + |dy|: the two axes add up separately
+        sort(all(*c));
+        __int128 pre = 0;  // the sum of the smaller coordinates
+        rep(i, n) total += (__int128)(*c)[i] * i - pre, pre += (*c)[i];
+    }
+    string s;
+    for (; total > 0; total /= 10) s += char('0' + total % 10);
+    if (s.empty()) s = "0";
+    reverse(all(s));
+    print(s);
+}
+\end{code}
+
+% ======================================================================================================================
+\section[Sweep lines]{Sweep lines \hfill \plat}\label{sec:sweep}
+
+A sweep line moves across the plane and processes \emph{events}, such as segment endpoints, points and queries, in order of position,
+while a data structure holds the \emph{active} objects that the line currently crosses. It turns a two-dimensional problem into a
+sequence of one-dimensional ones. Designing a sweep means answering three questions: what are the events, in which order do events at the
+same position happen, and what must the active set support? Section~\ref{sec:mincount} computed the area of a union of rectangles this
+way, with a segment tree as the active set.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[scale=0.55]
+  \foreach \xa/\xb/\yy in {0/5/1, 2/9/3, 1/4/5, 6/10/4.5, 3/8/6} \draw[line width=1.4pt, draw=fgblue, line cap=round] (\xa, \yy) -- (\xb, \yy);
+  \foreach \xx/\ya/\yb in {1.5/0.5/2, 7/2/5.5, 9.5/0/6.5} \draw[line width=1.4pt, draw=fgorange!85!black, line cap=round] (\xx, \ya) -- (\xx, \yb);
+  \draw[line width=1pt, draw=fgverm, dashed] (7, -0.4) -- (7, 7);
+  \foreach \yy in {3, 4.5, 6} \fill[fgverm] (7, \yy) circle (3.5pt);
+  \node[font=\sffamily\scriptsize, text=fgverm, above] at (7, 7) {sweep at $x = 7$};
+  \node[notel, anchor=west, text width=6.0cm] at (11.2, 3.2) {At $x = 7$ the active horizontals (crossing the line) are at heights 3, 4.5
+    and 6. The vertical segment from 2 to 5.5 meets the two whose height lies in $[2, 5.5]$: a range count in a Fenwick tree over the
+    heights.};
+\end{tikzpicture}
+\caption{Counting intersections of horizontal and vertical segments by a sweep.}
+\label{fig:intpoints}
+\end{figure}
+
+\begin{problem}{Intersection Points (CSES)}
+$n \le 10^5$ horizontal and vertical segments with coordinates up to $10^6$ are given, and parallel segments never touch. Count the
+points where a horizontal and a vertical segment meet.
+\solution Sweep over $x$. A horizontal segment becomes active at its left end and inactive at its right end; a vertical segment at $x$
+asks how many active horizontals have their height in its $y$-range (Figure~\ref{fig:intpoints}). At equal $x$, insertions come before
+queries and queries before removals, so that touching endpoints count. 0.12\,s.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    const ll OFF = 1000001, N = 2 * OFF + 1;  // y + OFF lies in [1, N]
+    vector<array<ll, 4>> ev;  // (x, type, y1, y2): 0 add, 1 query, 2 remove
+    rep(i, n) {
+        ll x1, y1, x2, y2;
+        cin >> x1 >> y1 >> x2 >> y2;
+        if (y1 == y2) {  // horizontal: alive for x in [min, max]
+            ev.push_back({min(x1, x2), 0, y1, y1});
+            ev.push_back({max(x1, x2), 2, y1, y1});
+        } else ev.push_back({x1, 1, min(y1, y2), max(y1, y2)});
+    }
+    sort(all(ev));  // at equal x: insert, then query, then remove
+    vi bit(N + 1);
+    auto add = [&](ll y, ll v) {
+        for (ll i = y + OFF; i <= N; i += i & -i) bit[i] += v;
+    };
+    auto pre = [&](ll y) {  // active horizontals at height <= y
+        ll s = 0;
+        for (ll i = y + OFF; i > 0; i -= i & -i) s += bit[i];
+        return s;
+    };
+    ll ans = 0;
+    for (auto [x, type, a, b] : ev) {
+        if (type == 0) add(a, 1);
+        else if (type == 2) add(a, -1);
+        else ans += pre(b) - pre(a - 1);
+    }
+    print(ans);
+}
+\end{code}
+
+\begin{recognize}
+Many intervals, rectangles or segments, and a question about their overlaps, unions or intersections; ``for each point, how many
+rectangles contain it''; ``the largest number of overlapping intervals'' (a one-dimensional sweep over $+1$ and $-1$ events). Sort the
+events, fix the tie-breaking order, and choose the active set's structure: a counter, a multiset, a Fenwick tree, or a segment tree.
+\end{recognize}
+
+% ======================================================================================================================
+\section[Half-plane intersection]{Half-plane intersection \hfill \ioi}\label{sec:halfplane}
+
+A directed line keeps the half-plane on its left. The intersection of $n$ half-planes is a convex polygon (possibly empty or unbounded),
+and it is computed in $\Oh{n \log n}$ much like a convex hull: sort the lines by direction angle, then add them in that order to a deque.
+A new line makes the last line in the deque redundant when the intersection point of the last two lines lies outside the new half-plane,
+so pop from the back while that happens; the same check at the front removes lines that the new one cuts off from the other end. Of two
+lines with the same direction only the stricter one is kept. A final cleanup between the two ends of the deque closes the polygon
+(Figure~\ref{fig:halfplane}). Adding a bounding box of four lines keeps the result bounded.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[scale=0.65]
+  \fill[fggreen!25] (1, 1) -- (5, 0.5) -- (6.2, 3.2) -- (3.8, 5.2) -- (0.8, 3.8) -- cycle;
+  \draw[line width=1.4pt, draw=fggreen!80!black] (1, 1) -- (5, 0.5) -- (6.2, 3.2) -- (3.8, 5.2) -- (0.8, 3.8) -- cycle;
+  \foreach \ax/\ay/\bx/\by in {1/1/5/0.5, 5/0.5/6.2/3.2, 6.2/3.2/3.8/5.2, 3.8/5.2/0.8/3.8, 0.8/3.8/1/1} {
+    \draw[->, line width=0.8pt, draw=fgblue] ($(\ax, \ay)!-0.35!(\bx, \by)$) -- ($(\ax, \ay)!1.35!(\bx, \by)$);
+  }
+  \draw[->, line width=0.8pt, draw=fgline, dashed] (-0.5, 6.2) -- (7, 6.0);
+  \node[font=\sffamily\scriptsize, text=fggray, anchor=south] at (6.0, 6.05) {redundant};
+  \node[notel, anchor=west, text width=6.0cm] at (8.0, 2.8) {Six half-planes, each to the left of its directed line. Five of them bound
+    the intersection (green); the dashed one contains it entirely and is dropped when the deque is cleaned up.};
+\end{tikzpicture}
+\caption{Half-plane intersection: the lines sorted by angle form the boundary in order.}
+\label{fig:halfplane}
+\end{figure}
+
+\usetemplate{Half-plane intersection}{Ctrl+Alt+U, 4}{cphalfplane}
+
+\begin{problem}{Half-plane intersection area}
+Print the area of the intersection of $n \le 10^5$ half-planes (each to the left of a directed line through two integer points) inside the
+square $[-10^6, 10^6]^2$.
+\solution The deque algorithm with the square's four sides added, then the shoelace formula. With $10^5$ tangent lines of a circle,
+which all survive, it takes 0.83\,s, mostly for the angles and the long-double intersections.
+\end{problem}
+
+\begin{code}
+void solve() {  // half_plane_intersection (cphalfplane) is pasted above solve()
+    int n;
+    cin >> n;
+    vector<array<ld, 4>> hs(n);
+    for (auto& [ax, ay, bx, by] : hs) cin >> ax >> ay >> bx >> by;
+    auto poly = half_plane_intersection(hs, 1e6);  // keeps the left of a -> b
+    ld area = 0;  // the shoelace formula on the resulting convex polygon
+    rep(i, sz(poly)) {
+        auto [x1, y1] = poly[i];
+        auto [x2, y2] = poly[(i + 1) % sz(poly)];
+        area += x1 * y2 - x2 * y1;
+    }
+    cout << fixed << setprecision(6) << area / 2 << '\n';
+}
+\end{code}
+
+% ======================================================================================================================
+\section[The minimum enclosing circle]{The minimum enclosing circle \hfill \ioi}\label{sec:mincircle}
+
+The smallest circle that contains $n$ given points is unique, and it is determined by two points on its boundary (a diameter) or by
+three. \textbf{Welzl's algorithm}, in its iterative form, shuffles the points and maintains the smallest circle of the points seen so far.
+When a new point $p_i$ falls outside, the new circle must pass through $p_i$; rebuild it from the earlier points with $p_i$ fixed on the
+boundary, by the same procedure one level down, and when a second point $p_j$ falls outside, with both $p_i$ and $p_j$ on the boundary; at
+the third level a circle through three points is determined (Figure~\ref{fig:mincircle}).
+
+The rebuilds look expensive, but in random order they are rare. By \emph{backwards analysis}, the circle of the first $i$ points changes
+when $p_i$ is added only if $p_i$ is one of the at most three points that define it, which happens with probability at most $3/i$; a
+rebuild costs $\Oh{i}$, so its expected cost is $\Oh{1}$ per point, and the same argument one level down keeps the whole algorithm at
+expected $\Oh{n}$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[scale=0.7]
+  \draw[line width=1.3pt, draw=fgblue, fill=fgsky!15] (3.8043, 3.0217) circle (2.9847);
+  \foreach \px/\py in {3/3, 4/3, 2/4, 5/4} \fill[fgline!80!fgink] (\px, \py) circle (3pt);
+  \foreach \px/\py in {1/2, 6/1, 4/6} \fill[fgverm] (\px, \py) circle (3.8pt);
+  \draw[line width=0.7pt, draw=fgverm, dashed] (1, 2) -- (6, 1) -- (4, 6) -- cycle;
+  \node[notel, anchor=west, text width=6.0cm] at (7.5, 3) {Seven points; the smallest enclosing circle passes through the three red ones,
+    the circumcircle of their triangle, which is acute. Had the triangle been obtuse, the circle would instead have the longest side as
+    a diameter and pass through only two points.};
+\end{tikzpicture}
+\caption{The minimum enclosing circle is determined by two or three of the points.}
+\label{fig:mincircle}
+\end{figure}
+
+\usetemplate{Minimum enclosing circle}{Ctrl+Alt+U, Shift+M}{cpmincircle}
+
+\begin{problem}{Minimum enclosing circle}
+Print the centre and the radius of the smallest circle containing $n \le 10^5$ points with integer coordinates up to $10^6$.
+\solution Welzl's algorithm after a shuffle: 0.51\,s, almost all of it in \cc{hypotl}. Comparing squared distances instead would save most
+of that.
+\end{problem}
+
+\begin{code}
+void solve() {  // min_enclosing_circle (cpmincircle) is pasted above solve()
+    int n;
+    cin >> n;
+    vector<pair<ld, ld>> p(n);
+    for (auto& [x, y] : p) cin >> x >> y;
+    auto [cx, cy, r] = min_enclosing_circle(p);  // expected O(n), shuffled
+    cout << fixed << setprecision(6) << cx << ' ' << cy << ' ' << r << '\n';
+}
+\end{code}
+
+\begin{pitfall}[Shuffle, or be hacked]
+Without the random shuffle, Welzl's algorithm is quadratic on inputs sorted by distance from the centre, and such inputs are easy to
+construct. Shuffle with a seeded generator (Section~\ref{sec:random-stl}), never with the default seed.
+\end{pitfall}
+
+\begin{summary}[Chapter summary]
+\begin{itemize}
+  \item The cross product gives signed areas and orientations; stay in integers, and mind that cross products of $10^9$-sized coordinates
+        nearly fill a \cc{long long}.
+  \item Segment intersection is four orientations plus endpoint-on-segment checks; the shoelace formula gives areas; ray casting decides
+        point in polygon; Pick's theorem counts lattice points from the area and the boundary.
+  \item The monotone chain builds the convex hull in $\Oh{n \log n}$; rotating calipers find the farthest pair and the width in $\Oh{h}$.
+  \item The closest pair falls to a sweep with a $y$-ordered set; rotating by $45^\circ$ turns Manhattan distances into maxima of two
+        independent coordinates.
+  \item A sweep line needs its events, a tie-breaking order and an active set.
+  \item Half-planes intersect in $\Oh{n \log n}$ with a deque over lines sorted by angle; the minimum enclosing circle takes expected
+        $\Oh{n}$ after a random shuffle.
+\end{itemize}
+\end{summary}
+
+\begin{practice}
+\ppgroup{Geometry}
+\begin{pplist}
+  \item Point Location Test
+  \item Line Segment Intersection
+  \item Polygon Area
+  \item Point in Polygon
+  \item Polygon Lattice Points
+  \item Minimum Euclidean Distance
+  \item Convex Hull
+  \item Maximum Manhattan Distances
+  \item All Manhattan Distances
+  \item Intersection Points
+  \item Line Segments Trace I
+  \item Line Segments Trace II
+  \item Lines and Queries I
+  \item Lines and Queries II
+  \item Area of Rectangles
+  \item Robot Path
+\end{pplist}
+\end{practice}

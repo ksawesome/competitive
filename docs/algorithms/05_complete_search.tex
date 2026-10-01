@@ -1,0 +1,981 @@
+\chapter{Simulation and Complete Search}\label{ch:search}
+
+The simplest correct algorithm is to try everything. When the input is small enough, that is also the intended solution;
+when it is not, a complete search is still where you begin: it pins down exactly what you are computing, it is the
+reference you stress test against, and it often earns the points of the small subtasks. This chapter is about doing
+exhaustive work \emph{systematically}: simulating a process exactly as described, enumerating subsets and permutations
+without missing or repeating any, and organising a search so that it abandons hopeless branches early. It closes with three
+techniques that stretch the reach of exhaustive search far beyond its naive limits: meet in the middle, fracturing search,
+and the brute-force-assisted casework that solves so many ad hoc problems.
+
+\begin{chapterintro}{\bronze\ \silver\ \gold\ \ioi}{Chapters~\ref{ch:approach} to~\ref{ch:cpp}.}
+  \item simulate processes correctly, and skip ahead when a state repeats;
+  \item estimate the size of a search space and choose the smallest one;
+  \item enumerate subsets (bitmasks, Gray codes, submasks, $k$-subsets) and permutations;
+  \item write backtracking searches and prune them by orders of magnitude;
+  \item halve an exponent with meet in the middle, and list the $k$ best solutions with fracturing search;
+  \item solve casework problems by tabulating small cases with a brute force.
+\end{chapterintro}
+
+% ======================================================================================================================
+\section[Simulation]{Simulation \hfill \bronze}\label{sec:simulation}
+
+Some problems ask you to do exactly what the statement describes: move a robot for $T$ steps, apply a list of swaps, play a
+game by fixed rules, run a queue of customers through a shop. There is no clever algorithm to discover; the whole difficulty
+is in getting every detail right, and a handful of habits turn that from a gamble into a routine.
+
+\begin{itemize}
+  \item \textbf{Make the state explicit.} Write down exactly what describes the situation at one moment (positions,
+        directions, counters, whose turn it is) and keep it in a few named variables or a struct. Everything the rules
+        mention must be part of the state, and nothing else should be.
+  \item \textbf{Write one step function.} A single piece of code that advances the state by one step is far easier to
+        check than logic spread across a loop. Test it on the first steps of the sample before running it for long.
+  \item \textbf{Use direction arrays for grids.} Store the four directions in clockwise order (up, right, down, left) as
+        \cc|dr = {-1, 0, 1, 0}| and \cc|dc = {0, 1, 0, -1}|. Then moving forward is \cc{r += dr[d], c += dc[d]}, turning
+        right is \cc{d = (d + 1) % 4}, turning left \cc{d = (d + 3) % 4} and turning around \cc{d ^= 2}. Eight directions
+        work the same way with arrays of length eight.
+  \item \textbf{Pad the grid.} Surrounding the grid with a border of blocked cells removes every bounds check: a step off
+        the grid simply hits a wall. The Grid Paths solution in Section~\ref{sec:backtracking} uses this.
+  \item \textbf{Trace the samples.} Print the state after every step with \cc{dbg} and compare it with a hand simulation of
+        the first sample; the first line that differs is where the bug is.
+\end{itemize}
+
+\subsection{When $T$ is huge: find the cycle}
+
+If the number of possible states is finite, a deterministic process must eventually revisit a state, and from then on it
+repeats forever, because the next state depends only on the current one. So a process that runs for $T = 10^{18}$ steps is
+never simulated step by step. Record the time at which each state first appears; when a state appears again at time $t$,
+having first appeared at time $s$, the process has a \defn[cycle detection]{cycle} of length $L = t - s$, and the state at
+any time $T \ge s$ equals the state at time $s + (T - s) \bmod L$. Equivalently, jump over $\lfloor (T - t) / L\rfloor$
+whole cycles at once and simulate the fewer than $L$ steps that remain. Drawn as a sequence of states, the process has the
+shape of the Greek letter $\rho$: a \emph{tail} of states that are never seen again, leading into the cycle
+(Figure~\ref{fig:robot}).
+
+\begin{problem}{Robot on a grid}
+A robot stands on a grid with walls, facing up. At each step it moves forward if the cell in front is free and inside the
+grid; otherwise it turns right (and does not move in that step). Where is it after $T$ steps? Limits: grid up to
+$1000 \times 1000$, $T \le 10^{18}$.
+\solution The state is the triple (row, column, direction), so there are at most $4nm = 4\cdot10^6$ states. Store the first
+time each state occurs in an array indexed by \cc{(r * m + c) * 4 + d}. At the first repetition, skip all complete cycles
+that fit before $T$, then simulate the rest. Before the repetition at most $4nm$ steps are simulated, and after it fewer than
+$L \le 4nm$, so the total work is $\Oh{nm}$ whatever the value of $T$.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  % left: the grid and the run (computed by simulation: tail of 5 states, cycle of 14)
+  \begin{scope}[x=0.88cm, y=0.88cm]
+    \foreach \rr in {0,...,3} \foreach \kk in {0,...,4}
+      \draw[line width=0.4pt, draw=fgline!80, fill=white] (\kk, -\rr) rectangle ++(1, -1);
+    \foreach \rr/\kk in {0/0, 0/2, 1/0}
+      \draw[line width=0.4pt, draw=fgline!80, fill=fgline!55] (\kk, -\rr) rectangle ++(1, -1);
+    \foreach \kk in {0,...,4} \node[lbl] at (\kk+0.5, 0.3) {\kk};
+    \foreach \rr in {0,...,3} \node[lbl] at (-0.3, -\rr-0.5) {\rr};
+    % the cycle through rows 2 and 3
+    \draw[line width=1.6pt, draw=fgblue, rounded corners=5pt] (0.5, -2.5) -- (4.5, -2.5) -- (4.5, -3.5) -- (0.5, -3.5)
+      -- cycle;
+    \draw[line width=1.6pt, draw=fgblue, -{Stealth[length=2.6mm, width=2.2mm]}] (2.3, -2.5) -- (2.75, -2.5);
+    \draw[line width=1.6pt, draw=fgblue, -{Stealth[length=2.6mm, width=2.2mm]}] (2.7, -3.5) -- (2.25, -3.5);
+    % the tail: up to the top edge, two right turns, back down into the cycle
+    \draw[line width=1.6pt, draw=fgorange, dash pattern=on 4pt off 2pt] (4.35, -1.5) -- (4.35, -0.62) arc (180:0:0.15)
+      -- (4.65, -2.3);
+    \draw[line width=1.6pt, draw=fgorange, -{Stealth[length=2.6mm, width=2.2mm]}] (4.35, -1.3) -- (4.35, -0.95);
+    \draw[line width=1.6pt, draw=fgorange, -{Stealth[length=2.6mm, width=2.2mm]}] (4.65, -1.7) -- (4.65, -2.05);
+    \fill[fgverm] (4.35, -1.5) circle (3pt);
+  \end{scope}
+  % right: the same run as a sequence of states
+  \begin{scope}[xshift=7.1cm, yshift=-1.45cm]
+    \draw[line width=1.1pt, draw=fgblue] (0, 1.0) circle (1.0);
+    \foreach \k in {0,...,13} \fill[fgblue] ($(0, 1.0) + ({270 + \k*360/14}:1.0)$) circle (2.3pt);
+    \draw[line width=1.1pt, draw=fgorange] (0, -2.0) -- (0, 0);
+    \foreach \k in {1,...,5} \fill[fgorange] (0, {-0.4*\k}) circle (2.3pt);
+    \draw[->, line width=0.7pt, draw=fgblue] (0, 1.0) ++(212:0.55) arc (212:328:0.55);
+    \node[font=\sffamily\small, text=fgblue] at (0, 1.05) {$L = 14$};
+    \node[lbl, anchor=west] at (0.2, -2.0) {$t = 0$ (start)};
+    \node[lbl, anchor=west] at (0.2, -0.3) {$t = 5,\ 19,\ 33, \ldots$};
+    \node[lbl, anchor=east] at (-0.2, -1.0) {tail};
+  \end{scope}
+\end{tikzpicture}
+\caption{A robot run on a $4 \times 5$ grid with three walls (grey), starting at the dot facing up. It goes up, turns right
+twice at the edge, comes back down (orange tail) and then circles rows 2 and 3 forever (blue cycle). Right: the same run as a
+sequence of states. The state at time 5 recurs at time 19, so for every $T \ge 5$ the state at time $T$ is the state at time
+$5 + (T - 5) \bmod 14$.}
+\label{fig:robot}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n, m;
+    ll T;
+    cin >> n >> m >> T;
+    vector<string> g(n);
+    cin >> g;
+    const int dr[4] = {-1, 0, 1, 0}, dc[4] = {0, 1, 0, -1};  // U, R, D, L
+    int r = 0, c = 0, d = 0;
+    rep(i, n) rep(j, m) if (g[i][j] == 'R') r = i, c = j;
+    vector<ll> seen(4 * n * m, -1);  // first time each state (r, c, d) occurred
+    ll t = 0;
+    bool skipped = false;
+    while (t < T) {
+        int id = (r * m + c) * 4 + d;
+        if (!skipped && seen[id] >= 0) {  // repeated state: skip whole cycles
+            ll len = t - seen[id];
+            t += (T - t) / len * len;
+            skipped = true;
+            if (t == T) break;
+        }
+        seen[id] = t;
+        int nr = r + dr[d], nc = c + dc[d];
+        bool ok = nr >= 0 && nr < n && nc >= 0 && nc < m && g[nr][nc] != '#';
+        if (ok) r = nr, c = nc;
+        else d = (d + 1) % 4;  // blocked: turn right
+        t++;
+    }
+    print(r + 1, c + 1);
+}
+\end{code}
+
+After the jump, the flag \cc{skipped} stops the program from detecting the same cycle again, and the loop simulates the
+remaining steps normally. On a $1000 \times 1000$ grid with $T = 10^{18}$ the program runs in 0.08\,s. When the states are
+too many to store, or are not small integers, Floyd's and Brent's cycle-finding algorithms find the same tail and cycle
+lengths with $\Oh{1}$ memory by running two copies of the process at different speeds (Chapter~\ref{ch:graphs}); when many
+queries ask for the state after $T$ steps from \emph{different} starting states, binary lifting answers each in
+$\Oh{\log T}$ (Chapter~\ref{ch:trees}).
+
+\begin{pitfall}[The state must be complete]
+Cycle skipping is correct only if the state captures \emph{everything} that influences the future. Forgetting the direction,
+a counter, a timer that changes the rules every $k$ steps, or ``whose turn it is'' makes two different situations look
+identical and produces a wrong cycle, and often the samples still pass. When a step also depends on $t$ itself (for example
+``every tenth step is special''), add $t \bmod 10$ to the state.
+\end{pitfall}
+
+% ======================================================================================================================
+\section[Complete search with loops]{Complete search with loops \hfill \bronze}\label{sec:search-loops}
+
+A \defn{complete search} enumerates every candidate answer, checks each one, and keeps the best valid one. Its correctness is
+obvious, which is its great strength: the only questions are whether the candidates really cover every possible answer, and
+whether there are few enough of them. When a candidate is described by a few numbers, nested loops are all you need: all
+pairs of points, all triples of indices, all rectangles given by two opposite corners, all starting times of a schedule. The
+limits tell you how many nested loops you can afford: two loops over $n = 5000$ or three over $n = 400$ are about
+$2.5\cdot10^7$ and $6.4\cdot10^7$ steps.
+
+The skill that makes complete search powerful is reducing the number of candidates \emph{without losing the optimum}. Very
+often an infinite or huge space of candidates contains a small set of \emph{critical values} that is guaranteed to contain an
+optimal answer, and only those need to be tried.
+
+\begin{problem}{The most covered point}
+Given $n \le 2000$ intervals $[a_i, b_i]$ with real endpoints, find a point covered by as many intervals as possible.
+\solution The point can be any real number, but some optimal point is always a left endpoint $a_i$: take any optimal point
+$x$ and slide it to the left until it reaches the nearest left endpoint $a_i \le x$. While sliding, the point never leaves an
+interval (it would have to pass that interval's left endpoint first), so the number of covering intervals cannot decrease.
+Therefore it suffices to try the $n$ left endpoints and count the intervals covering each, which is $\Oh{n^2}$
+(Figure~\ref{fig:critical}). The sweep of Section~\ref{sec:events} solves the same problem in $\Oh{n \log n}$, and the
+argument above is exactly why the sweep only needs to look at endpoints.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.95cm, y=0.5cm]
+  \numline{0}{10}{0}{}
+  \ivl{1}{5}{1}{fgblue!55}{}
+  \ivl{2}{6}{2}{fgblue!55}{}
+  \ivl{3}{4}{3}{fgblue!55}{}
+  \ivl{4}{8}{4}{fgblue!55}{}
+  \ivl{7}{10}{5}{fgblue!55}{}
+  \draw[line width=1pt, draw=fgverm, dashed] (4, 0.15) -- (4, 5.8) node[above, font=\sffamily\scriptsize\bfseries,
+    text=fgverm] {best: 4 intervals};
+  \foreach \x/\cnt in {1/1, 2/2, 3/3, 4/4, 7/2} {
+    \fill[fgorange] (\x, 0) circle (2.6pt);
+    \node[font=\sffamily\scriptsize\bfseries, text=fgorange!80!black] at (\x, -1.75) {\cnt};
+  }
+  \node[lbl, anchor=east] at (0.2, -1.75) {covered by};
+\end{tikzpicture}
+\caption{Five intervals. Only the left endpoints (orange dots) are candidate answers: sliding any point to the left until it
+reaches a left endpoint never loses an interval. The counts below the axis are the numbers of intervals covering each
+candidate; the best is 4, at $x = 4$.}
+\label{fig:critical}
+\end{figure}
+
+\paragraph{How big is the search space?} Before writing a search, count its candidates and compare with the time limit.
+Table~\ref{tab:searchspaces} lists the spaces that come up again and again, with the largest $n$ for which they hold about
+$10^8$ candidates. Two rules of thumb follow from it: enumerating subsets is fine up to $n \approx 20$ (where each subset
+costs $\Oh{n}$ to process), and enumerating permutations up to $n \approx 10$.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}l l c P{5.4cm}@{}}
+  \toprule
+  \thd{Search space} & \thd{Size} & \thd{$n$ at $\approx 10^8$} & \thd{Typical use} \\
+  \midrule
+  subsets of $n$ items & $2^n$ & 26 & choose any group (Apple Division) \\
+  subsets of size $n/2$ & $\binom{n}{n/2}$ & 29 & split into two equal halves \\
+  permutations & $n!$ & 11 & orders, schedules (Creating Strings) \\
+  pairs (mask, submask) & $3^n$ & 17 & DP over subsets of subsets \\
+  partitions into groups & Bell number $B_n$ & 13 & split items into any number of teams \\
+  balanced bracket sequences & Catalan $C_n$ & 17 & expressions, binary tree shapes \\
+  partitions of the integer $n$ & $p(n)$ & 95 & write $n$ as a sum of positive parts \\
+  one half, meet in the middle & $2 \cdot 2^{n/2}$ & 54 & subset sums (Section~\ref{sec:mitm}) \\
+  \bottomrule
+\end{tabular}
+\caption{Sizes of common search spaces. The third column is the largest $n$ for which the space has about $10^8$ elements;
+if each candidate costs more than a few operations, reduce it accordingly.}
+\label{tab:searchspaces}
+\end{table}
+
+\begin{trick}[Search the smaller space]
+Before searching, compare the space of \emph{inputs} with the space of \emph{answers}, and search whichever is smaller.
+If the answer is a small integer (a number of bits, a number of distinct values, a length up to 60), loop over the answer and
+check each value. If an optimum is always attained at an input value (a median, an endpoint, a coordinate of some point),
+try only those. And if a rectangle or a line is optimal, it can usually be moved until it touches input points, so only the
+rectangles or lines determined by one or two input points need to be tried.
+\end{trick}
+
+% ======================================================================================================================
+\section[Generating subsets]{Generating subsets \hfill \bronze}\label{sec:subsets}
+
+A set of $n$ items has $2^n$ subsets. Represent a subset by an $n$-bit number, a \defn{bitmask}, whose bit $i$ is 1 exactly
+when item $i$ belongs to the subset. Counting from $0$ to $2^n - 1$ then visits every subset exactly once
+(Figure~\ref{fig:bitmasks}, left), and set operations become single machine instructions: union is \cc{a | b},
+intersection \cc{a & b}, difference \cc{a & ~b}, ``is item $i$ in $S$?'' is \cc{S >> i & 1}, and the size of $S$ is
+\cc{__builtin_popcount(S)}. Chapter~\ref{ch:bits} collects many more bit operations.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[b/.style={cellc, minimum width=6mm, minimum height=5.4mm, font=\ttfamily\small}]
+  \node[title] at (1.9, 1.15) {counting order};
+  \foreach \h/\x in {mask/0, c/1.2, b/1.8, a/2.4, subset/3.65} \node[hdr] at (\x, 0.55) {\h};
+  \foreach \m/\bc/\bb/\ba/\s in {0/0/0/0/{$\emptyset$}, 1/0/0/1/{$\{a\}$}, 2/0/1/0/{$\{b\}$}, 3/0/1/1/{$\{a, b\}$},
+      4/1/0/0/{$\{c\}$}, 5/1/0/1/{$\{a, c\}$}, 6/1/1/0/{$\{b, c\}$}, 7/1/1/1/{$\{a, b, c\}$}} {
+    \pgfmathsetmacro{\yy}{-0.56*\m}
+    \node[font=\sffamily\small\bfseries, text=fgblue] at (0, \yy) {\m};
+    \edef\sA{\ifnum\ba=1 cool\else n\fi}\edef\sB{\ifnum\bb=1 cool\else n\fi}\edef\sC{\ifnum\bc=1 cool\else n\fi}
+    \node[b, \sC] at (1.2, \yy) {\bc};
+    \node[b, \sB] at (1.8, \yy) {\bb};
+    \node[b, \sA] at (2.4, \yy) {\ba};
+    \node[font=\small, anchor=west] at (3.05, \yy) {\s};
+  }
+  \begin{scope}[xshift=6.6cm]
+    \node[title] at (2.2, 1.15) {Gray code order};
+    \foreach \h/\x in {$k$/0, c/1.2, b/1.8, a/2.4, change/3.35, subset/4.45} \node[hdr] at (\x, 0.55) {\h};
+    \foreach \m/\bc/\bb/\ba/\f/\ch/\s in {0/0/0/0/x/{}/{$\emptyset$}, 1/0/0/1/a/{$+a$}/{$\{a\}$},
+        2/0/1/1/b/{$+b$}/{$\{a, b\}$}, 3/0/1/0/a/{$-a$}/{$\{b\}$}, 4/1/1/0/c/{$+c$}/{$\{b, c\}$},
+        5/1/1/1/a/{$+a$}/{$\{a, b, c\}$}, 6/1/0/1/b/{$-b$}/{$\{a, c\}$}, 7/1/0/0/a/{$-a$}/{$\{c\}$}} {
+      \pgfmathsetmacro{\yy}{-0.56*\m}
+      \node[font=\sffamily\small\bfseries, text=fgblue] at (0, \yy) {\m};
+      \edef\sA{\if a\f hot\else\ifnum\ba=1 cool\else n\fi\fi}
+      \edef\sB{\if b\f hot\else\ifnum\bb=1 cool\else n\fi\fi}
+      \edef\sC{\if c\f hot\else\ifnum\bc=1 cool\else n\fi\fi}
+      \node[b, \sC] at (1.2, \yy) {\bc};
+      \node[b, \sB] at (1.8, \yy) {\bb};
+      \node[b, \sA] at (2.4, \yy) {\ba};
+      \node[font=\small, text=fgverm] at (3.35, \yy) {\ch};
+      \node[font=\small, anchor=west] at (3.9, \yy) {\s};
+    }
+  \end{scope}
+\end{tikzpicture}
+\caption{The 8 subsets of $\{a, b, c\}$ (bit 0 is $a$, bit 1 is $b$, bit 2 is $c$; blue bits are chosen items). Left: in
+counting order, one step can change many bits ($3 \to 4$ changes all three). Right: in Gray code order $g_k = k \oplus
+\lfloor k/2 \rfloor$, every step flips exactly one bit (red), and step $k$ flips bit number $\operatorname{ctz}(k)$.}
+\label{fig:bitmasks}
+\end{figure}
+
+\begin{problem}{Apple Division (CSES)}
+Divide $n \le 20$ apples with given weights into two groups so that the difference of the group weights is as small as
+possible.
+\solution Try all $2^n$ splits: the mask lists the apples that go into the first group, and the second group weighs the total
+minus the first. With $n = 20$ that is about $10^6$ masks times 20 bits each, $2\cdot10^7$ simple operations.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vi p(n);
+    cin >> p;
+    ll total = accumulate(all(p), 0LL), best = LLONG_MAX;
+    rep(mask, 1 << n) {  // the apples in the first group
+        ll s = 0;
+        rep(i, n) if (mask >> i & 1) s += p[i];
+        chmin(best, abs(total - 2 * s));  // |group 1 - group 2|
+    }
+    print(best);
+}
+\end{code}
+
+\usetemplate{All subsets (bitmask loop)}{Ctrl+Alt+T, 8}{cpsubsets}
+
+\subsection{Faster subset loops}
+
+The loop above spends $\Oh{n}$ on each subset to recompute its sum, $\Oh{n 2^n}$ in total. Two classic tricks remove the
+factor $n$, and both matter when $n$ is 25 or when the work per subset is heavier than a sum.
+
+\emph{Incremental tables.} Every non-empty mask is a smaller mask plus one item, its lowest set bit. So
+\cc{sum[mask] = sum[mask & (mask - 1)] + a[__builtin_ctz(mask)]} fills a table of all $2^n$ subset sums in $\Oh{2^n}$, in
+increasing order of masks, because \cc{mask & (mask - 1)} (the mask without its lowest bit) is always smaller. The same works
+for any quantity that can be extended by one item: the number of edges inside a vertex set, a bitwise OR, a product modulo a
+prime.
+
+\emph{Gray code order.} When the per-subset state is a whole structure that cannot be stored $2^n$ times (a multiset, a DSU,
+a board position), visit the subsets in \defn{Gray code} order instead: consecutive subsets differ in exactly one item
+(Figure~\ref{fig:bitmasks}, right), so the structure is updated by a single insertion or deletion per step. The $k$-th subset
+is $g_k = k \oplus \lfloor k/2\rfloor$, and going from $g_{k-1}$ to $g_k$ flips bit $\operatorname{ctz}(k)$, the number of
+trailing zeros of $k$. The template generates this order.
+
+\usetemplate{Gray code order}{Ctrl+Alt+U, 0}{cpgray}
+
+\subsection{Submasks and $k$-subsets}
+
+To iterate over all \defn[submask]{submasks} of a mask $S$ (the subsets of the set $S$), including $S$ itself and the empty
+set, use
+\cc|for (int T = S; ; T = (T - 1) & S) { ...; if (T == 0) break; }|.
+Subtracting one clears the lowest set bit of $T$ and sets all the bits below it; masking with $S$ keeps only the bits that
+belong to $S$, and the result is exactly the next smaller submask. The loop visits the $2^{|S|}$ submasks in decreasing
+order. Summed over all masks $S$ of $n$ bits it visits $\sum_S 2^{|S|} = 3^n$ pairs, because each of the $n$ items is
+independently outside $S$, in $S$ but not in $T$, or in both: this is the $3^n$ of Table~\ref{tab:searchspaces}, and the
+basis of the subset DPs of Chapter~\ref{ch:dppatterns}.
+
+\begin{trick}[Gosper's hack: all subsets of size $k$]
+To visit only the $\binom{n}{k}$ masks with exactly $k$ bits (for $k \ge 1$), in increasing order, jump from each such mask
+directly to the next one:
+\begin{code}
+for (int x = (1 << k) - 1; x < (1 << n);) {
+    // ... use x ...
+    int low = x & -x, r = x + low;  // r: the lowest block of ones carried
+    x = (((r ^ x) >> 2) / low) | r;  // move the rest of the block to the bottom
+}
+\end{code}
+Adding the lowest set bit \cc{low} turns the lowest block of consecutive ones into a single one bit, one position higher;
+the other ones of that block are then shifted back down to the lowest positions. This is \defn{Gosper's hack}, and it beats
+filtering all $2^n$ masks by popcount whenever $\binom{n}{k}$ is much smaller than $2^n$.
+\end{trick}
+
+% ======================================================================================================================
+\section[Generating permutations]{Generating permutations \hfill \bronze}\label{sec:permutations}
+
+An ordering of $n$ items is a permutation; there are $n!$ of them ($8! = 40\,320$, $10! \approx 3.6 \cdot 10^6$, $12!
+\approx 4.8 \cdot 10^8$), so enumerating them is feasible up to about $n = 10$. The standard library does the work:
+\cc{next_permutation} rearranges a range into the next permutation in lexicographic order and returns \cc{false} after the
+last one (when it wraps around to the sorted order). Starting from the sorted order therefore visits every permutation once.
+Because it compares values, a sequence with repeated values yields each \emph{distinct} arrangement exactly once: the four
+letters of \texttt{aabb} give $4!/(2!\,2!) = 6$ arrangements, not 24.
+
+The algorithm behind \cc{next_permutation} is short and worth knowing, because variants of it solve many problems (``the
+next larger number with the same digits'', ``the lexicographically next valid bracket sequence''). Scan from the right for
+the longest \emph{non-increasing} suffix: it is already the largest arrangement of its elements, so it cannot be increased on
+its own. The element just before it, the \emph{pivot}, must grow, and by as little as possible: swap it with the smallest
+element of the suffix that is larger than it. The suffix is still non-increasing after the swap, so reversing it sorts it
+into its smallest arrangement (Figure~\ref{fig:nextperm}). Each call costs $\Oh{n}$ in the worst case and $\Oh{1}$ on
+average over all permutations.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[blbl, anchor=east] at (-0.25, 0) {current};
+  \arrs{A}{0}{0}{1/n, 3/hot, 5/cool, 4/cool, 2/cool}
+  \spanabove{A-3}{A-5}{longest non-increasing suffix}
+  \ptrb{A-2}{pivot}{fgverm}
+  \node[notel, anchor=west, text width=6.9cm] at (4.1, 0) {The suffix $5\,4\,2$ is already the largest arrangement of
+    its elements, so the pivot 3 in front of it must grow.};
+  \node[blbl, anchor=east] at (-0.25, -2.2) {1.\ swap};
+  \arrs{B}{0}{-2.2}{1/n, 4/hot, 5/cool, 3/cool, 2/cool}
+  \draw[<->, line width=0.9pt, draw=fgverm] ($(B-2.north)+(0,0.06)$) to[out=65, in=115] ($(B-4.north)+(0,0.06)$);
+  \node[notel, anchor=west, text width=6.9cm] at (4.1, -2.2) {Swap the pivot with the smallest suffix element that is
+    larger than it (4). The suffix $5\,3\,2$ is still non-increasing.};
+  \node[blbl, anchor=east] at (-0.25, -3.8) {2.\ reverse};
+  \arrs{C}{0}{-3.8}{1/n, 4/hot, 2/good, 3/good, 5/good}
+  \spanbelow{C-3}{C-5}{sorted: smallest suffix}
+  \node[notel, anchor=west, text width=6.9cm] at (4.1, -3.8) {Reversing a non-increasing suffix sorts it. Result:
+    $1\,3\,5\,4\,2 \to 1\,4\,2\,3\,5$, the next permutation.};
+\end{tikzpicture}
+\caption{How \texttt{next\_permutation} finds the next arrangement in lexicographic order: find the pivot, swap it with its
+successor in the suffix, reverse the suffix. Only the pivot and the suffix change.}
+\label{fig:nextperm}
+\end{figure}
+
+\begin{problem}{Creating Strings (CSES)}
+Print all distinct rearrangements of a string of at most 8 letters, in alphabetical order, preceded by their number.
+\end{problem}
+
+\begin{code}
+void solve() {
+    string s;
+    cin >> s;
+    sort(all(s));
+    vector<string> out;
+    do out.push_back(s);
+    while (next_permutation(all(s)));  // each distinct arrangement once
+    print(sz(out));
+    for (auto& t : out) print(t);
+}
+\end{code}
+
+\usetemplate{All permutations}{Ctrl+Alt+T, 9}{cpperm}
+
+\begin{pitfall}[Start sorted]
+\cc{next_permutation} only visits the permutations that come \emph{after} the starting sequence. Forgetting to sort first
+silently skips part of the search space, and the samples, which are often already sorted, may still pass. When permuting
+indices rather than values, start from \cc{iota(all(p), 0)}.
+\end{pitfall}
+
+\begin{trick}[Jump straight to the $k$-th permutation]
+The permutations of $0, \ldots, n-1$ in lexicographic order come in $n$ blocks of $(n-1)!$, one block per first element;
+inside a block the remaining elements again form blocks of $(n-2)!$, and so on. So the $k$-th permutation (counting from 0)
+takes as its first element the $\lfloor k/(n-1)! \rfloor$-th smallest unused value, and continues with $k \bmod (n-1)!$.
+The successive quotients are the digits of $k$ in the \defn{factorial number system} (the \defn{Lehmer code} of the
+permutation), and running the procedure backwards gives the rank of a permutation. Both take $\Oh{n^2}$ as written, or
+$\Oh{n \log n}$ with a Fenwick tree that finds the $d$-th unused value (Chapter~\ref{ch:segtree}).
+\begin{code}
+vi kth_perm(int n, ll k) {  // n <= 20
+    vector<ll> f(n + 1, 1);
+    rep(i, 1, n + 1) f[i] = f[i - 1] * i;
+    vi pool(n), out;
+    iota(all(pool), 0);
+    for (int i = n - 1; i >= 0; i--) {
+        int d = k / f[i];  // skip d whole blocks of i! permutations
+        k %= f[i];
+        out.push_back(pool[d]);
+        pool.erase(pool.begin() + d);
+    }
+    return out;
+}
+\end{code}
+\end{trick}
+
+% ======================================================================================================================
+\section[Backtracking and pruning]{Backtracking and pruning \hfill \silver}\label{sec:backtracking}
+
+\defn{Backtracking} builds a solution one choice at a time and abandons a partial solution as soon as it is clear that it
+cannot be completed into a valid (or better) one. The partial solutions form a \emph{search tree}: the root is the empty
+solution, the children of a node are its extensions by one more choice, and the leaves are complete candidates. A plain loop
+over all candidates visits every leaf; backtracking walks the tree depth first and \emph{prunes}, that is, refuses to enter a
+subtree once it knows that the subtree contains nothing useful. A single pruned node near the root removes an exponential
+number of leaves, which is why the difference between a search that runs in a second and one that runs for a year is almost
+always \defn{pruning}: how early, and how often, the search can say no.
+
+\begin{pseudo}{Backtracking}
+\begin{algorithmic}[1]
+\Procedure{Search}{$\mathit{depth}$}
+  \If{the partial solution is complete}
+    \State record it (count it, or compare it with the best so far)
+    \State \Return
+  \EndIf
+  \ForAll{choices $x$ for the next position}
+    \If{$x$ is consistent with the choices so far and can still win}
+      \State apply $x$ to the shared state \Comment{mark a column, add a weight, \ldots}
+      \State \Call{Search}{$\mathit{depth} + 1$}
+      \State undo $x$ \Comment{restore the state exactly}
+    \EndIf
+  \EndFor
+\EndProcedure
+\end{algorithmic}
+\end{pseudo}
+
+The \emph{undo} line is the heart of backtracking. The search keeps one shared state, modifies it before descending and
+restores it after returning, so no copies are ever made and each step costs $\Oh{1}$. Forgetting to undo, or undoing only part
+of the change, is the classic backtracking bug: the state after returning must be \emph{identical} to the state before
+descending.
+
+\begin{problem}{Chessboard and Queens (CSES)}
+Place eight queens on an $8 \times 8$ board, avoiding reserved squares, so that no two queens attack each other. Count the
+ways.
+\solution Two queens in the same row attack each other, so every row holds exactly one queen: choose the column of the
+queen in row 0, then in row 1, and so on. A queen in row $r$, column $c$ attacks its column, its diagonal (on which $r + c$ is
+constant) and its anti-diagonal (on which $r - c$ is constant). Three boolean arrays record which columns and diagonals are
+taken, so each square is checked in $\Oh{1}$. Figure~\ref{fig:queens} shows the complete search tree for four queens: the
+search visits 16 placements, while the tree of all ways to put one queen in each row has $4 + 16 + 64 + 256 = 340$ nodes.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{minipage}[c]{0.55\linewidth}
+\centering
+\begin{forest}
+  for tree={circle, draw=fgink!80, fill=fgfill, line width=0.7pt, minimum size=5.6mm, inner sep=0pt,
+    font=\sffamily\scriptsize, s sep=2.4mm, l sep=4.5mm, edge={line width=0.7pt, draw=fgline!80!fgink}}
+  [{}, fill=fgline!40
+    [1 [3, hot] [4 [2, hot]]]
+    [2 [4 [1 [3, good]]]]
+    [3 [1 [4 [2, good]]]]
+    [4 [1 [3, hot]] [2, hot]]]
+\end{forest}
+\end{minipage}%
+\begin{minipage}[c]{0.3\linewidth}
+\centering
+\begin{tikzpicture}[scale=0.62]
+  \foreach \rr in {0,...,3} \foreach \kk in {0,...,3} {
+    \pgfmathtruncatemacro{\cpar}{mod(\rr+\kk,2)}
+    \ifnum\cpar=0 \fill[fgline!30] (\kk, -\rr) rectangle ++(1, -1); \else \fill[white] (\kk, -\rr) rectangle ++(1, -1); \fi
+  }
+  \draw[line width=0.6pt, draw=fgink!70] (0, 0) rectangle (4, -4);
+  \foreach \rr/\kk in {0/1, 1/3, 2/0, 3/2}
+    \node[circle, fill=fggreen, minimum size=4.6mm, inner sep=0pt, text=white, font=\sffamily\tiny\bfseries]
+      at (\kk+0.5, -\rr-0.5) {Q};
+  \foreach \kk in {1,...,4} \node[lbl] at (\kk-0.5, 0.35) {\kk};
+  \node[lbl] at (2, -4.55) {columns $2, 4, 1, 3$};
+\end{tikzpicture}
+\end{minipage}
+\caption{Left: the whole backtracking tree for four queens; a node is the column of the queen placed in the next row. Red
+nodes are dead ends (the following row has no safe square), green nodes complete a solution. Right: the solution
+$2, 4, 1, 3$; the other one is its mirror image $3, 1, 4, 2$.}
+\label{fig:queens}
+\end{figure}
+
+\begin{code}
+void solve() {
+    vector<string> b(8);
+    cin >> b;
+    array<bool, 8> col{};
+    array<bool, 15> diag{}, anti{};  // r + c, and r - c + 7
+    ll ways = 0;
+    auto place = [&](auto&& self, int r) -> void {  // one queen per row
+        if (r == 8) {
+            ways++;
+            return;
+        }
+        rep(c, 8) {
+            bool taken = col[c] || diag[r + c] || anti[r - c + 7];
+            if (b[r][c] == '*' || taken) continue;
+            col[c] = diag[r + c] = anti[r - c + 7] = true;
+            self(self, r + 1);
+            col[c] = diag[r + c] = anti[r - c + 7] = false;  // undo
+        }
+    };
+    place(place, 0);
+    print(ways);
+}
+\end{code}
+
+\usetemplate{Recursive complete search}{Ctrl+Alt+T, Shift+Y}{cpbacktrack}
+
+\subsection{A case study in pruning: Grid Paths}
+
+\begin{problem}{Grid Path Description (CSES)}
+A path on a $7 \times 7$ grid starts in the upper-left corner, ends in the lower-left corner, and visits every one of the 49
+squares exactly once, so it consists of 48 moves. You are given a description of 48 characters, each \texttt{U}, \texttt{D},
+\texttt{L}, \texttt{R} (the move is fixed) or \texttt{?} (any move). Count the paths that match the description.
+\end{problem}
+
+A naive search tries up to three directions at each of 48 steps, $3^{47} \approx 2.7 \cdot 10^{22}$ sequences in the worst
+case (a description of 48 question marks). Refusing to step onto visited squares already cuts this enormously, but the
+search still visits $1.9 \cdot 10^{10}$ nodes and needs two minutes (Table~\ref{tab:gridpruning}). Two observations about
+\emph{dead} partial paths bring it down to a quarter of a second (Figure~\ref{fig:gridpaths}).
+
+\begin{enumerate}
+  \item \textbf{The end is reached too early.} Every path must end at the lower-left corner, so a path that arrives there
+        before its 48th move can never be completed: stop at once instead of wandering on.
+  \item \textbf{The free squares split in two.} Suppose the squares above and below the current square are blocked (visited
+        or outside the grid) while the squares to its left and right are both free, or the same with the two directions
+        exchanged. The blocked squares, the path and the border then form a barrier through the current square, and the
+        free squares on its two sides are disconnected from each other. The path can continue into only one side and can
+        never come back, so the squares on the other side will never be visited: the partial path is dead.
+\end{enumerate}
+
+The second rule fires far more often than one would guess: every time the path runs straight into a wall or into its own
+earlier trail with space on both sides. Because it cuts subtrees close to the root, it removes 99.6\% of the remaining search.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.46cm, y=0.46cm]
+  \tikzset{gpath/.style={line width=1.6pt, draw=fgverm}, gvis/.style={fill=fgline!35},
+    gend/.style={draw=fggreen!80!black, line width=1.1pt}, gcur/.style={draw=fgverm, line width=1.1pt}}
+  % (a) the end corner is reached after 6 moves
+  \begin{scope}
+    \fill[fgsky!30] (0, 0) rectangle (7, -7);
+    \foreach \rr in {0,...,6} \fill[gvis] (0, -\rr) rectangle ++(1, -1);
+    \draw[fgline!80, line width=0.4pt, step=1] (0, 0) grid (7, -7);
+    \draw[gpath] (0.5, -0.5) -- (0.5, -6.5);
+    \fill[fgverm] (0.5, -0.5) circle (2.6pt);
+    \draw[gend] (0.5, -6.5) circle (6.5pt);
+    \node[font=\sffamily\scriptsize\bfseries, text=fgblue] at (4, -3.5) {42 unvisited};
+    \node[lbl, text width=3.6cm, align=center, anchor=north] at (3.5, -7.4) {(a) the end corner is reached after
+      6 moves: stop};
+  \end{scope}
+  % (b) the path runs into the bottom wall with free squares on both sides
+  \begin{scope}[xshift=4.3cm]
+    \fill[fgsky!30] (0, -1) rectangle (3, -7);
+    \fill[fgorange!35] (4, 0) rectangle (7, -7);
+    \foreach \kk in {0,...,3} \fill[gvis] (\kk, 0) rectangle ++(1, -1);
+    \foreach \rr in {1,...,6} \fill[gvis] (3, -\rr) rectangle ++(1, -1);
+    \draw[fgline!80, line width=0.4pt, step=1] (0, 0) grid (7, -7);
+    \draw[gpath] (0.5, -0.5) -- (3.5, -0.5) -- (3.5, -6.5);
+    \fill[fgverm] (0.5, -0.5) circle (2.6pt);
+    \draw[gend] (0.5, -6.5) circle (6.5pt);
+    \draw[gcur] (3, -6) rectangle (4, -7);
+    \node[font=\sffamily\scriptsize\bfseries, text=fgblue] at (1.5, -3.5) {18};
+    \node[font=\sffamily\scriptsize\bfseries, text=fgorange!80!black] at (5.5, -3.5) {21};
+    \node[lbl, text width=3.6cm, align=center, anchor=north] at (3.5, -7.4) {(b) blocked below, free left and right:
+      one side is lost};
+  \end{scope}
+  % (c) the path encloses a pocket against its own trail
+  \begin{scope}[xshift=8.6cm]
+    \fill[fgsky!30] (0, 0) rectangle (7, -7);
+    \foreach \rr/\kk in {0/0, 1/0, 2/0, 3/0, 3/1, 3/2, 3/3, 3/4, 3/5, 2/5, 1/5, 1/4, 1/3, 2/3}
+      \fill[gvis] (\kk, -\rr) rectangle ++(1, -1);
+    \fill[fgorange!35] (4, -2) rectangle (5, -3);
+    \draw[fgline!80, line width=0.4pt, step=1] (0, 0) grid (7, -7);
+    \draw[gpath] (0.5, -0.5) -- (0.5, -3.5) -- (5.5, -3.5) -- (5.5, -1.5) -- (3.5, -1.5) -- (3.5, -2.5);
+    \fill[fgverm] (0.5, -0.5) circle (2.6pt);
+    \draw[gend] (0.5, -6.5) circle (6.5pt);
+    \draw[gcur] (3, -2) rectangle (4, -3);
+    \node[lbl, text width=3.6cm, align=center, anchor=north] at (3.5, -7.4) {(c) blocked above and below by its own
+      trail: the pocket is lost};
+  \end{scope}
+\end{tikzpicture}
+\caption{Dead partial paths in Grid Paths. The path (red) starts at the dot; the green circle marks the end corner and the red
+square the current position. Blue squares are free; orange squares are free but can no longer be reached once the path
+chooses a side. In (b) and (c) the current square is blocked on two opposite sides and free on the other two, which is
+exactly the test in the code.}
+\label{fig:gridpaths}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}l r r@{}}
+  \toprule
+  \thd{Pruning rules} & \thd{Search nodes} & \thd{Time} \\
+  \midrule
+  never step onto a visited square & $1.9 \cdot 10^{10}$ & 120\,s \\
+  $+$ stop when the end corner is reached & $1.1 \cdot 10^{10}$ & 54\,s \\
+  $+$ stop when the free squares split in two & $4.7 \cdot 10^{7}$ & 0.24\,s \\
+  \bottomrule
+\end{tabular}
+\caption{Counting all 88\,418 paths (a description of 48 question marks) with more and more pruning, measured with
+\texttt{g++ -O2}. The split rule alone makes the search 230 times faster.}
+\label{tab:gridpruning}
+\end{table}
+
+\begin{code}
+void solve() {
+    string s;
+    cin >> s;
+    // the 7 x 7 grid is rows and columns 1..7, surrounded by blocked cells
+    array<array<bool, 9>, 9> vis{};
+    rep(i, 9) vis[i][0] = vis[i][8] = vis[0][i] = vis[8][i] = true;
+    const int dr[4] = {1, -1, 0, 0}, dc[4] = {0, 0, -1, 1};
+    const string dirs = "DULR";
+    ll ways = 0;
+    auto go = [&](auto&& self, int r, int c, int step) -> void {
+        if (r == 7 && c == 1) {  // every path ends here, so stop here
+            if (step == 48) ways++;
+            return;
+        }
+        // blocked on two opposite sides, free on the other two: the free
+        // cells split into two parts and one of them can never be visited
+        bool up = vis[r - 1][c], down = vis[r + 1][c];
+        bool left = vis[r][c - 1], right = vis[r][c + 1];
+        if (up && down && !left && !right) return;
+        if (left && right && !up && !down) return;
+        vis[r][c] = true;
+        rep(k, 4) {
+            if (s[step] != '?' && s[step] != dirs[k]) continue;
+            int nr = r + dr[k], nc = c + dc[k];
+            if (!vis[nr][nc]) self(self, nr, nc, step + 1);
+        }
+        vis[r][c] = false;
+    };
+    go(go, 1, 1, 0);
+    print(ways);
+}
+\end{code}
+
+The border of blocked cells makes every neighbour access safe and turns ``outside the grid'' into ``visited'', which is
+exactly what both pruning rules need. The search never reads \cc{s[48]}: a path that has made 48 moves has visited all 49
+squares, including the end corner, and the search stops as soon as it reaches that corner.
+
+\begin{trick}[Pruning that matters]
+\begin{itemize}
+  \item \textbf{Check constraints early.} Test a choice when it is made, not when the solution is complete; test the most
+        restrictive constraints first.
+  \item \textbf{Look for dead states}, as in Grid Paths: parity, connectivity of what remains, or a resource that can no
+        longer suffice (``the remaining items cannot fill the remaining capacity'').
+  \item \textbf{Bound optimistically.} If the current cost plus a lower bound on the cost of the rest cannot beat the best
+        solution so far, stop. This is \defn{branch and bound}; a cheap but tight bound is worth more than a clever search
+        order.
+  \item \textbf{Order the choices} so that good solutions are found first: the better the first solution, the more the
+        bound prunes. Greedy order (largest item first, nearest city first) is a good default.
+  \item \textbf{Choose the most constrained variable next}: in Sudoku-like problems, fill the cell with the fewest remaining
+        options, so that contradictions surface near the root.
+  \item \textbf{Break symmetry.} Fix the first element, or require choices in increasing order when their order does not
+        matter; this divides the search by the size of the symmetry group (up to $n!$).
+  \item \textbf{Memoise.} If the same partial state can be reached along different paths, you are really doing dynamic
+        programming (Part~V), and caching the result of each state turns exponential time into polynomial.
+\end{itemize}
+\end{trick}
+
+% ======================================================================================================================
+\section[Meet in the middle]{Meet in the middle \hfill \gold}\label{sec:mitm}
+
+For $n$ around 40, the $2^{40} \approx 10^{12}$ subsets are far too many, but $2^{20} \approx 10^6$ is nothing.
+\defn{Meet in the middle} splits the items into two halves, enumerates the subsets of each half separately, and combines the
+two lists with sorting and two pointers, binary search or a hash map. Every subset of all the items is a pair (subset of the
+left half, subset of the right half), so questions about the whole set become questions about pairs from two lists of
+$2^{n/2}$ elements each, and those can be answered in about $2^{n/2}$ time instead of $2^n$.
+
+\begin{problem}{Meet in the Middle (CSES)}
+Count the subsets of $n \le 40$ numbers (each up to $10^9$) whose sum is exactly $x$.
+\solution Enumerate the subset sums $L$ of the first half and $R$ of the second half. The answer is the number of pairs
+$(a, b) \in L \times R$ with $a + b = x$. With both lists sorted, walk one pointer up $L$ and another down $R$: if
+$a + b < x$, the current $a$ is too small for every remaining $b$, so move up in $L$; if $a + b > x$, move down in $R$; if
+they are equal, the runs of equal values on both sides contribute the product of their lengths (Figure~\ref{fig:mitm}).
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[title, anchor=west] at (-0.55, 1.0) {left half $3, 5$; right half $2, 7$; target $x = 10$};
+  \node[blbl, anchor=east] at (-0.2, 0) {$L$};
+  \arrs{L}{0}{0}{0/n, 3/hot, 5/n, 8/good}
+  \node[blbl, anchor=east] at (-0.2, -1.5) {$R$};
+  \arrs{R}{0}{-1.5}{0/n, 2/good, 7/hot, 9/n}
+  \draw[line width=1.1pt, draw=fgverm] (L-2.south) -- (R-3.north);
+  \draw[line width=1.1pt, draw=fggreen] (L-4.south) -- (R-2.north);
+  \node[notel, anchor=west, text width=7cm] at (3.6, -0.75) {$3 + 7 = 10$ is the subset $\{3, 7\}$, and $8 + 2 = 10$ is
+    the subset $\{3, 5, 2\}$. The pointer on $L$ only moves right and the one on $R$ only moves left, so once both lists
+    are sorted the matching takes linear time.};
+\end{tikzpicture}
+\caption{Meet in the middle for subset sums. $L$ and $R$ hold the $2^{n/2}$ subset sums of each half, sorted. A subset of
+all items is one sum from each list, so the pairs adding up to $x$ are exactly the subsets with sum $x$.}
+\label{fig:mitm}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n;
+    ll x;
+    cin >> n >> x;
+    vi t(n);
+    cin >> t;
+    auto sums = [&](int lo, int hi) {  // all subset sums of t[lo..hi), sorted
+        vector<ll> s{0};
+        rep(i, lo, hi) {  // merge s with s + t[i]: stays sorted, linear time
+            vector<ll> shifted(sz(s)), merged(2 * sz(s));
+            rep(j, sz(s)) shifted[j] = s[j] + t[i];
+            merge(all(s), all(shifted), merged.begin());
+            s = merged;
+        }
+        return s;
+    };
+    vector<ll> L = sums(0, n / 2), R = sums(n / 2, n);
+    ll ways = 0;
+    int i = 0, j = sz(R) - 1;  // two pointers: L ascending, R descending
+    while (i < sz(L) && j >= 0) {
+        if (L[i] + R[j] < x) i++;
+        else if (L[i] + R[j] > x) j--;
+        else {  // equal: multiply the sizes of the two runs of equal values
+            ll a = L[i], b = R[j], ca = 0, cb = 0;
+            while (i < sz(L) && L[i] == a) i++, ca++;
+            while (j >= 0 && R[j] == b) j--, cb++;
+            ways += ca * cb;
+        }
+    }
+    print(ways);
+}
+\end{code}
+
+\begin{trick}[Generate the sums already sorted]
+Sorting $2^{20}$ numbers costs a factor of 20. Instead, build the sums one item at a time: if $s$ is the sorted list of sums
+of the first $i$ items, the list for $i + 1$ items is the \emph{merge} of $s$ and $s + t_i$, two sorted lists, in linear
+time. The sizes double at each step, so the whole half costs $\Oh{2^{n/2}}$, and the program above runs in 0.1\,s for
+$n = 40$.
+\end{trick}
+
+\usetemplate{Meet in the middle (subset sums)}{Ctrl+Alt+T, Shift+U}{cpmitm}
+
+\paragraph{Variations.} The combining step depends on the question. To find the subset sum closest to $x$, binary search
+each $a \in L$ for $x - a$ in $R$. For subsets with a given \emph{XOR}, count matching values with a hash map. To count
+subsets with sum \emph{at most} $x$, count for each $a$ the elements of $R$ that are at most $x - a$, again with two
+pointers. Beyond subsets, the idea applies to any search of depth $d$ whose two halves can be combined: a search of $b^d$
+states becomes two of $b^{d/2}$ each. This is how bidirectional BFS finds shortest paths in huge implicit graphs
+(Chapter~\ref{ch:graphs}), and how 4-SUM ($a + b + c + d = S$) becomes pairs $(a, b)$ against pairs $(c, d)$ in
+$\Oh{n^2 \log n}$.
+
+\begin{recognize}
+$n \le 40$ (or 36, or 45) together with a task that is exponential in $n$: subset sums, subset XORs, ``split into two
+groups'', knapsack with huge weights. More generally, any search where $b^{d/2}$ states are affordable but $b^d$ are not, and
+where a solution can be cut into two independent halves that meet in a simple condition.
+\end{recognize}
+
+% ======================================================================================================================
+\section[Fracturing search]{Fracturing search: the $k$ best solutions \hfill \ioi}\label{sec:fracturing}
+
+Sometimes you need not only the best solution but the $k$ best: the $k$ smallest subset sums, the $k$ cheapest spanning
+trees, the $k$ shortest paths. \defn{Fracturing search} finds them by arranging \emph{all} solutions into a tree in which
+every child is no better than its parent and every solution appears exactly once. A priority queue then produces solutions
+in order: pop the best node, report it, push its children. The first pop is the root, the best solution overall; each later
+pop is the best node whose parent has already been reported, and because children are never better than their parents,
+that is the best solution not yet reported. After $k$ pops you have the $k$ best solutions, and the queue never holds more
+than $k \times (\text{number of children}) + 1$ nodes.
+
+\begin{problem}{The $k$ smallest subset sums}
+Given $n$ positive numbers, list the $k$ smallest sums over all non-empty subsets.
+\solution Sort the numbers and describe a subset by its sum and the index $i$ of its largest element. Every subset other than
+$\{a_0\}$ has exactly one \emph{parent}, from which it arises by one of two moves: \emph{add} the element $a_{i+1}$, or
+\emph{replace} the largest element $a_i$ by $a_{i+1}$. (To find the parent of a subset with largest index $j$: if index
+$j - 1$ is also in the subset, remove $j$; otherwise replace $j$ by $j - 1$.) Neither move decreases the sum, because the
+numbers are sorted and positive, so the tree rooted at $\{a_0\}$ is heap-ordered, and popping the queue $k$ times lists the
+$k$ smallest sums (Figure~\ref{fig:fracturing}).
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{forest}
+  for tree={rectangle, rounded corners=2pt, draw=fgink!70, fill=fgfill, line width=0.6pt, font=\sffamily\scriptsize,
+    align=center, inner sep=2.5pt, s sep=3mm, l sep=6mm, edge={line width=0.7pt, draw=fgline!80!fgink}}
+  [{$\{1\}$\\ 1}, good
+    [{$\{1,2\}$\\ 3}, good, edge label={node[midway, left, font=\sffamily\tiny, text=fgblue]{add}}
+      [{$\{1,2,4\}$\\ 7}, good, edge label={node[midway, left, font=\sffamily\tiny, text=fgblue]{add}}
+        [{\ldots}, draw=none, fill=none]]
+      [{$\{1,4\}$\\ 5}, good, edge label={node[midway, right, font=\sffamily\tiny, text=fgblue]{replace}}
+        [{\ldots}, draw=none, fill=none]]]
+    [{$\{2\}$\\ 2}, good, edge label={node[midway, right, font=\sffamily\tiny, text=fgblue]{replace}}
+      [{$\{2,4\}$\\ 6}, good [{\ldots}, draw=none, fill=none]]
+      [{$\{4\}$\\ 4}, good [{$\{4,7\}$\\ 11}] [{$\{7\}$\\ 7}, good]]]]
+\end{forest}
+\caption{The successor tree for $a = 1, 2, 4, 7$; each node shows a subset and its sum. Left children add the next element,
+right children replace the largest element by the next one. Sums never decrease downwards, so a priority queue pops them in
+order: $1, 2, 3, 4, 5, 6, 7, 7, \ldots$ (green: the first eight pops).}
+\label{fig:fracturing}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n, k;
+    cin >> n >> k;
+    vi a(n);
+    cin >> a;
+    sort(all(a));
+    minpq<pll> pq;  // (sum, i): a subset whose largest element is a[i]
+    pq.push({a[0], 0});
+    vi out;
+    while (sz(out) < k) {
+        auto [s, i] = pq.top();
+        pq.pop();
+        out.push_back(s);
+        if (i + 1 < n) {  // two children; together they reach every subset once
+            pq.push({s + a[i + 1], i + 1});         // also take a[i + 1]
+            pq.push({s - a[i] + a[i + 1], i + 1});  // swap a[i] for a[i + 1]
+        }
+    }
+    print(out);
+}
+\end{code}
+
+The general recipe: find a way to \emph{fracture} the solution space into disjoint parts, each described by a few constraints
+and each with an easily computed best element, such that removing the best element of a part leaves a few smaller parts of
+the same form. Then let the priority queue explore the parts in order of their best elements. For the $k$ shortest paths, a
+part is ``paths that share this prefix and then avoid these edges''; for the $k$ smallest spanning trees it is ``trees that
+contain these edges and avoid those''. The total cost is $\Oh{k \cdot (c \cdot B + \log k)}$, where $c$ is the number of
+children per node and $B$ the cost of finding the best element of a part.
+
+% ======================================================================================================================
+\section[Casework and ad hoc problems]{Casework and ad hoc problems \hfill \bronze}\label{sec:adhoc}
+
+Many Bronze problems and most Codeforces Division~2 A and B problems have no named algorithm. The solution is a single
+observation, or a careful division into cases, and such problems reward one specific habit: \emph{compute small cases with a
+brute force and look at the table}. The brute force is a complete search, which you can write in minutes and trust; the table
+shows you the rule; and the rule is usually much easier to prove once you know what it is.
+
+\begin{problem}{Coin Piles (CSES)}
+Two piles hold $a$ and $b$ coins. One move removes one coin from one pile and two coins from the other. Can both piles be
+emptied? Answer up to $10^5$ such questions with $a, b \le 10^9$.
+\solution Tabulate the answers for small $a$ and $b$ with a brute force (Figure~\ref{fig:coinpiles}). Two facts jump out, and
+both are easy to prove. Every move removes three coins, so $a + b$ must be divisible by 3. And every move removes at most two
+coins from one pile while removing at least one from the other, so if one pile holds more than twice the other, the larger
+pile can never be emptied. The table suggests that these two conditions are also sufficient, and indeed they are: if both
+hold, then $x = (2a - b)/3$ moves of the first kind and $y = (2b - a)/3$ of the second kind are non-negative integers that
+empty both piles.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[s/.style={minimum size=4.6mm, inner sep=0pt, draw=white, line width=0.5pt}]
+  \foreach \a in {0,...,12} \foreach \b in {0,...,12} {
+    \pgfmathtruncatemacro{\ok}{(mod(\a+\b,3)==0 && 2*min(\a,\b)>=max(\a,\b)) ? 1 : 0}
+    \ifnum\ok=1 \node[s, fill=fggreen!55] at (\a*0.46, -\b*0.46) {};
+    \else \node[s, fill=fgline!22] at (\a*0.46, -\b*0.46) {}; \fi
+  }
+  \foreach \a in {0, 3, 6, 9, 12} \node[lbl] at (\a*0.46, 0.42) {\a};
+  \foreach \b in {0, 3, 6, 9, 12} \node[lbl] at (-0.45, -\b*0.46) {\b};
+  \node[blbl] at (2.76, 0.85) {$a$};
+  \node[blbl] at (-0.9, -2.76) {$b$};
+  \draw[line width=0.9pt, draw=fgverm, dashed] (0, 0) -- (3.0, -6.0) node[below, font=\sffamily\scriptsize,
+    text=fgverm] {$b = 2a$};
+  \draw[line width=0.9pt, draw=fgverm, dashed] (0, 0) -- (6.0, -3.0) node[right, font=\sffamily\scriptsize,
+    text=fgverm] {$a = 2b$};
+  \node[notel, anchor=west, text width=5.4cm] at (7.5, -2.76) {Green: both piles can be emptied. The green cells lie on
+    every third anti-diagonal ($a + b \equiv 0 \pmod 3$) and inside the wedge between the lines $b = 2a$ and $a = 2b$.};
+\end{tikzpicture}
+\caption{Coin Piles for $0 \le a, b \le 12$, computed by brute force. Looking at such a table is often the fastest way to
+find the rule; proving it afterwards takes two lines.}
+\label{fig:coinpiles}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int t;
+    cin >> t;
+    while (t--) {
+        ll a, b;
+        cin >> a >> b;
+        // each move removes 3 coins; no pile may exceed twice the other
+        yn((a + b) % 3 == 0 && 2 * min(a, b) >= max(a, b));
+    }
+}
+\end{code}
+
+\begin{tip}[Getting casework right]
+List the cases on paper before coding, and check that they cover every input and do not overlap. For each case, construct a
+small example and check your formula on it by hand. The special values ($0$, $1$, all elements equal, $n = 1$, $n = 2$, the
+maximum value) are where casework breaks, so test each of them. When the analysis grows beyond five cases, look for a simpler
+characterisation, or brute force a small parameter instead of reasoning about it.
+\end{tip}
+
+\begin{trick}[Ad hoc habits]
+Look for invariants (a sum, a parity or a remainder that no operation changes), extremal elements (what must happen to the
+maximum?), and better representations (differences $a_{i+1} - a_i$ instead of values, prefix sums instead of elements,
+positions instead of values). Above all, write the brute force, print a table of answers for all small inputs, and look at it
+from every angle: by rows, by columns, by diagonals, modulo small numbers. The pattern is often the whole solution, and the
+brute force then doubles as the checker for your stress test (Chapter~\ref{ch:patterns}).
+\end{trick}
+
+\begin{summary}[Chapter summary]
+\begin{itemize}
+  \item Simulate with an explicit state and one step function; when $T$ is huge, find the cycle and skip it. The state must
+        contain everything that influences the future.
+  \item Count the search space first (Table~\ref{tab:searchspaces}), search the smaller of inputs and answers, and look for
+        critical values.
+  \item Subsets are bitmasks ($n \le 20$); incremental tables and Gray codes remove the factor $n$; submask loops cost $3^n$
+        in total; Gosper's hack visits the $k$-subsets.
+  \item Permutations come from \texttt{next\_permutation} ($n \le 10$), started from the sorted order; the factorial number
+        system jumps to the $k$-th one.
+  \item Backtracking modifies one shared state and undoes each change. Dead-state detection, bounds, good ordering and
+        symmetry breaking can make it faster by factors of hundreds.
+  \item Meet in the middle turns $2^n$ into $2^{n/2}$; build the half sums already sorted by merging.
+  \item Fracturing search lists the $k$ best solutions with a priority queue over a heap-ordered tree of all solutions.
+  \item For ad hoc problems, tabulate small cases with a brute force and find the rule in the table.
+\end{itemize}
+\end{summary}
+
+\begin{practice}
+\ppgroup{Simulation and enumeration}
+\begin{pplist}
+  \item Number Spiral
+  \item Two Knights
+  \item Apple Division
+  \item Creating Strings
+  \item Gray Code
+  \item Tower of Hanoi
+\end{pplist}
+\ppgroup{Backtracking, meet in the middle and ad hoc}
+\begin{pplist}
+  \item Chessboard and Queens
+  \item Grid Path Description
+  \item Meet in the Middle
+  \item Coin Piles
+  \item Two Sets
+  \item Palindrome Reorder
+\end{pplist}
+\end{practice}

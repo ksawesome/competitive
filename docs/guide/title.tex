@@ -1,0 +1,25 @@
+\begin{titlepage}
+\begin{tikzpicture}[remember picture, overlay]
+  \fill[cpblue] (current page.north west) rectangle ([yshift=-9.5cm]current page.north east);
+  \fill[cpteal] ([yshift=-9.5cm]current page.north west) rectangle ([yshift=-9.9cm]current page.north east);
+  % a little graph as decoration
+  \begin{scope}[shift={([xshift=-5.2cm, yshift=-4.6cm]current page.north east)}, every node/.style={circle, fill=white, inner sep=2.2pt}]
+    \node (a) at (0, 1.6) {}; \node (b) at (1.4, 2.2) {}; \node (c) at (2.6, 1.2) {}; \node (d) at (1.2, 0.3) {};
+    \node (e) at (3.4, 2.6) {}; \node (f) at (0.2, -0.6) {}; \node[fill=cporange] (g) at (2.4, -0.4) {};
+    \draw[white, thick] (a)--(b)--(c)--(d)--(a) (b)--(e) (c)--(e) (d)--(f) (d)--(g) (c)--(g);
+  \end{scope}
+  \node[anchor=north west, text=white, font=\sffamily\bfseries\fontsize{34}{40}\selectfont, align=left]
+    at ([xshift=2.2cm, yshift=-2.6cm]current page.north west) {Competitive\\Programming\\Setup};
+  \node[anchor=north west, text=cpteal!40!white, font=\sffamily\Large, align=left]
+    at ([xshift=2.2cm, yshift=-7.6cm]current page.north west) {User Guide \textperiodcentered{} VS Code + CPH};
+  \node[anchor=north west, text=cpgray, font=\sffamily\large, align=left, text width=15cm]
+    at ([xshift=2.2cm, yshift=-11.2cm]current page.north west)
+    {Everything installed in \texttt{Desktop/competitive}: the template, the 175-template library and its
+     keyboard shortcuts, the CPH integration, the test runner, the stress tester and the tools behind them,
+     and how to use every piece of it.};
+  \node[anchor=south west, text=cpblue, font=\sffamily\bfseries\large]
+    at ([xshift=2.2cm, yshift=3.2cm]current page.south west) {Kshitish Madbhavi};
+  \node[anchor=south west, text=cpgray, font=\sffamily]
+    at ([xshift=2.2cm, yshift=2.5cm]current page.south west) {Companion volume: \emph{The Competitive Programming Handbook} (ALGORITHMS.pdf)};
+\end{tikzpicture}
+\end{titlepage}

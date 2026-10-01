@@ -1,0 +1,700 @@
+\chapter{Bits and Rectangles}\label{ch:bits}
+
+Computers store integers in binary, and a single machine instruction applies a logical operation to all 64 bits of a word at
+once. Competitive programmers exploit this in three ways: to treat a number as a small \emph{set} (a bitmask), to reason
+about numbers \emph{one bit at a time} (the key to almost every XOR problem), and to process 64 booleans per instruction
+(bitsets). This chapter develops all three, together with two beautiful bit-level objects, Gray codes and de Bruijn
+sequences. It closes with axis-parallel rectangles, the geometry of USACO Bronze, whose intersection formula is the
+two-dimensional version of the interval arithmetic used throughout the book.
+
+\begin{chapterintro}{\bronze\ \silver\ \gold}{Chapters~\ref{ch:cpp} and~\ref{ch:search}.}
+  \item understand two's complement, and avoid the classic overflow and precedence bugs of bit operations;
+  \item use the everyday bit tricks and compiler built-ins, and count bits in closed form;
+  \item solve XOR problems bit by bit, and find maximum XOR pairs with a binary trie;
+  \item speed up boolean DPs and set operations by a factor of 64 with bitsets;
+  \item generate Gray codes and de Bruijn sequences, and see why they matter;
+  \item compute intersections and unions of rectangles.
+\end{chapterintro}
+
+% ======================================================================================================================
+\section[Binary numbers and two's complement]{Binary numbers and two's complement \hfill \bronze}\label{sec:binary}
+
+A $w$-bit unsigned integer $x$ stands for $\sum_{i} x_i 2^i$, where $x_i \in \{0, 1\}$ is \emph{bit $i$}; bit 0 is the least
+significant bit and bit $w - 1$ the most significant. Signed integers use \defn{two's complement}: the top bit has weight
+$-2^{w-1}$ instead of $+2^{w-1}$. The effect is easiest to see on a wheel (Figure~\ref{fig:twoscomp}): the $2^w$ bit patterns
+are arranged in a circle, adding one moves one step clockwise, and the signed and unsigned readings differ only in where the
+circle is cut. Three consequences are worth remembering.
+
+\begin{itemize}
+  \item $-x$ is \cc{~x + 1}: flip every bit and add one. In particular $-1$ has all bits set, and $x$ and $-x$ agree in
+        their lowest set bit and differ in every bit above it (Figure~\ref{fig:lowbit}).
+  \item Overflow wraps around the circle: one step past the largest signed value $2^{w-1} - 1$ lands on the smallest,
+        $-2^{w-1}$. For unsigned types this wrap-around is defined behaviour; for signed types it is undefined behaviour, which
+        the optimiser is allowed to exploit in surprising ways (Section~\ref{sec:ub}).
+  \item The range of a $w$-bit signed type is $[-2^{w-1}, 2^{w-1} - 1]$: about $\pm 2.1 \cdot 10^9$ for \cc{int} and
+        $\pm 9.2 \cdot 10^{18}$ for \cc{long long}.
+\end{itemize}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \draw[line width=0.8pt, draw=fgline] (0, 0) circle (2.15);
+  \foreach \kk in {0,...,15} {
+    \pgfmathsetmacro{\ang}{90 - \kk*22.5}
+    \pgfmathtruncatemacro{\sv}{\kk < 8 ? \kk : \kk - 16}
+    \pgfmathtruncatemacro{\ba}{floor(\kk/8)}\pgfmathtruncatemacro{\bb}{mod(floor(\kk/4),2)}
+    \pgfmathtruncatemacro{\bc}{mod(floor(\kk/2),2)}\pgfmathtruncatemacro{\bd}{mod(\kk,2)}
+    \ifnum\kk<8 \def\dotc{fgblue}\else\def\dotc{fgverm}\fi
+    \fill[\dotc] (\ang:2.15) circle (2.4pt);
+    \node[font=\ttfamily\scriptsize, text=fgink] at (\ang:2.72) {\ba\bb\bc\bd};
+    \node[font=\sffamily\scriptsize\bfseries, text=\dotc] at (\ang:1.62) {\sv};
+    \node[font=\sffamily\tiny, text=fggray] at (\ang:3.28) {\kk};
+  }
+  \draw[line width=1.8pt, draw=fgverm, ->] (-66:1.22) arc (-66:-88:1.22);
+  \node[font=\sffamily\scriptsize, text=fgverm] at (-77:0.72) {overflow};
+  \node[font=\sffamily\scriptsize, text=fgink, align=center] at (0, 0.35) {signed};
+  \node[notel, anchor=west, text width=4.6cm] at (3.9, 0.9) {4-bit two's complement. Outside: the unsigned value; on the
+    ring: the bit pattern; inside: the signed value. Adding 1 moves clockwise.};
+  \node[notel, anchor=west, text width=4.6cm] at (3.9, -1.0) {The only difference between the two readings is where the
+    circle is cut: between 15 and 0 for unsigned values, between 7 and $-8$ for signed ones.};
+\end{tikzpicture}
+\caption{Two's complement on a wheel. Patterns with top bit 0 (blue) mean the same in both readings; patterns with top bit 1
+(red) mean $v - 16$ as signed numbers. Signed overflow is the step from 7 to $-8$.}
+\label{fig:twoscomp}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}l l l l@{}}
+  \toprule
+  \thd{Operator} & \thd{Meaning} & \thd{Example} & \thd{Result} \\
+  \midrule
+  \texttt{a \& b} & AND: 1 where both are 1 & \texttt{1100 \& 1010} & \texttt{1000} \\
+  \texttt{a | b} & OR: 1 where either is 1 & \texttt{1100 | 1010} & \texttt{1110} \\
+  \texttt{a \textasciicircum{} b} & XOR: 1 where they differ & \texttt{1100 \textasciicircum{} 1010} & \texttt{0110} \\
+  \texttt{\textasciitilde a} & NOT: flip every bit & \texttt{\textasciitilde 0} & \texttt{-1} (all ones) \\
+  \texttt{a <{}< k} & shift left: multiply by $2^k$ & \texttt{0011 <{}< 2} & \texttt{1100} \\
+  \texttt{a >{}> k} & shift right: divide by $2^k$, rounding down & \texttt{1100 >{}> 2} & \texttt{0011} \\
+  \bottomrule
+\end{tabular}
+\caption{The bitwise operators. All of them cost the same as an addition.}
+\label{tab:bitops}
+\end{table}
+
+\begin{pitfall}[The three classic bit bugs]
+\textbf{Width:} \cc{1 << 40} shifts an \cc{int} and is undefined; write \cc{1LL << 40}. Shifting by the width of the type
+or more, or by a negative amount, is undefined too. \textbf{Precedence:} the comparison operators bind \emph{tighter} than
+\cc{&}, \cc{|} and \cc{^}, so \cc{x & 1 == 0} means \cc{x & (1 == 0)}, which is always 0; write \cc{(x & 1) == 0}. Shifts
+bind tighter than \cc{&}, so the common \cc{x >> i & 1} is correct as written. \textbf{Signedness:} right-shifting a
+negative number copies the sign bit, so \cc{-8 >> 1} is $-4$, and \cc{-1 >> 1} stays $-1$; for pure bit manipulation of
+arbitrary patterns, use \cc{unsigned long long}.
+\end{pitfall}
+
+% ======================================================================================================================
+\section[Bit tricks]{Bit tricks \hfill \silver}\label{sec:bittricks}
+
+Table~\ref{tab:bittricks} collects the expressions that appear in almost every bitmask solution. Most of them follow from two
+observations. First, subtracting one from $x$ flips its lowest set bit and every zero below it, and nothing else. Second,
+$-x = \mathord{\sim}x + 1$ agrees with $x$ at the lowest set bit and below, and is the complement of $x$ above it
+(Figure~\ref{fig:lowbit}). So \cc{x & (x - 1)} removes the lowest set bit, and \cc{x & -x} isolates it.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}l P{9.2cm}@{}}
+  \toprule
+  \thd{Expression} & \thd{Meaning} \\
+  \midrule
+  \texttt{x >{}> i \& 1} & bit $i$ of $x$ \\
+  \texttt{x | (1LL <{}< i)} & set bit $i$ \\
+  \texttt{x \& \textasciitilde(1LL <{}< i)} & clear bit $i$ \\
+  \texttt{x \textasciicircum{} (1LL <{}< i)} & toggle bit $i$ \\
+  \texttt{x \& -x} & the lowest set bit, as a number ($12 \to 4$); the step size of a Fenwick tree \\
+  \texttt{x \& (x - 1)} & $x$ without its lowest set bit; it is 0 exactly when $x$ is 0 or a power of two \\
+  \texttt{(1LL <{}< n) - 1} & the full set $\{0, 1, \ldots, n-1\}$ \\
+  \texttt{(a \& b) == a} & $a \subseteq b$ as sets \\
+  \texttt{\_\_builtin\_popcountll(x)} & the number of set bits \\
+  \texttt{\_\_builtin\_ctzll(x)}, \ \texttt{\_\_builtin\_clzll(x)} & trailing, leading zeros (undefined for $x = 0$) \\
+  \texttt{63 - \_\_builtin\_clzll(x)} & the index of the highest set bit, $\lfloor \log_2 x\rfloor$ (also \texttt{\_\_lg(x)}) \\
+  \texttt{\_\_builtin\_parityll(x)} & the parity of the number of set bits \\
+  \bottomrule
+\end{tabular}
+\caption{Everyday bit tricks. The built-ins compile to single instructions on modern processors; the versions without
+\texttt{ll} take 32-bit arguments and silently truncate 64-bit ones.}
+\label{tab:bittricks}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[b/.style={cellc, minimum width=6mm, minimum height=5.6mm, font=\ttfamily\small}]
+  \foreach \row/\lab/\bits in {0/{$x = 88$}/{0,1,0,1,1,0,0,0}, 1/{$-x$}/{1,0,1,0,1,0,0,0},
+      2/{$x \mathbin{\&} -x = 8$}/{0,0,0,0,1,0,0,0}, 3/{$x - 1$}/{0,1,0,1,0,1,1,1},
+      4/{$x \mathbin{\&} (x - 1) = 80$}/{0,1,0,1,0,0,0,0}} {
+    \pgfmathsetmacro{\yy}{-0.68*\row - (\row > 2 ? 0.35 : 0)}
+    \node[blbl, anchor=east] at (-0.5, \yy) {\lab};
+    \foreach \bv [count=\ci from 0] in \bits {
+      \pgfmathtruncatemacro{\pos}{7 - \ci}
+      \ifnum\pos=3 \node[b, hot] at (\ci*0.6, \yy) {\bv};
+      \else\ifnum\bv=1 \node[b, cool] at (\ci*0.6, \yy) {\bv};
+      \else \node[b] at (\ci*0.6, \yy) {\bv}; \fi\fi
+    }
+  }
+  \foreach \ci in {0,...,7} {
+    \pgfmathtruncatemacro{\pos}{7 - \ci}
+    \node[lbl] at (\ci*0.6, 0.55) {\pos};
+  }
+  \node[notel, anchor=west, text width=4.6cm] at (5.0, -0.68) {$-x$ agrees with $x$ from the lowest set bit (red column)
+    down, and is the complement above it: AND keeps only that bit.};
+  \node[notel, anchor=west, text width=4.6cm] at (5.0, -2.7) {$x - 1$ flips the lowest set bit and the zeros below it:
+    AND with $x$ removes that bit.};
+\end{tikzpicture}
+\caption{The two fundamental tricks on $x = 88 = 01011000_2$ (bit numbers on top). Its lowest set bit is bit 3, worth 8.}
+\label{fig:lowbit}
+\end{figure}
+
+\usetemplate{Bit helpers}{Ctrl+Alt+T, Y}{cpbits}
+
+To iterate over the set bits of $x$, peel them off one at a time: \cc{for (ll m = x; m; m &= m - 1)} visits each set bit once
+(its index is \cc{__builtin_ctzll(m)}), so the loop costs the popcount of $x$ rather than the width of the word. This is
+how Kernighan counted bits, and it is the right loop whenever the sets are sparse.
+
+\subsection{Counting bits in closed form}
+
+Many problems ask for a sum of bit-related quantities over a huge range of numbers. The key is that bit $b$ of the numbers
+$0, 1, 2, \ldots$ follows a fixed periodic pattern: $2^b$ zeros, then $2^b$ ones, repeating with period $2^{b+1}$
+(Figure~\ref{fig:bitperiods}). So each bit can be counted in $\Oh{1}$, and a question about $10^{15}$ numbers takes 50 steps.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.52cm, y=0.52cm]
+  \foreach \nv in {0,...,15} {
+    \node[lbl] at (\nv + 0.5, 0.6) {\nv};
+    \foreach \bi in {0,...,3} {
+      \pgfmathtruncatemacro{\bit}{mod(floor(\nv / 2^\bi), 2)}
+      \ifnum\bit=1 \fill[fgblue!55] (\nv, -\bi) rectangle ++(1, -1); \fi
+      \draw[fgline!60, line width=0.3pt] (\nv, -\bi) rectangle ++(1, -1);
+    }
+  }
+  \foreach \bi in {0,...,3} \node[blbl, anchor=east] at (-0.2, -\bi - 0.5) {bit \bi};
+  \foreach \bi/\pp in {0/2, 1/4, 2/8, 3/16} \node[lbl, anchor=west] at (16.3, -\bi - 0.5) {period \pp};
+\end{tikzpicture}
+\caption{The bits of $0, \ldots, 15$ (one column per number, blue = 1). Bit $b$ alternates between runs of $2^b$ zeros and
+$2^b$ ones, so the number of ones among $0, \ldots, n$ is the number of complete periods times $2^b$, plus the ones in the
+last, partial period.}
+\label{fig:bitperiods}
+\end{figure}
+
+\begin{problem}{Counting Bits (CSES)}
+Count the total number of one bits in the binary representations of $1, 2, \ldots, n$, for $n \le 10^{15}$.
+\solution For each bit $b$, the $n + 1$ numbers $0, \ldots, n$ contain $\lfloor (n+1)/2^{b+1}\rfloor$ complete periods, each
+with $2^b$ ones, and a partial period of $r = (n + 1) \bmod 2^{b+1}$ numbers, which contains $\max(0, r - 2^b)$ ones.
+\end{problem}
+
+\begin{code}
+void solve() {
+    ll n;
+    cin >> n;
+    // count the numbers 0..n with bit b set: bit b repeats the pattern
+    // 2^b zeros, 2^b ones, so count whole periods and the partial one
+    ll total = 0;
+    for (int b = 0; (1LL << b) <= n; b++) {
+        ll period = 1LL << (b + 1), half = 1LL << b;
+        total += (n + 1) / period * half + max(0LL, (n + 1) % period - half);
+    }
+    print(total);
+}
+\end{code}
+
+% ======================================================================================================================
+\section[XOR]{XOR \hfill \gold}\label{sec:xor}
+
+XOR is addition modulo 2 in every bit separately, without carries. That makes it the most algebraically pleasant of the bit
+operations, and entire problem genres are built on the following properties.
+
+\begin{itemize}
+  \item \textbf{It cancels:} $x \oplus x = 0$ and $x \oplus 0 = x$, and XOR is commutative and associative. So XOR-ing a
+        value twice removes it, and the XOR of a list in which every value appears twice except one is that value.
+  \item \textbf{Prefix XORs} work exactly like prefix sums: $a_l \oplus \cdots \oplus a_{r-1} = X_r \oplus X_l$
+        (Section~\ref{sec:prefix}).
+  \item \textbf{Bits are independent:} bit $b$ of $x \oplus y$ depends only on bit $b$ of $x$ and $y$. So XOR problems can be
+        solved one bit at a time, and ``maximise the XOR'' problems greedily from the highest bit.
+  \item \textbf{Addition is XOR plus carries:} $a + b = (a \oplus b) + 2(a \mathbin{\&} b)$, because the bits where both are
+        one are exactly the carries (Figure~\ref{fig:xoradd}). Consequently $a \oplus b \le a + b$, and $a + b = a \oplus b$
+        exactly when $a \mathbin{\&} b = 0$.
+\end{itemize}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[b/.style={cellc, minimum width=6mm, minimum height=5.6mm, font=\ttfamily\small}]
+  \foreach \row/\lab/\bits/\sty in {0/{$a = 11$}/{0,1,0,1,1}/n, 1/{$b = 6$}/{0,0,1,1,0}/n,
+      2/{$a \oplus b = 13$}/{0,1,1,0,1}/cool, 3/{$a \mathbin{\&} b = 2$}/{0,0,0,1,0}/warn,
+      4/{$2(a \mathbin{\&} b) = 4$}/{0,0,1,0,0}/warn, 5/{$a + b = 17$}/{1,0,0,0,1}/good} {
+    \pgfmathsetmacro{\yy}{-0.68*\row - (\row > 1 ? 0.25 : 0) - (\row > 4 ? 0.25 : 0)}
+    \node[blbl, anchor=east] at (-0.5, \yy) {\lab};
+    \foreach \bv [count=\ci from 0] in \bits {
+      \ifnum\bv=1 \node[b, \sty] at (\ci*0.6, \yy) {\bv}; \else \node[b] at (\ci*0.6, \yy) {\bv}; \fi
+    }
+  }
+  \draw[line width=0.6pt, draw=fgink!60] (-0.3, -1.19) -- (2.7, -1.19);
+  \draw[line width=0.6pt, draw=fgink!60] (-0.3, -3.46) -- (2.7, -3.46);
+  \node[notel, anchor=west, text width=5.2cm] at (3.3, -1.95) {XOR adds each column modulo 2 and forgets the carry; AND
+    finds the columns that produce a carry, and the carry is worth twice as much.};
+  \node[notel, anchor=west, text width=5.2cm] at (3.3, -3.85) {$13 + 4 = 17 = 11 + 6$};
+\end{tikzpicture}
+\caption{Addition is XOR plus twice the AND: $a + b = (a \oplus b) + 2(a \mathbin{\&} b)$.}
+\label{fig:xoradd}
+\end{figure}
+
+\begin{trick}[The XOR of $0, 1, \ldots, n$]
+The prefix XOR $0 \oplus 1 \oplus \cdots \oplus n$ has a period-4 closed form: it equals $n$, $1$, $n + 1$ or $0$ when
+$n \bmod 4$ is $0$, $1$, $2$ or $3$. (Pairs $2k, 2k+1$ XOR to 1, and two such pairs cancel.) So the XOR of any range of
+consecutive integers $l..r$ is $f(r) \oplus f(l - 1)$ in $\Oh{1}$.
+\end{trick}
+
+\subsection{Counting one bit at a time}
+
+Sums of XORs over many pairs decompose by bits. A pair contributes $2^b$ to the sum of XORs exactly when its two numbers
+differ in bit $b$; if $c_b$ numbers have bit $b$ set, $c_b(n - c_b)$ pairs differ there. So
+\[
+  \sum_{i < j} a_i \oplus a_j = \sum_b 2^b\, c_b\,(n - c_b) ,
+\]
+computed in $\Oh{n \log(\max a)}$ instead of $\Oh{n^2}$. The same per-bit decomposition gives sums of ANDs (pairs with both
+bits set: $\binom{c_b}{2}$) and ORs (all pairs minus pairs with both bits clear), and it extends from pairs to subarrays (count
+prefix XORs with each bit value) and to paths in trees (Chapter~\ref{ch:trees}).
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vi a(n);
+    cin >> a;
+    // a pair contributes 2^b exactly when its two numbers differ in bit b
+    ll total = 0;
+    rep(b, 21) {
+        ll ones = 0;
+        for (ll x : a) ones += x >> b & 1;
+        total += (1LL << b) * ones * (n - ones);
+    }
+    print(total);
+}
+\end{code}
+
+\subsection{Maximum XOR with a binary trie}
+
+\begin{problem}{Maximum XOR pair}
+Given $n \le 2\cdot10^5$ numbers below $2^{30}$, find the maximum of $a_i \oplus a_j$ over all pairs.
+\solution A higher bit outweighs all lower bits together ($2^b > 2^b - 1 = \sum_{c < b} 2^c$), so the best partner for $x$ is
+found greedily from the top bit down: at each bit, prefer a partner whose bit \emph{differs} from $x$'s, if any candidate with
+the prefix chosen so far has it. A \defn{binary trie} stores the numbers as root-to-leaf paths of bits, most significant first,
+so that ``does a number with this prefix exist?'' is ``does this child exist?'' (Figure~\ref{fig:xortrie}). Insert the numbers
+one by one and query each against those before it: $\Oh{30}$ per operation.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{minipage}[c]{0.5\linewidth}
+\centering
+\begin{forest}
+  for tree={circle, draw=fgink!80, fill=fgfill, line width=0.7pt, minimum size=5.4mm, inner sep=0pt,
+    font=\sffamily\scriptsize, s sep=5mm, l sep=6mm, edge={line width=0.8pt, draw=fgline!80!fgink}},
+  hl/.style={draw=fgverm, fill=fgverm!18, line width=1.1pt, edge={line width=1.8pt, draw=fgverm}}
+  [{}, draw=fgverm, fill=fgverm!18, line width=1.1pt
+    [0, hl, edge label={node[midway, left, font=\sffamily\tiny, text=fggray]{bit 2}}
+      [1, hl
+        [0, rectangle, rounded corners=2pt, label={below:{\scriptsize 2 = 010}}]
+        [1, hl, rectangle, rounded corners=2pt, label={below:{\scriptsize\color{fgverm}\bfseries 3 = 011}}]]]
+    [1
+      [0 [1, rectangle, rounded corners=2pt, label={below:{\scriptsize 5 = 101}}]]
+      [1 [0, rectangle, rounded corners=2pt, label={below:{\scriptsize 6 = 110}}]]]]
+\end{forest}
+\end{minipage}%
+\begin{minipage}[c]{0.42\linewidth}
+\raggedright\small Query $x = 4 = 100_2$ against the set $\{2, 3, 5, 6\}$:\par\smallskip
+\begin{tabular}{@{}l l r@{}}
+  bit 2: & $x$ has 1, take 0 & $+4$ \\
+  bit 1: & $x$ has 0, take 1 & $+2$ \\
+  bit 0: & $x$ has 0, take 1 & $+1$ \\
+\end{tabular}\par\smallskip
+The walk ends at 3, and $4 \oplus 3 = 7$ is the maximum.
+\end{minipage}
+\caption{A binary trie of the 3-bit numbers 2, 3, 5 and 6. To maximise the XOR with $x$, walk down from the root and take
+the child with the bit opposite to $x$'s whenever it exists (red path).}
+\label{fig:xortrie}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vi a(n);
+    cin >> a;
+    const int B = 30;  // values below 2^30
+    vector<array<int, 2>> child(1, {0, 0});  // binary trie, node 0 = root
+    auto insert = [&](ll x) {
+        int v = 0;
+        per(b, B) {
+            int c = x >> b & 1;
+            if (!child[v][c]) {
+                child[v][c] = sz(child);
+                child.push_back({0, 0});
+            }
+            v = child[v][c];
+        }
+    };
+    auto best_with = [&](ll x) {  // max of x ^ y over the inserted y
+        int v = 0;
+        ll res = 0;
+        per(b, B) {
+            int want = (x >> b & 1) ^ 1;  // the opposite bit gives a 1
+            if (child[v][want]) res |= 1LL << b, v = child[v][want];
+            else v = child[v][want ^ 1];
+        }
+        return res;
+    };
+    ll best = 0;
+    insert(a[0]);
+    rep(i, 1, n) {
+        chmax(best, best_with(a[i]));
+        insert(a[i]);
+    }
+    print(best);
+}
+\end{code}
+
+\usetemplate{Binary trie (maximum XOR)}{Ctrl+Alt+T, \textasciigrave}{cpxortrie}
+
+Combined with prefix XORs, the same trie finds the maximum XOR of a \emph{subarray} (Maximum Xor Subarray): it is the maximum
+XOR of two prefix values. Storing counts in the trie nodes answers ``how many $y$ have $x \oplus y < k$?'' by the same walk,
+and deletions are just decrements. When the question is about XORs of arbitrary \emph{subsets} rather than pairs, the right
+tool is a linear basis over $\mathrm{GF}(2)$, Gaussian elimination on bits (Chapter~\ref{ch:linalg}).
+
+\usetemplate{XOR basis (linear basis over GF(2))}{Ctrl+Alt+Y, Shift+X}{cpxorbasis}
+
+% ======================================================================================================================
+\section[Bitsets]{Bitsets: 64 booleans per instruction \hfill \gold}\label{sec:bitset}
+
+\cc{bitset<N>} stores $N$ booleans in $N/64$ machine words and implements \cc{&}, \cc{|}, \cc{^}, \cc{~} and the shifts
+\cc{<<}, \cc{>>} one word at a time. Any algorithm whose inner loop applies the same boolean operation to a whole row of values
+therefore runs about 64 times faster when the row is a bitset, turning $\Oh{n^2}$ into $\Oh{n^2/64}$ and $\Oh{n^3}$ into
+$\Oh{n^3/64}$. That factor routinely decides between a time limit exceeded and an accepted solution.
+
+The canonical example is subset sums. If bit $s$ of \cc{can} records whether the sum $s$ can be formed, then adding a coin
+of value $x$ creates exactly the sums $s + x$: the new set is \cc{can | (can << x)} (Figure~\ref{fig:bitsetshift}), one
+shifted OR instead of a loop over all sums.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[b/.style={cellc, minimum width=6mm, minimum height=5.6mm, font=\ttfamily\small}]
+  \foreach \row/\lab/\bits/\sty in {0/{\texttt{can}: sums $\{0, 2, 3\}$}/{1,0,1,1,0,0,0,0}/cool,
+      1/{\texttt{can <{}< 3}}/{0,0,0,1,0,1,1,0}/warn, 2/{\texttt{can | (can <{}< 3)}}/{1,0,1,1,0,1,1,0}/good} {
+    \pgfmathsetmacro{\yy}{-0.75*\row}
+    \node[blbl, anchor=east] at (-0.5, \yy) {\lab};
+    \foreach \bv [count=\ci from 0] in \bits {
+      \ifnum\bv=1 \node[b, \sty] at (\ci*0.6, \yy) {\bv}; \else \node[b] at (\ci*0.6, \yy) {\bv}; \fi
+    }
+  }
+  \foreach \ci in {0,...,7} \node[lbl] at (\ci*0.6, 0.55) {\ci};
+  \node[notel, anchor=west, text width=4.4cm] at (5.0, -0.75) {adding a coin of value 3: every old sum $s$ also gives
+    $s + 3$; the result is $\{0, 2, 3, 5, 6\}$};
+\end{tikzpicture}
+\caption{The bitset step of subset-sum DP. Bit $s$ (numbered from the left here) says whether the sum $s$ is reachable; a
+shift by $x$ moves every sum up by $x$, and the OR merges old and new sums.}
+\label{fig:bitsetshift}
+\end{figure}
+
+\begin{problem}{Money Sums (CSES)}
+Given $n \le 100$ coins with values up to 1000, list all sums that can be formed with some non-empty subset of the coins.
+\solution The sums are below $10^5$, so a bitset of $10^5 + 1$ bits holds the reachable sums; each coin is one shifted OR.
+The total work is $100 \cdot 10^5 / 64 \approx 1.6 \cdot 10^5$ word operations.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    const int MAXS = 100000;
+    bitset<MAXS + 1> can;  // can[s]: the coins seen so far can make s
+    can[0] = 1;
+    rep(i, n) {
+        int x;
+        cin >> x;
+        can |= can << x;  // every old sum, and every old sum plus x
+    }
+    vi sums;
+    for (int s = 1; s <= MAXS; s++) if (can[s]) sums.push_back(s);
+    print(sz(sums));
+    print(sums);
+}
+\end{code}
+
+\usetemplate{Subset sums with bitset}{Ctrl+Alt+T, Shift+1}{cpbitsetsum}
+
+On a larger instance, 1000 coins with sums up to $10^6$, the same DP with a byte array takes 0.26\,s (and that already benefits
+from the compiler's vectorisation), while the bitset version takes 0.019\,s, 14 times faster. Other classic uses:
+\begin{itemize}
+  \item \textbf{Transitive closure and reachability.} Store the rows of an adjacency matrix as bitsets; ``everything reachable
+        from $v$'' is the OR of the rows of $v$'s successors, processed in reverse topological order: $\Oh{nm/64}$ for a DAG.
+  \item \textbf{Counting triangles.} For each edge $(u, v)$, the common neighbours are \cc{(adj[u] & adj[v]).count()}:
+        $\Oh{m n / 64}$.
+  \item \textbf{Iterating over set bits.} GCC's \cc{b._Find_first()} and \cc{b._Find_next(i)} jump to the next set bit a word
+        at a time, which makes sparse bitsets fast to traverse.
+\end{itemize}
+
+\begin{pitfall}[Bitset sizes are compile-time constants]
+The size $N$ must be known at compile time, so choose the largest size the limits allow. When the actual size varies a lot
+between test cases, the extra work is proportional to $N$, not to the actual size; a common trick is a template function
+\cc{template <int N> void run()} instantiated for a few sizes ($2^{10}, 2^{12}, \ldots$) and dispatched on the input. Also
+remember the memory: $10^4$ bitsets of $10^5$ bits already take 125\,MB.
+\end{pitfall}
+
+% ======================================================================================================================
+\section[Gray codes and de Bruijn sequences]{Gray codes and de Bruijn sequences \hfill \gold}\label{sec:debruijn}
+
+\subsection{Gray codes}
+
+A \defn{Gray code} lists all $n$-bit strings so that consecutive strings differ in exactly one bit. Section~\ref{sec:subsets}
+used it to update a structure with one insertion or deletion per subset. Geometrically, the $n$-bit strings are the corners of
+an $n$-dimensional cube, two corners are adjacent when they differ in one bit, and a Gray code is a path that visits every
+corner exactly once, a \emph{Hamiltonian path} of the cube (Figure~\ref{fig:graycube}). The \emph{reflected} Gray code
+$g_k = k \oplus \lfloor k/2\rfloor$ is built recursively: list the $(n-1)$-bit code with a 0 in front, then the same list in
+reverse order with a 1 in front; the reflection guarantees that the two halves meet with a one-bit change.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \foreach \vi in {0,...,7} {
+    \pgfmathtruncatemacro{\bx}{mod(\vi,2)}\pgfmathtruncatemacro{\by}{mod(floor(\vi/2),2)}
+    \pgfmathtruncatemacro{\bz}{floor(\vi/4)}
+    \coordinate (c\vi) at ({2.3*\bx + 1.15*\bz}, {2.3*\by + 0.8*\bz});
+  }
+  \foreach \ea/\eb in {0/1, 2/3, 4/5, 6/7, 0/2, 1/3, 4/6, 5/7, 0/4, 1/5, 2/6, 3/7}
+    \draw[line width=0.7pt, draw=fgline, dashed] (c\ea) -- (c\eb);
+  \foreach \ea/\eb in {0/1, 1/3, 3/2, 2/6, 6/7, 7/5, 5/4}
+    \draw[->, line width=1.8pt, draw=fgblue, shorten >=6pt, shorten <=6pt] (c\ea) -- (c\eb);
+  \foreach \vi/\s/\pos in {0/000/below left, 1/001/below right, 2/010/left, 3/011/right, 4/100/below left,
+      5/101/right, 6/110/above left, 7/111/above right} {
+    \ifnum\vi=0 \def\vc{fggreen}\else\ifnum\vi=4 \def\vc{fgverm}\else\def\vc{fgblue}\fi\fi
+    \fill[\vc] (c\vi) circle (3pt);
+    \node[font=\ttfamily\small, text=fgink, \pos=1pt] at (c\vi) {\s};
+  }
+  \node[notel, anchor=west, text width=4.8cm] at (4.6, 1.6) {$000 \to 001 \to 011 \to 010 \to 110 \to 111 \to 101 \to 100$:
+    every step walks along one edge of the cube (flips one bit). The start is green and the end red.};
+\end{tikzpicture}
+\caption{The 3-bit reflected Gray code as a Hamiltonian path on the cube, whose corners are the 3-bit strings and whose edges
+join strings that differ in one bit. Bit 0 runs left to right, bit 1 bottom to top, bit 2 front to back.}
+\label{fig:graycube}
+\end{figure}
+
+\begin{problem}{Gray Code (CSES)}
+List all $2^n$ bit strings of length $n$ so that consecutive strings differ in exactly one bit.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    rep(k, 1 << n) {
+        int g = k ^ (k >> 1);  // the k-th Gray code
+        string s(n, '0');
+        rep(b, n) if (g >> b & 1) s[n - 1 - b] = '1';
+        print(s);
+    }
+}
+\end{code}
+
+\usetemplate{Gray code}{Ctrl+Alt+U, 0}{cpgray}
+
+\subsection{De Bruijn sequences}
+
+A \defn{de Bruijn sequence} of order $n$ is a cyclic bit string of length $2^n$ that contains every $n$-bit string exactly
+once as a window; written out linearly, it needs $2^n + n - 1$ characters, which is optimal since there are $2^n$ windows.
+For $n = 3$, the string \texttt{0001011100} contains the eight windows \texttt{000}, \texttt{001}, \texttt{010},
+\texttt{101}, \texttt{011}, \texttt{111}, \texttt{110}, \texttt{100}, each once.
+
+The construction is a graph problem in disguise. Make a vertex for each $(n-1)$-bit string, and for each $n$-bit string
+$w = b_1 b_2 \ldots b_n$ an edge from $b_1 \ldots b_{n-1}$ to $b_2 \ldots b_n$ (Figure~\ref{fig:debruijn}). Consecutive windows
+of a string overlap in $n - 1$ bits, so a string that contains every window once is exactly a walk that uses every edge once:
+an \emph{Eulerian circuit}. Every vertex has two outgoing edges (append 0 or 1) and two incoming ones, so the graph is Eulerian
+and the circuit exists (Chapter~\ref{ch:connectivity} explains Eulerian circuits and Hierholzer's algorithm, which the code
+below uses).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[dv/.style={vtx, minimum size=9mm, font=\ttfamily\small}]
+  \node[dv] (a) at (0, 0) {00};
+  \node[dv] (b) at (2.4, 1.4) {01};
+  \node[dv] (c) at (2.4, -1.4) {10};
+  \node[dv] (d) at (4.8, 0) {11};
+  \tikzset{de/.style={->, line width=1pt, draw=fgblue}, el/.style={font=\ttfamily\scriptsize, fill=white, inner sep=1pt}}
+  \draw[de] (a) to[out=210, in=150, looseness=7] node[el, left] {\textcolor{fgverm}{1}\,000} (a);
+  \draw[de] (a) -- node[el, above left] {\textcolor{fgverm}{2}\,001} (b);
+  \draw[de] (b) to[bend left=18] node[el, right] {\textcolor{fgverm}{3}\,010} (c);
+  \draw[de] (c) to[bend left=18] node[el, left] {\textcolor{fgverm}{4}\,101} (b);
+  \draw[de] (b) -- node[el, above right] {\textcolor{fgverm}{5}\,011} (d);
+  \draw[de] (d) to[out=30, in=-30, looseness=7] node[el, right] {\textcolor{fgverm}{6}\,111} (d);
+  \draw[de] (d) -- node[el, below right] {\textcolor{fgverm}{7}\,110} (c);
+  \draw[de] (c) -- node[el, below left] {\textcolor{fgverm}{8}\,100} (a);
+\end{tikzpicture}
+\caption{The de Bruijn graph of order 3: vertices are 2-bit strings, and each 3-bit string is an edge from its first two bits
+to its last two. The red numbers give an Eulerian circuit; reading the last bit of each edge after the start vertex
+\texttt{00} spells the de Bruijn sequence \texttt{00}\,\texttt{01011100}.}
+\label{fig:debruijn}
+\end{figure}
+
+\begin{problem}{De Bruijn Sequence (CSES)}
+Construct a shortest bit string that contains every bit string of length $n \le 15$ as a substring.
+\solution Find an Eulerian circuit in the de Bruijn graph with Hierholzer's algorithm (iteratively, since the graph has
+$2^{15}$ edges), write down the start vertex, then the last bit of every edge in circuit order.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    // Eulerian circuit in the graph whose vertices are the (n-1)-bit
+    // strings and whose edges are the n-bit strings
+    if (n == 1) {
+        print("01");
+        return;
+    }
+    int V = 1 << (n - 1);
+    vector<int> used(V, 0);  // how many of the two out-edges were taken
+    string out;
+    vector<int> st{0};  // Hierholzer's algorithm, iterative
+    vector<int> bits{0};
+    while (!st.empty()) {
+        int v = st.back();
+        if (used[v] < 2) {
+            int b = used[v]++;
+            st.push_back(((v << 1) | b) & (V - 1));
+            bits.push_back(b);
+        } else {
+            out += char('0' + bits.back());
+            st.pop_back();
+            bits.pop_back();
+        }
+    }
+    out.pop_back();  // the dummy bit of the start vertex
+    reverse(all(out));
+    print(string(n - 1, '0') + out);
+}
+\end{code}
+
+\usetemplate{De Bruijn sequence}{Ctrl+Alt+U, 9}{cpdebruijn}
+
+The template builds the sequence for any alphabet size $k$ without a graph, by concatenating the Lyndon words whose length
+divides $n$ in lexicographic order (the FKM algorithm; Lyndon words appear in Chapter~\ref{ch:strings}). De Bruijn sequences
+answer ``the shortest string containing all words of length $n$'' (the classic example is opening a keypad lock with the
+fewest key presses), and they power a famous bit trick.
+
+\begin{trick}[Finding a bit position with a de Bruijn multiplication]
+The 32-bit constant $D = \mathtt{0x077CB531}$ is a de Bruijn sequence of order 5: its 32 cyclic 5-bit windows are all
+different. Multiplying a power of two $2^i$ by $D$ shifts $D$ left by $i$, so the top five bits of the product are the $i$-th
+window of $D$, a unique fingerprint of $i$. A 32-entry table maps fingerprints back to positions:
+\begin{code}
+int tab[32];
+for (int i = 0; i < 32; i++) tab[(0x077CB531u << i) >> 27] = i;
+// the index of the lowest set bit of a non-zero 32-bit x
+auto ctz = [&](uint32_t x) { return tab[((x & -x) * 0x077CB531u) >> 27]; };
+\end{code}
+Built-ins make this unnecessary in C++ contests, but the trick shows up in bitboard chess engines and on judges without them,
+and it is the nicest proof that de Bruijn sequences are more than a curiosity.
+\end{trick}
+
+% ======================================================================================================================
+\section[Rectangle geometry]{Rectangle geometry \hfill \bronze}\label{sec:rectangles}
+
+Many USACO Bronze problems involve axis-parallel rectangles given by two corners, the lower-left $(x_1, y_1)$ and the
+upper-right $(x_2, y_2)$. Everything rests on one observation: two rectangles intersect in a rectangle whose projection on
+each axis is the intersection of their projections. On one axis, $[a_1, a_2) \cap [b_1, b_2) = [\max(a_1, b_1), \min(a_2,
+b_2))$, which is empty when the lower end is not below the upper end. So the intersection's width is
+$\max(0, \min(x_2) - \max(x_1))$ and its height $\max(0, \min(y_2) - \max(y_1))$ (Figure~\ref{fig:rectinter}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[scale=0.62]
+  \draw[step=1, fgline!30, line width=0.3pt] (-0.5, -0.5) grid (9.5, 6.5);
+  \fill[fgblue!15] (1, 1) rectangle (6, 4);
+  \draw[line width=1pt, draw=fgblue] (1, 1) rectangle (6, 4);
+  \fill[fggreen!15] (3, 2) rectangle (8, 6);
+  \draw[line width=1pt, draw=fggreen] (3, 2) rectangle (8, 6);
+  \fill[fgorange!40] (3, 2) rectangle (6, 4);
+  \draw[line width=1.6pt, draw=fgorange!90!black] (3, 2) rectangle (6, 4);
+  \node[font=\sffamily\small\bfseries, text=fgblue] at (1.6, 1.5) {A};
+  \node[font=\sffamily\small\bfseries, text=fggreen!70!black] at (7.4, 5.5) {B};
+  \draw[<->, line width=0.9pt, draw=fgorange!90!black] (3, -0.25) -- (6, -0.25) node[midway, below,
+    font=\sffamily\scriptsize] {$\min(x_2) - \max(x_1) = 6 - 3$};
+  \draw[<->, line width=0.9pt, draw=fgorange!90!black] (9.1, 2) -- (9.1, 4) node[midway, right,
+    font=\sffamily\scriptsize] {$\min(y_2) - \max(y_1) = 4 - 2$};
+\end{tikzpicture}
+\caption{The intersection of two rectangles (orange) is a rectangle whose width and height are the overlaps of the
+projections; if either overlap is negative, the rectangles do not intersect and the area is 0.}
+\label{fig:rectinter}
+\end{figure}
+
+\begin{problem}{Blocked Billboard (USACO 2017 December Bronze)}
+Two billboards (which do not overlap each other) are partly hidden by a truck. Given the three rectangles, find the total
+visible area of the billboards.
+\solution The visible part of a billboard is its area minus its intersection with the truck, and because the billboards do not
+overlap, the two visible areas simply add up.
+\end{problem}
+
+\begin{code}
+void solve() {
+    array<ll, 4> a, b, t;  // x1 y1 x2 y2: lower-left and upper-right
+    for (auto* r : {&a, &b, &t})
+        for (ll& v : *r) cin >> v;
+    auto area = [](const array<ll, 4>& r) {
+        return (r[2] - r[0]) * (r[3] - r[1]);
+    };
+    auto overlap = [](const array<ll, 4>& p, const array<ll, 4>& q) {
+        ll w = max(0LL, min(p[2], q[2]) - max(p[0], q[0]));
+        ll h = max(0LL, min(p[3], q[3]) - max(p[1], q[1]));
+        return w * h;
+    };
+    // the billboards do not overlap each other, so subtract separately
+    print(area(a) - overlap(a, t) + area(b) - overlap(b, t));
+}
+\end{code}
+
+\usetemplate{Rectangles (intersection, union of two)}{Ctrl+Alt+T, Shift+4}{cprect}
+
+\paragraph{Unions and coverings.} The area of the union of two rectangles is $|A| + |B| - |A \cap B|$, and of three it is the
+inclusion--exclusion sum over all seven non-empty combinations, where the intersection of several rectangles is again the
+overlap of all their projections. Covering questions reduce to corners: in Blocked Billboard~II, a tarp covering the visible
+part of a billboard must cover the whole billboard unless the truck covers at least two of its corners, in which case the
+visible part is itself a rectangle. For the union of many rectangles, compress the coordinates and use a 2D difference array
+(Section~\ref{sec:diff}) when they are small, or sweep a vertical line across the $x$-coordinates with a segment tree that
+maintains the covered length of the $y$-axis (Chapter~\ref{ch:segtree}), in $\Oh{n \log n}$.
+
+\begin{summary}[Chapter summary]
+\begin{itemize}
+  \item Two's complement: $-x = \mathord{\sim}x + 1$, and overflow wraps (undefined for signed types). Write
+        \texttt{1LL <{}< k}, parenthesise comparisons, and use unsigned types for raw bit patterns.
+  \item \texttt{x \& -x} isolates the lowest set bit, \texttt{x \& (x - 1)} removes it; the built-ins count and locate bits in
+        one instruction.
+  \item Bit $b$ of consecutive numbers is periodic with period $2^{b+1}$, which counts bits over huge ranges in closed form.
+  \item XOR problems decompose by bits; maximum XOR queries use a binary trie, subset XOR problems a linear basis.
+  \item Bitsets run boolean row operations 64 at a time: subset sums, reachability, triangle counting.
+  \item Gray codes are Hamiltonian paths of the cube; de Bruijn sequences are Eulerian circuits of the de Bruijn graph.
+  \item Rectangles intersect in the overlap of their projections; unions follow by inclusion--exclusion or sweeping.
+\end{itemize}
+\end{summary}
+
+\begin{practice}[Practice problems (CSES and USACO)]
+\ppgroup{Bits}
+\begin{pplist}
+  \item Bit Strings
+  \item Counting Bits
+  \item Gray Code
+  \item Maximum Xor Subarray
+  \item Money Sums
+  \item De Bruijn Sequence
+\end{pplist}
+\ppgroup{Rectangles (USACO Bronze)}
+\begin{pplist}[2]
+  \item Blocked Billboard (2017 December)
+  \item Blocked Billboard II (2018 January)
+\end{pplist}
+\end{practice}

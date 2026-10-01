@@ -1,0 +1,152 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\@writefile{toc}{\contentsline {chapter}{\numberline {12}Shortest Paths}{151}{chapter.12}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{ch:shortest}{{12}{151}{Shortest Paths}{chapter.12}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {12.1}Choosing the algorithm}{151}{section.12.1}\protected@file@percent }
+\newlabel{sec:sp-choose}{{12.1}{151}{Choosing the algorithm}{section.12.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {12.1}{\ignorespaces Which shortest-path algorithm? A DAG allows any weights (and even longest paths) with a simple DP; negative weights in a graph with cycles need Bellman--Ford, or Floyd--Warshall for all pairs.}}{151}{figure.caption.201}\protected@file@percent }
+\newlabel{fig:spflow}{{12.1}{151}{Which shortest-path algorithm? A DAG allows any weights (and even longest paths) with a simple DP; negative weights in a graph with cycles need Bellman--Ford, or Floyd--Warshall for all pairs}{figure.caption.201}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {12.1}{\ignorespaces Shortest-path algorithms at a glance.}}{152}{table.caption.202}\protected@file@percent }
+\newlabel{tab:spalgos}{{12.1}{152}{Shortest-path algorithms at a glance}{table.caption.202}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {12.2}Relaxation}{152}{section.12.2}\protected@file@percent }
+\newlabel{sec:relax}{{12.2}{152}{Relaxation}{section.12.2}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {12.3}Dijkstra's algorithm}{152}{section.12.3}\protected@file@percent }
+\newlabel{sec:dijkstra}{{12.3}{152}{Dijkstra's algorithm}{section.12.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {12.2}{\ignorespaces Dijkstra's algorithm from S. Green vertices are final, red is the vertex being finalised, blue ones are in the queue with a tentative distance, and thick blue edges are the current parent pointers. The last step finalises T with distance 10, and the parent pointers form the shortest-path tree.}}{153}{figure.caption.203}\protected@file@percent }
+\newlabel{fig:dijkstra}{{12.2}{153}{Dijkstra's algorithm from S. Green vertices are final, red is the vertex being finalised, blue ones are in the queue with a tentative distance, and thick blue edges are the current parent pointers. The last step finalises T with distance 10, and the parent pointers form the shortest-path tree}{figure.caption.203}{}}
+\newlabel{tpl:cpdijkstra}{{12.3}{153}{Dijkstra's algorithm}{section*.204}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {12.3.1}Dijkstra on states}{154}{subsection.12.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {12.3.2}Counting and comparing shortest paths}{155}{subsection.12.3.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {12.4}0--1 BFS}{156}{section.12.4}\protected@file@percent }
+\newlabel{sec:01bfs}{{12.4}{156}{0--1 BFS}{section.12.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {12.3}{\ignorespaces 0--1 BFS keeps the deque sorted by distance: vertices at distance $d$ (blue) in front, $d + 1$ (orange) behind.}}{156}{figure.caption.205}\protected@file@percent }
+\newlabel{fig:01bfs}{{12.3}{156}{0--1 BFS keeps the deque sorted by distance: vertices at distance $d$ (blue) in front, $d + 1$ (orange) behind}{figure.caption.205}{}}
+\newlabel{tpl:cp01bfs}{{12.4}{157}{0--1 BFS}{section*.206}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {12.5}Negative weights: Bellman--Ford}{157}{section.12.5}\protected@file@percent }
+\newlabel{sec:bellman}{{12.5}{157}{Negative weights: Bellman--Ford}{section.12.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {12.4}{\ignorespaces A negative cycle (red) and a vertex that depends on it. Everything reachable from a negative cycle has distance $-\infty $.}}{158}{figure.caption.207}\protected@file@percent }
+\newlabel{fig:negcycle}{{12.4}{158}{A negative cycle (red) and a vertex that depends on it. Everything reachable from a negative cycle has distance $-\infty $}{figure.caption.207}{}}
+\newlabel{tpl:cpbellman}{{12.5}{158}{Negative weights: Bellman--Ford}{section*.208}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {12.5.1}Longest paths and unbounded answers}{158}{subsection.12.5.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {12.6}Difference constraints}{159}{section.12.6}\protected@file@percent }
+\newlabel{sec:diffcons}{{12.6}{159}{Difference constraints}{section.12.6}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {12.5}{\ignorespaces A system of difference constraints as a graph. Each constraint $x_b - x_a \le c$ is an edge $a \to b$ of weight $c$; shortest distances from a virtual source satisfy all constraints at once.}}{160}{figure.caption.209}\protected@file@percent }
+\newlabel{fig:diffcons}{{12.5}{160}{A system of difference constraints as a graph. Each constraint $x_b - x_a \le c$ is an edge $a \to b$ of weight $c$; shortest distances from a virtual source satisfy all constraints at once}{figure.caption.209}{}}
+\newlabel{tpl:cpdiffcons}{{12.6}{160}{Difference constraints}{section*.210}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {12.7}All pairs: Floyd--Warshall}{161}{section.12.7}\protected@file@percent }
+\newlabel{sec:floyd}{{12.7}{161}{All pairs: Floyd--Warshall}{section.12.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {12.6}{\ignorespaces The Floyd--Warshall recurrence. With stops up to $k$ allowed, the best path from $i$ to $j$ either avoids $k$ (grey) or visits it once, and then both halves use only stops below $k$ (blue).}}{161}{figure.caption.211}\protected@file@percent }
+\newlabel{fig:floyd}{{12.6}{161}{The Floyd--Warshall recurrence. With stops up to $k$ allowed, the best path from $i$ to $j$ either avoids $k$ (grey) or visits it once, and then both halves use only stops below $k$ (blue)}{figure.caption.211}{}}
+\newlabel{tpl:cpfloyd}{{12.7}{161}{All pairs: Floyd--Warshall}{section*.212}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {12.8}Shortest and longest paths in DAGs}{162}{section.12.8}\protected@file@percent }
+\newlabel{sec:dagpaths}{{12.8}{162}{Shortest and longest paths in DAGs}{section.12.8}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {12.7}{\ignorespaces Longest path in a DAG by DP in topological order. Parent pointers recover the route.}}{162}{figure.caption.213}\protected@file@percent }
+\newlabel{fig:dagpath}{{12.7}{162}{Longest path in a DAG by DP in topological order. Parent pointers recover the route}{figure.caption.213}{}}
+\@setckpt{algorithms/11_shortest_paths}{
+\setcounter{page}{165}
+\setcounter{equation}{0}
+\setcounter{enumi}{2}
+\setcounter{enumii}{0}
+\setcounter{enumiii}{0}
+\setcounter{enumiv}{0}
+\setcounter{footnote}{0}
+\setcounter{mpfootnote}{0}
+\setcounter{part}{3}
+\setcounter{chapter}{12}
+\setcounter{section}{8}
+\setcounter{subsection}{0}
+\setcounter{subsubsection}{0}
+\setcounter{paragraph}{0}
+\setcounter{subparagraph}{0}
+\setcounter{figure}{7}
+\setcounter{table}{1}
+\setcounter{parentequation}{0}
+\setcounter{lstnumber}{40}
+\setcounter{tcbbreakpart}{2}
+\setcounter{tcblayer}{0}
+\setcounter{tcolorbox@number}{494}
+\setcounter{tcblisting}{97}
+\setcounter{tcbrastercolumn}{1}
+\setcounter{tcbrasterrow}{1}
+\setcounter{tcbrasternum}{1}
+\setcounter{tcbraster}{2}
+\setcounter{cpsegfig}{0}
+\setcounter{LT@tables}{0}
+\setcounter{LT@chunks}{0}
+\setcounter{nlinenum}{0}
+\setcounter{ALG@line}{7}
+\setcounter{ALG@rem}{0}
+\setcounter{ALG@nested}{0}
+\setcounter{ALG@Lnr}{2}
+\setcounter{ALG@blocknr}{15}
+\setcounter{ALG@storecount}{0}
+\setcounter{ALG@tmpcounter}{0}
+\setcounter{algpx@codeBoxCount}{0}
+\setcounter{algpx@nestedCBoxCount}{0}
+\setcounter{algpx@startedBoxesCount}{0}
+\setcounter{algpx@endedBoxesCount}{0}
+\setcounter{algpx@nestedBoxedStringCount}{0}
+\setcounter{algpx@nestedBoxedStringMaxCount}{0}
+\setcounter{algpx@indentCount}{14}
+\setcounter{algpx@lastIndentEnded}{13}
+\setcounter{algpx@pageCount}{0}
+\setcounter{algpx@tmpCount}{0}
+\setcounter{caption@flags}{2}
+\setcounter{continuedfloat}{0}
+\setcounter{float@type}{16}
+\setcounter{section@level}{0}
+\setcounter{Item}{8}
+\setcounter{Hfootnote}{0}
+\setcounter{bookmark@seq@number}{0}
+\setcounter{algpx@indentEndPage-0@totc}{0}
+\setcounter{algpx@indentEndPage-1@totc}{0}
+\setcounter{algpx@indentEndPage-2@totc}{0}
+\setcounter{algpx@indentEndPage-3@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-2@totc}{3}
+\setcounter{algpx@indentEndCoordIndex-0@totc}{3}
+\setcounter{algpx@indentEndPage-4@totc}{0}
+\setcounter{algpx@indentEndPage-5@totc}{0}
+\setcounter{algpx@indentEndPage-6@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-4@totc}{6}
+\setcounter{algpx@indentEndPage-7@totc}{0}
+\setcounter{algpx@indentEndPage-8@totc}{0}
+\setcounter{algpx@indentEndPage-9@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-8@totc}{9}
+\setcounter{algpx@indentEndPage-10@totc}{0}
+\setcounter{algpx@indentEndPage-11@totc}{0}
+\setcounter{algpx@indentEndPage-12@totc}{0}
+\setcounter{algpx@indentEndPage-13@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-12@totc}{13}
+\setcounter{algpx@indentEndCoordIndex-10@totc}{13}
+\setcounter{algpx@indentEndPage-14@totc}{0}
+\setcounter{algpx@indentEndPage-15@totc}{0}
+\setcounter{algpx@indentEndPage-16@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-15@totc}{16}
+\setcounter{algpx@indentEndPage-17@totc}{0}
+\setcounter{algpx@indentEndPage-18@totc}{1}
+\setcounter{algpx@indentEndPage-19@totc}{1}
+\setcounter{algpx@indentEndCoordIndex-18@totc}{19}
+\setcounter{lstlisting}{0}
+\setcounter{algpx@indentEndPage-0}{0}
+\setcounter{algpx@indentEndPage-1}{0}
+\setcounter{algpx@indentEndPage-2}{0}
+\setcounter{algpx@indentEndPage-3}{0}
+\setcounter{algpx@indentEndCoordIndex-2}{3}
+\setcounter{algpx@indentEndCoordIndex-0}{3}
+\setcounter{algpx@indentEndPage-4}{0}
+\setcounter{algpx@indentEndPage-5}{0}
+\setcounter{algpx@indentEndPage-6}{0}
+\setcounter{algpx@indentEndCoordIndex-4}{6}
+\setcounter{algpx@indentEndPage-7}{0}
+\setcounter{algpx@indentEndPage-8}{0}
+\setcounter{algpx@indentEndPage-9}{0}
+\setcounter{algpx@indentEndCoordIndex-8}{9}
+\setcounter{algpx@indentEndPage-10}{0}
+\setcounter{algpx@indentEndPage-11}{0}
+\setcounter{algpx@indentEndPage-12}{0}
+\setcounter{algpx@indentEndPage-13}{0}
+\setcounter{algpx@indentEndCoordIndex-12}{13}
+\setcounter{algpx@indentEndCoordIndex-10}{13}
+}

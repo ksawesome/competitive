@@ -1,0 +1,753 @@
+\chapter{Linear Algebra and Polynomials}\label{ch:linalg}
+
+Two kinds of algebra appear again and again in contest problems. Linear algebra turns walks, linear systems and XOR puzzles into
+matrix operations. Polynomials turn counting into multiplication: the coefficients of a product are a convolution, the fast Fourier
+transform computes it in $\Oh{n \log n}$, and Newton's method lifts that to inverses, logarithms and exponentials of power series.
+This chapter covers both, from matrix powers to the polynomial toolkit, and ends with transforms for bitwise convolutions and with
+recovering linear recurrences from their first terms.
+
+\begin{chapterintro}{\gold\ \plat\ \ioi}{Section~\ref{sec:matexp} (matrix powers for recurrences), Chapter~\ref{ch:numbertheory}
+(modular inverses, primitive roots) and Section~\ref{sec:sosdp} (subset sums).}
+  \item count and optimise walks with matrix powers over different semirings;
+  \item solve linear systems modulo a prime with Gaussian elimination, and reason about XOR with bases over GF(2);
+  \item multiply polynomials with the FFT and the NTT, and recognise convolutions in disguise;
+  \item invert, divide, and take logarithms and exponentials of power series with Newton's method, and evaluate and interpolate at many
+        points;
+  \item compute XOR, AND and OR convolutions with the Walsh--Hadamard transform;
+  \item find a linear recurrence from its first terms (Berlekamp--Massey) and jump to its $n$-th term (Kitamasa).
+\end{chapterintro}
+
+% ======================================================================================================================
+\section[Matrices and walks]{Matrices and walks \hfill \gold}\label{sec:matrices}
+
+Multiplying an $n \times m$ matrix by an $m \times p$ matrix costs $nmp$ multiplications, so a power $A^k$ of an $n \times n$ matrix
+costs $\Oh{n^3 \log k}$ by repeated squaring. Section~\ref{sec:matexp} used this for linear recurrences. The other classic use is
+counting walks: if $A$ is the adjacency matrix of a graph, then $(A^k)_{uv}$ is the number of walks with exactly $k$ edges from $u$ to
+$v$, because a walk of length $k$ is a walk of length $k - 1$ followed by one more edge, which is exactly how a matrix product combines
+its entries (Figure~\ref{fig:walks}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{wv/.style={vtx, minimum size=7mm}}
+  \node[wv] (W1) at (0, 1.2) {1};
+  \node[wv] (W2) at (1.6, 1.2) {2};
+  \node[wv] (W3) at (0.8, 0) {3};
+  \draw[ded, shorten >=1pt] (W1) -- (W2);
+  \draw[ded, shorten >=1pt] (W2) -- (W3);
+  \draw[ded, shorten >=1pt] (W1) to[bend right=18] (W3);
+  \draw[ded, shorten >=1pt] (W3) to[bend right=18] (W1);
+  \node[anchor=west, font=\small] at (2.4, 0.6) {$A = \begin{pmatrix} 0 & 1 & 1 \\ 0 & 0 & 1 \\ 1 & 0 & 0 \end{pmatrix}, \quad
+    A^2 = \begin{pmatrix} 1 & 0 & 1 \\ 1 & 0 & 0 \\ 0 & 1 & 1 \end{pmatrix}$};
+  \node[notel, anchor=west, text width=4.6cm] at (8.6, 0.6) {Row 1 of $A^2$: from vertex 1 there is one walk of two edges back to
+    1 (via 3) and one to 3 (via 2), and none to 2.};
+\end{tikzpicture}
+\caption{The entries of $A^k$ count the walks with $k$ edges.}
+\label{fig:walks}
+\end{figure}
+
+\usetemplate{Matrix exponentiation}{Ctrl+Alt+T, Shift+X}{cpmatrix}
+
+\begin{problem}{Graph Paths I (CSES)}
+Count the routes with exactly $k \le 10^9$ flights from city 1 to city $n$ ($n \le 100$, parallel flights allowed), modulo $10^9 + 7$.
+\solution $(A^k)_{1n}$ with $A_{uv}$ the number of flights from $u$ to $v$: 30 squarings of a $100 \times 100$ matrix, 0.11\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // Mat, mat_pow (cpmatrix) are pasted above solve()
+    int n, m, k;
+    cin >> n >> m >> k;
+    Mat A(n, vector<ll>(n));
+    rep(i, m) {
+        int a, b;
+        cin >> a >> b;
+        A[a - 1][b - 1]++;  // parallel flights count separately
+    }
+    print(mat_pow(A, k)[0][n - 1]);  // (A^k)[u][v]: walks with exactly k edges
+}
+\end{code}
+
+\paragraph{Other semirings.} Nothing in repeated squaring needs ordinary $+$ and $\times$: any pair of operations in which $\otimes$
+distributes over $\oplus$ and both are associative works. With $(\min, +)$, the ``product'' $\min_l (X_{il} + Y_{lj})$ combines the
+cheapest ways to go from $i$ to $l$ and from $l$ to $j$, and $A^k$ holds the cheapest walks with exactly $k$ edges; its identity matrix
+has 0 on the diagonal and $\infty$ elsewhere. With $(\max, \min)$ it gives the best bottleneck, and with $(\lor, \land)$ plain
+reachability in exactly $k$ steps, where rows stored as bitsets make each product 64 times faster.
+
+\begin{problem}{Graph Paths II (CSES)}
+The cheapest route with exactly $k \le 10^9$ flights from city 1 to city $n$ ($n \le 100$), or $-1$.
+\solution The $(\min, +)$ power of the price matrix. Prices up to $10^9$ times $10^9$ flights stay below $10^{18}$, so \cc{INF}
+$= 4 \cdot 10^{18}$ is safe. 0.09\,s.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, m, k;
+    cin >> n >> m >> k;
+    vvi A(n, vi(n, INF));  // A[u][v]: the cheapest single flight from u to v
+    rep(i, m) {
+        int a, b;
+        ll c;
+        cin >> a >> b >> c;
+        chmin(A[a - 1][b - 1], c);
+    }
+    auto mul = [&](const vvi& X, const vvi& Y) {  // the (min, +) product
+        vvi Z(n, vi(n, INF));
+        rep(i, n) rep(l, n) {
+            if (X[i][l] == INF) continue;
+            rep(j, n) if (Y[l][j] < INF) chmin(Z[i][j], X[i][l] + Y[l][j]);
+        }
+        return Z;
+    };
+    vvi R(n, vi(n, INF));  // the identity for (min, +): 0 on the diagonal
+    rep(i, n) R[i][i] = 0;
+    for (; k > 0; k >>= 1, A = mul(A, A))
+        if (k & 1) R = mul(R, A);
+    print(R[0][n - 1] < INF ? R[0][n - 1] : -1);
+}
+\end{code}
+
+% ======================================================================================================================
+\section[Gaussian elimination]{Gaussian elimination \hfill \plat}\label{sec:gauss}
+
+To solve $n$ linear equations in $m$ unknowns, write them as an augmented matrix $(A \mid b)$ and simplify it with three row operations
+that do not change the solutions: swapping rows, scaling a row by a non-zero number, and adding a multiple of one row to another. Going
+column by column, choose a \emph{pivot} row with a non-zero entry in the column, scale it so the pivot becomes 1, and subtract multiples
+of it from every other row to clear the rest of the column (Figure~\ref{fig:gauss}). This \emph{Gauss--Jordan} form shows the answer
+directly; each column costs $\Oh{nm}$, so the whole elimination is $\Oh{nm \min(n, m)}$.
+
+\begin{figure}[htbp]
+\centering
+\newcommand{\gpiv}[1]{\textcolor{fgverm}{\mathbf{#1}}}
+$\left(\begin{array}{rrr|r} \gpiv{1} & 2 & 1 & 8 \\ 2 & 5 & 1 & 15 \\ 1 & 3 & 3 & 16 \end{array}\right)
+\xrightarrow{\text{column 1}}
+\left(\begin{array}{rrr|r} 1 & 2 & 1 & 8 \\ 0 & \gpiv{1} & -1 & -1 \\ 0 & 1 & 2 & 8 \end{array}\right)
+\xrightarrow{\text{column 2}}
+\left(\begin{array}{rrr|r} 1 & 0 & 3 & 10 \\ 0 & 1 & -1 & -1 \\ 0 & 0 & \gpiv{3} & 9 \end{array}\right)
+\xrightarrow{\text{column 3}}
+\left(\begin{array}{rrr|r} 1 & 0 & 0 & 1 \\ 0 & 1 & 0 & 2 \\ 0 & 0 & 1 & 3 \end{array}\right)$
+\caption{Gauss--Jordan elimination on $x + 2y + z = 8$, $2x + 5y + z = 15$, $x + 3y + 3z = 16$. Each step uses the pivot (red) to clear
+its column; the last matrix reads $x = 1$, $y = 2$, $z = 3$.}
+\label{fig:gauss}
+\end{figure}
+
+The final form also tells what happens in general. The number of pivots is the \defn{rank} $r$. A row that has become $0 = c$ with
+$c \ne 0$ means the system has no solution. Otherwise, the $m - r$ columns without a pivot are \emph{free variables}: any values work,
+and the pivot variables follow. Modulo a prime $p$ there are then exactly $p^{m-r}$ solutions; the template returns one of them, with the
+free variables set to 0. The same elimination computes determinants (the product of the pivots, with a sign for every swap,
+Section~\ref{sec:matrixtree}) and inverse matrices (eliminate $(A \mid I)$ to $(I \mid A^{-1})$).
+
+\usetemplate{Gaussian elimination mod $p$}{Ctrl+Alt+U, N}{cpgauss}
+
+\begin{problem}{System of Linear Equations (CSES)}
+Solve $n \le 500$ linear equations in $m \le 500$ unknowns modulo $10^9 + 7$, printing any solution, or $-1$ if there is none.
+\solution \cc{gauss_mod}; scaling by a pivot uses its modular inverse. $500 \times 500$ takes 0.15\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // gauss_mod (cpgauss) is pasted above solve()
+    int n, m;
+    cin >> n >> m;
+    vvi a(n, vi(m));
+    vi b(n), x;
+    rep(i, n) {
+        for (ll& v : a[i]) cin >> v;
+        cin >> b[i];
+    }
+    if (gauss_mod(a, b, x) == -1) print(-1);  // inconsistent
+    else print(x);  // free variables are 0
+}
+\end{code}
+
+\begin{pitfall}[Elimination with floating point]
+Over the reals, a tiny pivot amplifies rounding errors. Choose as pivot the entry of largest absolute value in the column (\emph{partial
+pivoting}), compare with a tolerance such as $10^{-9}$ instead of 0, and prefer exact arithmetic (modulo a prime, or fractions) whenever
+the problem allows it.
+\end{pitfall}
+
+\begin{recognize}
+``Each switch toggles some lamps; can all lamps be lit?'' (a system over GF(2): rows are bitsets and elimination is 64 times faster with
+XOR of whole words), expected values on a graph with cycles (one equation $E_v = 1 + \sum_w p_{vw} E_w$ per state), and anything phrased
+as ``linear combinations'', ``independent vectors'' or ``a unique solution''.
+\end{recognize}
+
+% ======================================================================================================================
+\section[Linear bases over GF(2)]{Linear bases over GF(2) \hfill \ioi}\label{sec:xorbasis}
+
+Numbers under XOR form a vector space over the two-element field: a number is a vector of bits, and XOR adds vectors. Questions about
+``the XOR of some subset'' are therefore questions about the \emph{span} of the numbers. A \defn{linear basis} keeps at most one vector
+for each highest bit. To insert $x$, go through its bits from the top: whenever the basis has a vector with the same highest bit, XOR it
+into $x$. If $x$ becomes 0, it was already representable; otherwise its remaining highest bit is new and $x$ joins the basis
+(Figure~\ref{fig:xorbasis}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{bz/.style={cell, font=\ttfamily\small, minimum width=6mm, minimum height=6mm}}
+  \foreach \lbr/\bits/\yy in {{$b_3$}/{1/cool,0/n,1/n,1/n}/0, {$b_2$}/{0/n,1/cool,1/n,0/n}/-0.75, {$b_0$}/{0/n,0/n,0/n,1/cool}/-1.5} {
+    \node[blbl, anchor=east] at (-0.2, \yy) {\lbr};
+    \foreach \bv/\bst [count=\ii from 0] in \bits \node[bz, \bst] at (0.6*\ii, \yy) {\bv};
+  }
+  \foreach \ii/\bt in {0/3, 1/2, 2/1, 3/0} \node[lbl] at (0.6*\ii + 0.3, 0.55) {\bt};
+  \node[lbl, anchor=east] at (-0.2, 0.55) {bit};
+  \node[notel, anchor=west, text width=8.2cm] at (3.1, -0.75) {Three vectors with distinct highest bits (blue) span $2^3 = 8$ values.
+    The largest subset XOR is found greedily from the top: start from 0, take $b_3$ (1011), then $b_2$ because $1011 \oplus 0110 = 1101$
+    is larger, and skip $b_0$ because $1101 \oplus 0001 = 1100$ is smaller. The maximum is $1101 = 13$.};
+\end{tikzpicture}
+\caption{A linear basis over GF(2): one vector per highest bit.}
+\label{fig:xorbasis}
+\end{figure}
+
+With a basis of dimension $d$, the subset XORs take exactly $2^d$ distinct values, each reached by the same number $2^{n - d}$ of
+subsets. The maximum subset XOR is the greedy of Figure~\ref{fig:xorbasis}, and ``can $x$ be formed?'' is an insertion that is not
+stored. After a reduction that makes every basis vector's highest bit appear in no other vector, the $k$-th smallest subset XOR is
+read off the binary representation of $k$.
+
+\usetemplate{XOR basis}{Ctrl+Alt+Y, Shift+X}{cpxorbasis}
+
+\begin{problem}{Maximum subset XOR}
+For $n \le 2 \cdot 10^5$ numbers below $2^{60}$, print the largest XOR of a subset and the number of distinct subset XORs.
+\solution Insert everything into a basis: $\Oh{n \cdot 60}$, 0.12\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // XorBasis (cpxorbasis) is pasted above solve()
+    int n;
+    cin >> n;
+    XorBasis xb;
+    rep(i, n) {
+        ll x;
+        cin >> x;
+        xb.insert(x);
+    }
+    print(xb.max_xor(), 1LL << xb.dim);  // 2^dim distinct subset XORs
+}
+\end{code}
+
+\paragraph{Bases of ranges.} ``The largest subset XOR of $a_l, \dots, a_r$'' for many ranges, online, has a neat solution. Build a basis
+of every prefix, but let each basis vector remember the position it came from, and when inserting a new element prefer it to an older
+vector with the same highest bit: swap them and continue inserting the older one. Then, for the prefix ending at $r$, the basis vectors
+whose positions are at least $l$ span exactly the XORs of subsets of $a_l, \dots, a_r$, and the greedy runs on them alone. Each prefix
+costs one insertion, $\Oh{B}$ for $B$-bit values, and so does each query.
+
+\begin{problem}{Range XOR maximum}
+Answer $q \le 2 \cdot 10^5$ queries ``the largest subset XOR of $a_l, \dots, a_r$'' for $n \le 2 \cdot 10^5$ values below $2^{30}$.
+\solution The prefix bases above, $30$ numbers and $30$ positions per prefix (48\,MB as 32-bit integers): 0.21\,s.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, q;
+    cin >> n >> q;
+    const int B = 30;  // the values are below 2^30
+    // prefix i: a basis of a[0..i) built from the latest possible positions
+    vector<array<int32_t, B>> val(n + 1), pos(n + 1);
+    val[0].fill(0), pos[0].fill(-1);
+    rep(i, n) {
+        int32_t x, p = i;
+        cin >> x;
+        val[i + 1] = val[i], pos[i + 1] = pos[i];
+        per(b, B) {
+            if (!(x >> b & 1)) continue;
+            if (!val[i + 1][b]) {
+                val[i + 1][b] = x, pos[i + 1][b] = p;
+                break;
+            }
+            if (pos[i + 1][b] < p) {  // keep the newer vector in the basis
+                swap(val[i + 1][b], x);
+                swap(pos[i + 1][b], p);
+            }
+            x ^= val[i + 1][b];  // go on with the older of the two vectors
+        }
+    }
+    while (q--) {
+        int l, r;
+        cin >> l >> r;
+        int32_t best = 0;  // greedy from the top, vectors from a[l-1..r) only
+        per(b, B) {
+            int32_t v = val[r][b];
+            if (pos[r][b] >= l - 1 && (best ^ v) > best) best ^= v;
+        }
+        print(best);
+    }
+}
+\end{code}
+
+\begin{recognize}
+``Maximum XOR of a subset'', ``how many distinct XORs'', ``can $x$ be written as a XOR of some of these'', ``the $k$-th smallest subset
+XOR'', and XOR along paths in a graph: the XOR of any cycle can be added to a path freely, so the cycles' XORs go into a basis and the
+answer is the greedy maximum starting from one fixed path.
+\end{recognize}
+
+% ======================================================================================================================
+\section[The fast Fourier transform]{The fast Fourier transform \hfill \ioi}\label{sec:fft}
+
+The product of $A(x) = \sum a_i x^i$ and $B(x) = \sum b_j x^j$ has the coefficients $c_k = \sum_{i + j = k} a_i b_j$, the
+\defn{convolution} of the two coefficient sequences (Figure~\ref{fig:convolution}). Computed directly it costs $\Oh{nm}$. Convolutions
+are everywhere: whenever two independent choices add up, such as ``choose one item from each of two lists so that the weights sum to
+$w$'', the counts of the sums are the convolution of the two histograms.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{cv/.style={draw=fgline, line width=0.6pt, minimum size=9mm, inner sep=0pt, font=\sffamily\small},
+    k0/.style={cv, fill=fgsky!35}, k1/.style={cv, fill=fgorange!30}, k2/.style={cv, fill=fggreen!28}, k3/.style={cv, fill=fgpink!35}}
+  \foreach \av [count=\ii from 0] in {1, 2, 3} \node[lbl, anchor=east] at (-0.55, -0.95*\ii) {$a_{\ii} = \av$};
+  \foreach \bv [count=\jj from 0] in {4, 5} \node[lbl] at (0.95*\jj, 0.75) {$b_{\jj} = \bv$};
+  \foreach \ii/\jj/\pv in {0/0/4, 0/1/5, 1/0/8, 1/1/10, 2/0/12, 2/1/15} {
+    \pgfmathtruncatemacro{\kk}{\ii + \jj}
+    \node[k\kk] at (0.95*\jj, -0.95*\ii) {\pv};
+  }
+  \foreach \kk/\cv in {0/4, 1/13, 2/22, 3/15} \node[k\kk, minimum width=12mm] at (3.2 + 1.35*\kk, -0.95) {$c_{\kk} = \cv$};
+  \node[notel, anchor=west, text width=4.4cm] at (8.7, -0.95) {$(1 + 2x + 3x^2)(4 + 5x)$: the products $a_i b_j$ with the same $i +
+    j$ (same colour) add up to $c_k$, giving $4 + 13x + 22x^2 + 15x^3$.};
+\end{tikzpicture}
+\caption{A convolution sums the products along anti-diagonals.}
+\label{fig:convolution}
+\end{figure}
+
+The \defn{fast Fourier transform} computes a convolution in $\Oh{n \log n}$ by changing representation. A polynomial of degree less
+than $N$ is determined by its values at $N$ points, and in the value representation multiplication is pointwise. So:
+\begin{enumerate}
+  \item \textbf{evaluate} $A$ and $B$ at $N$ points, where $N$ is a power of two at least $n + m - 1$;
+  \item \textbf{multiply} the values pointwise, $C(x_k) = A(x_k) B(x_k)$;
+  \item \textbf{interpolate} $C$ back from its $N$ values.
+\end{enumerate}
+The trick is the choice of points: the complex $N$-th roots of unity $\omega^k = e^{2\pi i k / N}$ (Figure~\ref{fig:roots}). Split $A$
+into its even and odd coefficients, $A(x) = A_{\mathrm{even}}(x^2) + x \cdot A_{\mathrm{odd}}(x^2)$. The squares of the $N$-th roots of
+unity are the $N/2$-th roots of unity, each taken twice, so evaluating $A$ at all $N$ points needs only the two half-size polynomials at
+$N/2$ points, plus $\Oh{N}$ work to combine them: $A(\omega^k) = E(\omega^{2k}) + \omega^k O(\omega^{2k})$ and $A(\omega^{k + N/2}) =
+E(\omega^{2k}) - \omega^k O(\omega^{2k})$. Hence $T(N) = 2T(N/2) + \Oh{N} = \Oh{N \log N}$. Interpolation is the same transform with
+$\omega^{-1}$ in place of $\omega$, followed by a division by $N$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[scale=1.25]
+  \draw[line width=0.4pt, draw=fgline] (-1.45, 0) -- (1.45, 0) (0, -1.45) -- (0, 1.45);
+  \draw[line width=0.9pt, draw=fgblue!70] (0, 0) circle (1);
+  \foreach \kk in {0, ..., 7} {
+    \pgfmathtruncatemacro{\ev}{mod(\kk, 2) == 0 ? 1 : 0}
+    \ifnum\ev=1
+      \fill[fgblue] ({cos(45*\kk)}, {sin(45*\kk)}) circle (2.2pt);
+    \else
+      \fill[fgorange] ({cos(45*\kk)}, {sin(45*\kk)}) circle (2.2pt);
+    \fi
+    \node[font=\sffamily\scriptsize] at ({1.27*cos(45*\kk)}, {1.27*sin(45*\kk)}) {$\omega^{\kk}$};
+  }
+  \node[notel, anchor=west, text width=6.2cm] at (1.9, 0) {The eight 8th roots of unity. Squaring doubles the angle, so $\omega^k$
+    and $\omega^{k+4} = -\omega^k$ have the same square, and the squares are exactly the even powers (blue), the four 4th roots of
+    unity. Halving the number of points at every level is what makes the recursion fast.};
+\end{tikzpicture}
+\caption{The evaluation points of the FFT.}
+\label{fig:roots}
+\end{figure}
+
+Implementations unroll the recursion. Reordering the input by bit-reversed indices puts the coefficients of every sub-problem next to
+each other; then $\log_2 N$ passes combine neighbouring blocks of sizes $1, 2, 4, \dots$ with \emph{butterflies} $(u, v) \mapsto (u +
+\omega^j v, u - \omega^j v)$ (Figure~\ref{fig:butterfly}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=1.9cm, y=0.58cm]
+  \foreach \sg/\half/\col in {1/1/fgblue, 2/2/fggreen, 3/4/fgverm} {
+    \foreach \ii in {0, ..., 7} {
+      \pgfmathtruncatemacro{\pp}{mod(floor(\ii / \half), 2) == 0 ? \ii + \half : \ii - \half}
+      \draw[line width=0.7pt, draw=\col] (\sg - 1, -\ii) -- (\sg, -\ii);
+      \draw[line width=0.7pt, draw=\col] (\sg - 1, -\pp) -- (\sg, -\ii);
+    }
+    \node[font=\sffamily\scriptsize\bfseries, text=\col] at (\sg - 0.5, 0.9) {blocks of \the\numexpr 2*\half\relax};
+  }
+  \foreach \sg in {0, ..., 3} \foreach \ii in {0, ..., 7} \fill[fgink] (\sg, -\ii) circle (1.7pt);
+  \foreach \cf [count=\ii from 0] in {0, 4, 2, 6, 1, 5, 3, 7} \node[lbl, anchor=east] at (-0.06, -\ii) {$a_{\cf}$};
+  \foreach \ii in {0, ..., 7} \node[lbl, anchor=west] at (3.06, -\ii) {$A(\omega^{\ii})$};
+  \node[notel, anchor=west, text width=4.4cm] at (3.75, -3.5) {An 8-point FFT. The coefficients enter in bit-reversed order (4 =
+    $100_2$ sits at position $001_2$). Each pass joins pairs of blocks; a node combines the two values that reach it, one of them
+    multiplied by a root of unity.};
+\end{tikzpicture}
+\caption{The butterfly network of the iterative FFT: three passes for $N = 8$.}
+\label{fig:butterfly}
+\end{figure}
+
+\usetemplate{FFT (exact integer convolution) / NTT}{Ctrl+Alt+Y, F / Shift+T}{cpfft, cpntt}
+
+The library's \cc{multiply} packs both inputs into one complex array, $a + i b$, and needs a single forward and a single inverse
+transform: squaring $a + ib$ gives $a^2 - b^2 + 2iab$, and the imaginary part of the product is twice the convolution.
+
+\begin{problem}{Apples and Bananas (CSES)}
+$n$ apples and $m$ bananas have weights between 1 and $k$ ($k, n, m \le 2 \cdot 10^5$). For every total $w$ from 2 to $2k$, count the
+(apple, banana) pairs that weigh $w$ together.
+\solution The convolution of the two weight histograms. Counts reach $4 \cdot 10^{10}$, well inside the FFT's exact range. 0.18\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // multiply (cpfft) is pasted above solve()
+    int k, n, m;
+    cin >> k >> n >> m;
+    vi a(k + 1), b(k + 1);  // histograms of the weights
+    rep(i, n) {
+        int x;
+        cin >> x;
+        a[x]++;
+    }
+    rep(i, m) {
+        int x;
+        cin >> x;
+        b[x]++;
+    }
+    vi c = multiply(a, b);  // c[w] = sum of a[i] * b[w - i]
+    print(vi(c.begin() + 2, c.begin() + 2 * k + 1));
+}
+\end{code}
+
+\paragraph{Correlations.} Reversing one sequence turns a convolution, which pairs indices with a fixed \emph{sum}, into a correlation,
+which pairs indices with a fixed \emph{difference}: with $b_i = a_{n-1-i}$, the coefficient $c_{n-1+k}$ of $a * b$ is $\sum_i a_{i+k}
+a_i$.
+
+\begin{problem}{One Bit Positions (CSES)}
+For a bit string of length $n \le 2 \cdot 10^5$ and every distance $k$ from 1 to $n - 1$, count the pairs of 1-bits at distance $k$.
+\solution The correlation of the string with itself: one FFT, 0.13\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // multiply (cpfft) is pasted above solve()
+    string s;
+    cin >> s;
+    int n = sz(s);
+    vi a(n), b(n);
+    rep(i, n) a[i] = b[n - 1 - i] = s[i] - '0';  // b is a reversed
+    vi c = multiply(a, b);  // c[n - 1 + k] = sum over i of a[i + k] * a[i]
+    vi ans(n - 1);
+    rep(k, 1, n) ans[k - 1] = c[n - 1 + k];
+    print(ans);
+}
+\end{code}
+
+\begin{table}[htbp]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{6.4cm}X@{}}
+\toprule
+problem & the convolution \\
+\midrule
+pairs $(i, j)$ with $a_i + b_j = s$, for every $s$ & the histograms of $a$ and $b$ \\
+pairs at distance $k$, or all pairwise differences & a histogram with the reversed other histogram \\
+string matching with wildcards & $\sum_j (p_j - t_{i+j})^2 p_j t_{i+j}$, expanded into three convolutions \\
+the number of mismatches of a pattern at every shift & one correlation per letter of the alphabet \\
+one item from each of $k$ groups, by total weight & the product of the groups' generating polynomials \\
+multiplying huge integers & digits as coefficients, then propagate the carries \\
+\bottomrule
+\end{tabularx}
+\caption{Convolutions in disguise.}
+\label{tab:convapps}
+\end{table}
+
+\begin{pitfall}[Precision of the complex FFT]
+A \cc{double} has 53 bits of precision. The library's FFT computes its roots in long double and stays exact while the true
+coefficients of the result are below about $10^{15}$; beyond that, results are silently rounded. For larger values, or values modulo an
+arbitrary number, split each coefficient into two halves of 15 bits (a few more transforms), or use the NTT with three primes and the
+Chinese remainder theorem.
+\end{pitfall}
+
+% ======================================================================================================================
+\section[The number theoretic transform]{The number theoretic transform \hfill \ioi}\label{sec:ntt}
+
+The FFT only needs a primitive $N$-th root of unity, and the integers modulo a prime $p$ have one whenever $N$ divides $p - 1$: if $g$ is
+a primitive root (Section~\ref{sec:dlog}), then $g^{(p-1)/N}$ has order exactly $N$. For $p = 998\,244\,353 = 119 \cdot 2^{23} + 1$
+every power of two up to $2^{23}$ divides $p - 1$, and $g = 3$. The \defn{number theoretic transform} is the FFT over these integers:
+exact, with no rounding at all, and producing the coefficients modulo $p$, which is precisely what counting problems ask for. That is why
+so many counting problems use $998\,244\,353$ instead of $10^9 + 7$, which has no large power of two in $p - 1$.
+
+\begin{trick}[Any modulus]
+For a convolution modulo $10^9 + 7$ (or exact results up to about $10^{26}$), run the NTT modulo three primes of the form $c \cdot 2^k +
+1$, such as $998\,244\,353$, $167\,772\,161$ and $469\,762\,049$, and recover every coefficient by the Chinese remainder theorem: the
+true value is below the product of the three primes, about $7.8 \cdot 10^{25}$.
+\end{trick}
+
+% ======================================================================================================================
+\section[Operations on power series]{Operations on power series \hfill \ioi}\label{sec:polyops}
+
+Counting problems speak the language of \emph{generating functions}: a sequence $f_0, f_1, \dots$ becomes the formal power series $F(x) =
+\sum f_n x^n$, and operations on sequences become algebra. Multiplying two series convolves them. The ways to make a total of $n$ from
+coins of values $c_1, \dots, c_k$, each usable any number of times, are the coefficients of $\prod_i \frac{1}{1 - x^{c_i}}$. With a fast
+product, the other operations follow from \textbf{Newton's method}, and each costs $\Oh{n \log n}$ for the first $n$ coefficients.
+
+\paragraph{The inverse.} If $A(x) B(x) \equiv 1 \pmod{x^k}$, then $B' = B (2 - A B)$ satisfies $A B' \equiv 1 \pmod{x^{2k}}$: writing
+$AB = 1 - E$ with $E \equiv 0 \pmod{x^k}$, we get $A B' = (1 - E)(1 + E) = 1 - E^2$, and $E^2 \equiv 0 \pmod{x^{2k}}$. Every step doubles
+the number of correct coefficients (Figure~\ref{fig:newton}) and costs a constant number of products of size $2k$, so the total is
+$\Oh{n \log n}$, dominated by the last step. The inverse exists exactly when $a_0 \ne 0$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{nc/.style={cell, font=\sffamily\small, minimum width=7mm}}
+  \node[blbl, anchor=east] at (-0.2, 0) {mod $x$};
+  \arrs{Na}{0}{0}{1/good}
+  \node[blbl, anchor=east] at (-0.2, -0.8) {mod $x^2$};
+  \arrs{Nb}{0}{-0.8}{1/n, 1/good}
+  \node[blbl, anchor=east] at (-0.2, -1.6) {mod $x^4$};
+  \arrs{Nc}{0}{-1.6}{1/n, 1/n, 2/good, 3/good}
+  \node[blbl, anchor=east] at (-0.2, -2.4) {mod $x^8$};
+  \arrs{Nd}{0}{-2.4}{1/n, 1/n, 2/n, 3/n, 5/good, 8/good, 13/good, 21/good}
+  \node[notel, anchor=west, text width=7.0cm] at (6.1, -1.2) {Inverting $A = 1 - x - x^2$, whose inverse generates the Fibonacci
+    numbers. Starting from $B = 1$, each step $B \gets B (2 - AB)$ keeps the correct coefficients and adds as many new ones (green):
+    $1 + x$, then $1 + x + 2x^2 + 3x^3$, then eight coefficients.};
+\end{tikzpicture}
+\caption{Newton's method doubles the number of correct coefficients at every step.}
+\label{fig:newton}
+\end{figure}
+
+\paragraph{The rest of the toolkit.} The same doubling builds everything else from the inverse:
+\begin{itemize}
+  \item \textbf{Division with remainder}, $A = BQ + R$ with $\deg R < \deg B$: reversing the coefficient order turns the quotient into a
+        power series division, $\mathrm{rev}(Q) = \mathrm{rev}(A) / \mathrm{rev}(B) \bmod x^{\deg A - \deg B + 1}$; then $R = A - BQ$.
+  \item \textbf{Logarithm} (for $a_0 = 1$): $\log A = \int A' / A$, a derivative, an inverse, a product and an integral.
+  \item \textbf{Exponential} (for $a_0 = 0$): Newton's method on $\log B - A = 0$ gives the step $B \gets B (1 - \log B + A)$.
+  \item \textbf{Powers and roots}: $A^k = \exp(k \log A)$ after factoring out the lowest term, and $\sqrt A$ by $B \gets (B + A/B) / 2$.
+\end{itemize}
+
+\usetemplate{Polynomial toolkit mod 998244353}{Ctrl+Alt+U, Shift+P}{cppoly}
+
+\begin{problem}{Partition numbers}
+Print the number of partitions $p(1), \dots, p(n)$ modulo $998\,244\,353$, for $n \le 2 \cdot 10^5$.
+\solution $\sum p(n) x^n = \prod_{k \ge 1} \frac{1}{1 - x^k}$, and Euler's pentagonal number theorem gives the denominator explicitly:
+$\prod_k (1 - x^k) = \sum_j (-1)^j x^{j(3j-1)/2}$, summed over all integers $j$, a series with only $\Oh{\sqrt n}$ non-zero terms. One
+inverse finishes the job: 0.34\,s, against $\Oh{n \sqrt n}$ for the classic DP over the pentagonal recurrence.
+\end{problem}
+
+\begin{code}
+void solve() {  // poly_inv (cppoly) is pasted above solve()
+    int n;
+    cin >> n;
+    Poly e(n + 1, 0);  // Euler: prod (1 - x^k) is a sparse series with +-1
+    for (ll j = 0; j * (3 * j - 1) / 2 <= n; j++)  // at the pentagonal numbers
+        for (ll g : {j * (3 * j - 1) / 2, j * (3 * j + 1) / 2})
+            if (g <= n) e[g] = j % 2 ? PMOD - 1 : 1;
+    Poly p = poly_inv(e, n + 1);  // the partition numbers: 1 / prod (1 - x^k)
+    print(vi(p.begin() + 1, p.end()));
+}
+\end{code}
+
+\paragraph{Products of many factors.} A product of many sparse factors $\prod (1 + x^{w_i})$ is best computed as the exponential of a sum
+of logarithms, because $\log(1 + x^w) = x^w - \frac{x^{2w}}{2} + \frac{x^{3w}}{3} - \cdots$ is known in closed form. Grouping equal
+weights, the sum of the logarithms costs $\sum_w S / w = \Oh{S \log S}$ terms by the harmonic bound, and one exponential follows.
+
+\begin{problem}{Subset sums}
+For $n \le 2 \cdot 10^5$ items with weights between 1 and $S \le 10^5$, count, for every $s$ from 1 to $S$, the subsets of total weight
+exactly $s$, modulo $998\,244\,353$.
+\solution $\prod_i (1 + x^{w_i}) = \exp\bigl(\sum_w \mathit{cnt}_w \log(1 + x^w)\bigr)$. The knapsack DP would need $\Oh{nS}$, $2 \cdot
+10^{10}$ steps; this takes 0.41\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // poly_exp (cppoly) is pasted above solve()
+    int n, S;
+    cin >> n >> S;
+    vi cnt(S + 1);
+    rep(i, n) {
+        int w;
+        cin >> w;
+        cnt[w]++;
+    }
+    vi inv(S + 1, 1);  // inverses of 1..S modulo PMOD
+    rep(i, 2, S + 1) inv[i] = (PMOD - PMOD / i) * inv[PMOD % i] % PMOD;
+    Poly lg(S + 1, 0);  // log(1 + x^w) = x^w - x^2w / 2 + x^3w / 3 - ...
+    rep(w, 1, S + 1) {
+        if (!cnt[w]) continue;
+        for (int j = 1; w * j <= S; j++) {  // the harmonic sum: O(S log S)
+            ll t = cnt[w] % PMOD * inv[j] % PMOD;
+            lg[w * j] = (lg[w * j] + (j % 2 ? t : PMOD - t)) % PMOD;
+        }
+    }
+    Poly f = poly_exp(lg, S + 1);  // prod (1 + x^w) = exp(sum of the logs)
+    print(vi(f.begin() + 1, f.end()));
+}
+\end{code}
+
+\paragraph{Evaluating at many points.} $A(x_i)$ is the remainder of $A$ modulo $x - x_i$. Build the \emph{subproduct tree} whose leaves
+are the factors $x - x_i$ and whose inner nodes multiply their children; then reduce $A$ modulo the root and push the remainders down,
+each child taking the remainder modulo its own product (Figure~\ref{fig:subproduct}). Every level costs $\Oh{n \log n}$, so evaluating
+at $n$ points costs $\Oh{n \log^2 n}$. Interpolation runs the same tree backwards, combining the Lagrange terms bottom up.
+
+\begin{figure}[htbp]
+\centering
+\begin{forest}
+  rectree, for tree={font=\sffamily\scriptsize, align=center, s sep=3mm, l sep=7mm, inner sep=3pt}
+  [{$(x - x_1)(x - x_2)(x - x_3)(x - x_4)$\\[1pt]\textcolor{fgverm}{$A \bmod M$}}, hot
+    [{$(x - x_1)(x - x_2)$\\[1pt]\textcolor{fgverm}{$r \bmod M_L$}}
+      [{$x - x_1$\\[1pt]\textcolor{fgverm}{$A(x_1)$}}, good] [{$x - x_2$\\[1pt]\textcolor{fgverm}{$A(x_2)$}}, good]]
+    [{$(x - x_3)(x - x_4)$\\[1pt]\textcolor{fgverm}{$r \bmod M_R$}}
+      [{$x - x_3$\\[1pt]\textcolor{fgverm}{$A(x_3)$}}, good] [{$x - x_4$\\[1pt]\textcolor{fgverm}{$A(x_4)$}}, good]]]
+\end{forest}
+\caption{Multipoint evaluation. The products are built bottom up; the remainders (red) flow top down, each node reducing its parent's
+remainder modulo its own product, until the leaves hold the values.}
+\label{fig:subproduct}
+\end{figure}
+
+\begin{problem}{Multipoint evaluation}
+Evaluate a polynomial of degree below $n$ at $m$ points modulo $998\,244\,353$ ($n, m \le 10^5$).
+\solution \cc{poly_eval_many}. The constant is large: $10^5$ points take 1.4\,s, and below a few thousand points Horner's rule, $\Oh{nm}$,
+is faster.
+\end{problem}
+
+\begin{code}
+void solve() {  // poly_eval_many (cppoly) is pasted above solve()
+    int n, m;
+    cin >> n >> m;
+    Poly a(n);
+    vi xs(m);
+    for (ll& c : a) cin >> c;
+    for (ll& x : xs) cin >> x;
+    print(poly_eval_many(a, xs));  // a subproduct tree: O((n + m) log^2)
+}
+\end{code}
+
+\paragraph{Online convolution.} Some recurrences convolve a sequence with itself as it is being produced, such as $f_n = \sum_{i=1}^{n}
+g_i f_{n-i}$ when $g_i$ itself depends on $f$, so the whole sequence is never available for one product. Divide and conquer on the
+indices, exactly like CDQ (Section~\ref{sec:cdq}), solves this in $\Oh{n \log^2 n}$: compute $f_l, \dots, f_{m-1}$ recursively, add their
+contributions to $f_m, \dots, f_{r-1}$ with one product of size $\Oh{r - l}$, then recurse on the right half (Figure~\ref{fig:onlineconv}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.95cm]
+  \foreach \ii in {0, ..., 7} \node[cell, minimum width=9.5mm] (F\ii) at (\ii, 0) {$f_{\ii}$};
+  \draw[line width=0.8pt, draw=fgblue, rounded corners=2pt] (-0.05, -0.55) rectangle (3.95, -0.85);
+  \draw[line width=0.8pt, draw=fgverm, rounded corners=2pt] (4.05, -0.55) rectangle (8.05, -0.85);
+  \draw[line width=0.8pt, draw=fgblue!60, rounded corners=2pt] (-0.05, -1.1) rectangle (1.95, -1.4);
+  \draw[line width=0.8pt, draw=fgverm!60, rounded corners=2pt] (2.05, -1.1) rectangle (3.95, -1.4);
+  \draw[->, line width=1.1pt, draw=fgverm] (F2.north) to[bend left=40] node[above, font=\sffamily\scriptsize, text=fgverm]
+    {$f_{0..3} * g$ adds to $f_{4..7}$} (F5.north);
+  \node[notel, anchor=west, text width=4.6cm] at (8.6, -0.4) {First finish the left half (blue), recursively; then add its whole
+    contribution to the right half (red) with one product; then recurse on the right half. Each level costs $\Oh{n \log n}$.};
+\end{tikzpicture}
+\caption{Online convolution by divide and conquer.}
+\label{fig:onlineconv}
+\end{figure}
+
+% ======================================================================================================================
+\section[Walsh--Hadamard transforms]{Walsh--Hadamard transforms \hfill \ioi}\label{sec:fwht}
+
+Replace the sum of indices in a convolution by a bitwise operation: $c_k = \sum_{i \oplus j = k} a_i b_j$ is the \defn{XOR
+convolution}, and $\land$ or $\lor$ give the AND and OR convolutions. Each has a transform that turns it into a pointwise product.
+For XOR it is the \defn{Walsh--Hadamard transform}: process the bits one at a time, and for every pair of indices $(i, i + 2^b)$ that
+differ only in bit $b$, replace $(u, v)$ by $(u + v, u - v)$. The transform of $a$ has the entry $\sum_i (-1)^{\mathrm{popcount}(i \land
+k)} a_i$ at $k$, the sign is multiplicative over $\oplus$, and so the transform of the XOR convolution is the pointwise product. The
+inverse is the same transform followed by a division by $n$ (Figure~\ref{fig:fwht}). For AND and OR the transforms are the sums over
+supersets and over subsets of Section~\ref{sec:sosdp}, inverted by the M\"obius transform. Each costs $\Oh{n \log n}$ for $n = 2^k$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[blbl, anchor=east] at (-0.2, 0) {$a$};
+  \arrs{Fa}{0}{0}{1/n, 2/n, 0/n, 1/n}
+  \node[blbl, anchor=east] at (-0.2, -0.8) {bit 0};
+  \arrs{Fb}{0}{-0.8}{3/n, -1/n, 1/n, -1/n}
+  \node[blbl, anchor=east] at (-0.2, -1.6) {bit 1: $\hat a$};
+  \arrs{Fc}{0}{-1.6}{4/cool, -2/cool, 2/cool, 0/cool}
+  \node[blbl, anchor=east] at (-0.2, -2.4) {$\hat a^2$};
+  \arrs{Fd}{0}{-2.4}{16/n, 4/n, 4/n, 0/n}
+  \node[blbl, anchor=east] at (-0.2, -3.2) {inverse: $a \oplus a$};
+  \arrs{Fe}{0}{-3.2}{6/good, 4/good, 4/good, 2/good}
+  \node[notel, anchor=west, text width=8.6cm] at (3.4, -1.6) {The values 0, 1, 1, 3 as a histogram $a$ over $\{0, 1, 2, 3\}$. Each
+    pass replaces the pairs that differ in one bit by $(u + v, u - v)$. Squaring the transform and transforming back (then dividing
+    by 4) gives the XOR convolution of $a$ with itself: among the 16 ordered pairs, 6 have XOR 0, 4 have XOR 1, 4 have XOR 2 and 2 have
+    XOR 3.};
+\end{tikzpicture}
+\caption{The Walsh--Hadamard transform of a 4-entry histogram, and the XOR convolution it computes.}
+\label{fig:fwht}
+\end{figure}
+
+\usetemplate{Walsh--Hadamard transform}{Ctrl+Alt+U, W}{cpfwht}
+
+\begin{problem}{XOR pairs}
+For $n \le 2 \cdot 10^5$ values below $2^k$ ($k \le 17$) and every $x < 2^k$, count the ordered pairs $(i, j)$ with $a_i \oplus a_j =
+x$, modulo $10^9 + 7$.
+\solution The XOR convolution of the histogram with itself: $\Oh{2^k k}$, 0.10\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // xor_convolution (cpfwht) is pasted above solve()
+    int n, k;
+    cin >> n >> k;
+    vi cnt(1 << k);
+    rep(i, n) {
+        int x;
+        cin >> x;
+        cnt[x]++;
+    }
+    print(xor_convolution(cnt, cnt));  // ordered pairs with a_i ^ a_j = x
+}
+\end{code}
+
+% ======================================================================================================================
+\section[Linear recurrences]{Linear recurrences \hfill \ioi}\label{sec:linrec}
+
+A sequence satisfies a \defn{linear recurrence} of order $L$ if $a_n = c_1 a_{n-1} + c_2 a_{n-2} + \dots + c_L a_{n-L}$ for all $n \ge
+L$. Section~\ref{sec:matexp} computed $a_n$ with an $L \times L$ matrix power in $\Oh{L^3 \log n}$. Two better tools exist.
+
+\paragraph{Kitamasa's method.} Shifting the sequence by one step is multiplication by $x$ modulo the characteristic polynomial $P(x) =
+x^L - c_1 x^{L-1} - \dots - c_L$, because $P$ encodes exactly the rule that rewrites $a_L$ in terms of earlier terms. So compute $x^n
+\bmod P(x) = \sum_{i<L} r_i x^i$ by repeated squaring of polynomials modulo $P$; then $a_n = \sum_i r_i a_i$. Each squaring is a product
+of two polynomials of degree below $L$ and a reduction, $\Oh{L^2}$ directly or $\Oh{L \log L}$ with the polynomial toolkit, so $a_n$
+costs $\Oh{L^2 \log n}$ instead of $\Oh{L^3 \log n}$.
+
+\paragraph{Berlekamp--Massey.} Conversely, given the first terms of a sequence, the \textbf{Berlekamp--Massey algorithm} finds the
+shortest linear recurrence that generates them, in $\Oh{N^2}$ for $N$ terms. It processes the terms one by one, keeping the current
+recurrence; when the recurrence predicts a term wrongly, it corrects itself by adding a shifted multiple of the recurrence it had at its
+last failure, which cancels the error without breaking the earlier terms. If the sequence truly satisfies a recurrence of order $L$,
+$2L$ terms are enough to find it.
+
+\usetemplate{Berlekamp--Massey / Kitamasa}{Ctrl+Alt+U, Shift+B / Ctrl+Alt+U, K}{cpbm, cpkitamasa}
+
+\begin{trick}[Guess the recurrence]
+Many counting sequences satisfy a linear recurrence whose order is small but tedious to derive: DPs whose state is a small vector (tilings
+of a $k \times n$ board, walks in a fixed graph, automata), and sums of such sequences. Compute the first few hundred terms with a simple
+DP, run Berlekamp--Massey modulo a prime, and use Kitamasa for $n = 10^{18}$. If the recurrence found has order close to half the number
+of terms, it is probably not the true one: compute more terms and check.
+\end{trick}
+
+\begin{problem}{Throwing Dice, again (CSES)}
+Count the ways to reach a sum of $n \le 10^{18}$ with dice throws, modulo $10^9 + 7$.
+\solution Section~\ref{sec:matexp} derived the recurrence of order 6 and used a matrix power. Without any derivation, 20 terms from the
+obvious DP let Berlekamp--Massey find $f_n = f_{n-1} + \dots + f_{n-6}$ by itself, and Kitamasa jumps to $n$: 0.06\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // berlekamp_massey (cpbm), linear_rec_nth (cpkitamasa) pasted
+    ll n;
+    cin >> n;
+    vi f(20);  // the first terms by the DP f[s] = f[s - 1] + ... + f[s - 6]
+    f[0] = 1;
+    rep(s, 1, 20) rep(d, 1, 7) if (s >= d) f[s] = (f[s] + f[s - d]) % MOD;
+    vi c = berlekamp_massey(f);  // recovers the recurrence from the terms alone
+    print(linear_rec_nth(f, c, n));
+}
+\end{code}
+
+\begin{summary}[Chapter summary]
+\begin{itemize}
+  \item $A^k$ counts walks with $k$ edges; over $(\min, +)$ it finds the cheapest such walks, over $(\lor, \land)$ reachability.
+  \item Gauss--Jordan elimination solves linear systems modulo a prime in $\Oh{nm \min(n, m)}$ and reveals the rank, the free variables
+        and the number of solutions; over the reals, pivot on the largest entry.
+  \item A linear basis over GF(2) answers maximum, counting and membership questions about subset XORs; prefix bases that prefer recent
+        vectors answer them for ranges.
+  \item The FFT multiplies polynomials in $\Oh{n \log n}$ through evaluation at roots of unity; the NTT does it exactly modulo
+        $998\,244\,353$; reversing a sequence turns convolution into correlation.
+  \item Newton's method doubles the precision of power series inverses, logarithms, exponentials and roots, each $\Oh{n \log n}$; a
+        subproduct tree evaluates and interpolates at many points in $\Oh{n \log^2 n}$.
+  \item Walsh--Hadamard and subset-sum transforms turn XOR, AND and OR convolutions into pointwise products.
+  \item Kitamasa computes the $n$-th term of a recurrence in $\Oh{L^2 \log n}$, and Berlekamp--Massey finds the recurrence from $2L$
+        terms.
+\end{itemize}
+\end{summary}
+
+\begin{practice}
+\ppgroup{Linear algebra and transforms}
+\begin{pplist}
+  \item Fibonacci Numbers
+  \item Throwing Dice
+  \item Graph Paths I
+  \item Graph Paths II
+  \item System of Linear Equations
+  \item Apples and Bananas
+  \item One Bit Positions
+  \item Signal Processing
+\end{pplist}
+\end{practice}

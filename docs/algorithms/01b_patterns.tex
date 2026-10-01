@@ -1,0 +1,849 @@
+\chapter{Problem-Solving Patterns}\label{ch:patterns}
+
+Algorithms are tools; patterns are the habits of thought that tell you which tool to pick up. Experienced competitors do not
+solve a new problem from scratch: they recognise that it ``is a contribution problem'', ``wants to be run backwards'', or
+``has a small answer, so enumerate it''. None of these patterns is an algorithm you could put in a library, yet together
+they solve a large fraction of all contest problems, from Bronze to the IOI.
+
+Each section below describes one pattern, shows it on a concrete problem with a figure, and ends with the signals that
+suggest it. Where a problem needs code, the code is complete and was tested against a brute force.
+
+\begin{chapterintro}{\silver\ \gold\ \plat}{Chapter~\ref{ch:approach}; some examples use sorting, prefix sums and a Fenwick
+tree, which later chapters explain in full.}
+  \item count by \emph{contribution}, and count the complement;
+  \item fix one part of the answer and solve the rest fast;
+  \item reverse time, go offline, and sweep over events;
+  \item prove impossibility with invariants and termination with monovariants;
+  \item use pigeonhole, extremal and reflection arguments;
+  \item exploit answers that are small, split heavy from light, and work with differences instead of values.
+\end{chapterintro}
+
+% ======================================================================================================================
+\section[Contribution: count each piece once]{Contribution: count each piece once \hfill \gold}\label{sec:contribution}
+
+Many counting problems ask for a sum over a huge family of objects: over all subarrays, all pairs, all paths in a tree.
+Enumerating the objects is hopeless (there are $\Theta(n^2)$ subarrays), but the sum can be regrouped: instead of asking
+``what does each object contribute?'', ask ``for each \emph{element}, in how many objects does it play a role, and what does
+it contribute there?''. The second question usually has a closed-form answer. This regrouping is the \defn{contribution
+technique}, and it is the single most useful idea in counting problems.
+
+\begin{problem}{Sum of subarray minimums}
+Given $a_0, \dots, a_{n-1}$ ($n \le 2\cdot10^5$, values up to $10^6$), compute the sum of $\min(a_l, \dots, a_r)$ over all
+$\frac{n(n+1)}{2}$ subarrays.
+\end{problem}
+
+Fix an element $a_i$ and ask in which subarrays it is the minimum. Going left from $i$, the subarray may extend until it
+would include an element smaller than $a_i$; going right, likewise. If $L_i$ is the index of the previous smaller element and
+$R_i$ the index of the next smaller one, then $a_i$ is the minimum of exactly the subarrays that start in $(L_i, i]$ and end in
+$[i, R_i)$, and there are $(i - L_i)(R_i - i)$ of them (Figure~\ref{fig:contribution}). So
+\[
+  \sum_{l \le r} \min(a_l, \dots, a_r) \;=\; \sum_{i} a_i \cdot (i - L_i)\cdot(R_i - i).
+\]
+Both $L_i$ and $R_i$ come from a monotonic stack in $\Oh{n}$ (Chapter~\ref{ch:prefix}). One detail needs care: when equal
+values occur, a subarray with two equal minima must be counted once, not twice. Breaking ties asymmetrically does it: use
+``strictly smaller'' on the left and ``smaller or equal'' on the right, so the subarray is charged to the last copy of its
+minimum.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  % bars of height 0.34 cm per unit; index i occupies x in [i, i + 0.8]
+  \fill[fgsky!15, rounded corners=2pt] (1.9, -0.1) rectangle (4.9, 2.95);
+  \foreach \v [count=\i from 0] in {5,2,6,4,7,3,8} {
+    \edef\st{\ifnum\i=3 hot\else\ifnum\i=1 good\else\ifnum\i=5 good\else n\fi\fi\fi}
+    \draw[fill=fgfill, draw=fgink!70, line width=0.6pt, \st] (\i, 0) rectangle ++(0.8, {\v*0.34});
+    \node[font=\sffamily\small, above] at ({\i+0.4}, {\v*0.34}) {\v};
+    \node[lbl, below] at ({\i+0.4}, 0) {\i};
+  }
+  % below the axis: the nearest smaller elements, then the choices of start and end
+  \node[font=\sffamily\scriptsize\bfseries, text=fggreen!80!black] at (1.4, -0.85) {$L_3$};
+  \node[font=\sffamily\scriptsize\bfseries, text=fggreen!80!black] at (5.4, -0.85) {$R_3$};
+  \draw[mbrace] (2.0, -0.62) -- (3.8, -0.62);
+  \node[font=\sffamily\scriptsize, text=fgverm] at (2.9, -1.3) {start $l \in \{2, 3\}$};
+  \draw[mbrace] (3.0, -1.55) -- (4.8, -1.55);
+  \node[font=\sffamily\scriptsize, text=fgverm] at (3.9, -2.23) {end $r \in \{3, 4\}$};
+  \node[notel, anchor=west, text width=5.6cm] at (7.4, 1.2) {The element $4$ at index 3 is the minimum of the four
+    subarrays $[6,4]$, $[6,4,7]$, $[4]$ and $[4,7]$: every choice of a start in $\{2,3\}$ and an end in $\{3,4\}$. Its
+    window stops just before the nearest smaller elements $L_3 = 1$ and $R_3 = 5$. It contributes
+    $4 \cdot 2 \cdot 2 = 16$.};
+\end{tikzpicture}
+\caption{The contribution of one element. It rules the shaded window, which stops just before the nearest smaller
+elements on each side (green). Summing $a_i \cdot (\text{choices of start}) \cdot (\text{choices of end})$ over all $i$
+counts every subarray exactly once.}
+\label{fig:contribution}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vi a(n);
+    cin >> a;
+    // a[i] is the minimum of a[l..r] iff left[i] < l <= i <= r < right[i]
+    vi left(n), right(n), st;
+    rep(i, n) {  // previous strictly smaller element
+        while (!st.empty() && a[st.back()] >= a[i]) st.pop_back();
+        left[i] = st.empty() ? -1 : st.back();
+        st.push_back(i);
+    }
+    st.clear();
+    per(i, n) {  // next smaller or equal element: a tie goes to its last copy
+        while (!st.empty() && a[st.back()] > a[i]) st.pop_back();
+        right[i] = st.empty() ? n : st.back();
+        st.push_back(i);
+    }
+    ll ans = 0;
+    rep(i, n) ans += a[i] * (i - left[i]) * (right[i] - i);
+    print(ans);
+}
+\end{code}
+
+The same regrouping works far beyond minimums. The sum of $|a_i - a_j|$ over all pairs becomes, after sorting, $\sum_i
+a_i\,(2i - n + 1)$: the $i$-th smallest value is added $i$ times (against every smaller value) and subtracted $n - 1 - i$
+times. The sum over all paths of a tree of their lengths becomes a sum over edges of (size of one side) $\times$ (size of the
+other). The expected number of fixed points of a random permutation is $n \cdot \frac1n = 1$ by linearity, without ever
+looking at a single permutation.
+
+\begin{recognize}
+``Sum over all subarrays / pairs / paths / subsets of $f$'' where enumerating the objects is too slow. Ask for each element
+(or edge, or value) how many objects it influences and how.
+\end{recognize}
+
+% ======================================================================================================================
+\section[Fix one thing]{Fix one thing, then solve the rest fast \hfill \silver}\label{sec:fixone}
+
+When an answer involves several choices (a triple of indices, a subarray's two ends, a path's two endpoints), fixing one of
+them often makes the rest easy. The art is choosing \emph{which} one to fix: it is usually the one in the middle, the one
+that plays a special role (the maximum, the root, the first move), or the one that makes the remaining choices independent.
+
+\begin{problem}{Increasing triplets}
+Count the triples $i < j < k$ with $a_i < a_j < a_k$ ($n \le 2 \cdot 10^5$).
+\end{problem}
+
+Fixing $i$ leaves a two-dimensional problem. Fixing the \emph{middle} index $j$ splits it into two independent
+one-dimensional counts: the number of smaller elements to its left, and the number of larger elements to its right. Every
+pair of a left partner and a right partner is a valid triple, so $j$ contributes the product (Figure~\ref{fig:fixmiddle}).
+Both counts come from a Fenwick tree over compressed values (Chapter~\ref{ch:segtree}): sweep left to right counting
+smaller elements seen so far, then right to left counting larger ones.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \arrs{A}{0}{0}{2/good, 5/dim, 3/hot, 6/cool, 4/cool}
+  \idx{A}{5}
+  \spanabove{A-1}{A-2}{1 smaller}
+  \spanabove{A-4}{A-5}{2 larger}
+  \node[font=\sffamily\scriptsize\bfseries, text=fgverm] at ($(A-3.north)+(0,0.3)$) {$j$};
+  \node[notel, anchor=west, text width=6.2cm] at (4.2, -0.1) {With $a_j = 3$ in the middle, the triples are $(2, 3, 6)$
+    and $(2, 3, 4)$: one choice on the left times two on the right.};
+\end{tikzpicture}
+\caption{Fixing the middle element makes the two sides independent: $j$ contributes (smaller on the left) $\times$ (larger
+on the right).}
+\label{fig:fixmiddle}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vi a(n);
+    cin >> a;
+    vi vals = a;  // compress values to 0..m-1
+    sort(all(vals)), vals.erase(unique(all(vals)), vals.end());
+    for (auto& x : a) x = lower_bound(all(vals), x) - vals.begin();
+    int m = sz(vals);
+    vi bit(m + 1, 0);
+    auto add = [&](int i) { for (i++; i <= m; i += i & -i) bit[i]++; };
+    auto count_below = [&](int v) {  // how many stored values are < v
+        ll s = 0;
+        for (; v > 0; v -= v & -v) s += bit[v];
+        return s;
+    };
+    vi smaller_left(n);
+    rep(j, n) smaller_left[j] = count_below(a[j]), add(a[j]);
+    fill(all(bit), 0);
+    ll ans = 0;
+    per(j, n) {  // fix the middle element j
+        ll larger_right = (n - 1 - j) - count_below(a[j] + 1);
+        ans += smaller_left[j] * larger_right;
+        add(a[j]);
+    }
+    print(ans);
+}
+\end{code}
+
+Other classic ``fix one thing'' moves: fix the right end of a subarray and maintain something about all left ends (prefix
+sums with a hash map, Chapter~\ref{ch:prefix}); fix the maximum of a subarray and count the subarrays where it is the
+maximum (the contribution technique again); fix the lowest common ancestor of a tree path (Part~IV); fix the value of the
+answer and check it (binary search on the answer, Chapter~\ref{ch:binsearch}); fix the number of items taken from one group
+and optimise the rest.
+
+\begin{recognize}
+Triples, pairs or intervals with a condition that couples all parts. Look for the part whose choice makes the others
+independent or one-dimensional.
+\end{recognize}
+
+% ======================================================================================================================
+\section[Complementary counting]{Complementary counting \hfill \silver}\label{sec:complement}
+
+Counting objects that satisfy ``at least one'', ``not all'' or ``some pair differs'' is often awkward, while their complement
+(``none'', ``all'', ``all equal'') is simple. Then count the complement and subtract it from the total. It sounds trivial,
+and it is, but it is missed surprisingly often under contest pressure.
+
+\begin{problem}{Subarrays with a large element}
+Count the subarrays that contain at least one element $\ge K$.
+\end{problem}
+
+A subarray \emph{without} a large element lies entirely inside a maximal run of small elements, and a run of length $\ell$
+contains $\frac{\ell(\ell+1)}{2}$ subarrays. So the answer is $\frac{n(n+1)}{2}$ minus the sum over runs
+(Figure~\ref{fig:complement}), computed in one pass.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \arrs{A}{0}{0}{3/n, 7/hot, 2/n, 1/n, 8/hot, 4/n}
+  \cellframe{A-1}{A-1}{fgblue} \cellframe{A-3}{A-4}{fgblue} \cellframe{A-6}{A-6}{fgblue}
+  \foreach \c in {A-1, A-6} \node[font=\sffamily\scriptsize, text=fgblue, below=4pt] at (\c.south) {$\ell{=}1$: 1};
+  \node[font=\sffamily\scriptsize, text=fgblue, below=4pt] at ($(A-3.south)!0.5!(A-4.south)$) {$\ell{=}2$: 3};
+  \node[notel, anchor=west, text width=6.4cm] at (4.6, 0) {$K = 5$. All subarrays: $\frac{6 \cdot 7}{2} = 21$. Without a
+    large element (inside a blue run): $1 + 3 + 1 = 5$. So $21 - 5 = 16$ subarrays contain a 7 or an 8.};
+\end{tikzpicture}
+\caption{Counting the complement: subarrays that avoid the large elements (orange) live inside the maximal runs of small
+elements (blue), and a run of length $\ell$ holds $\ell(\ell+1)/2$ of them.}
+\label{fig:complement}
+\end{figure}
+
+Complementary counting generalises to \defn{inclusion--exclusion} when there are several ``bad'' events (Chapter
+\ref{ch:combinatorics}): the number of objects avoiding all bad events is the total, minus those with each single bad
+event, plus those with each pair, and so on. It is also the natural way to count pairs of \emph{distinct} things: count
+all pairs, subtract the pairs that are equal.
+
+\begin{pitfall}[Double subtraction]
+When the ``bad'' objects overlap (a subarray can contain two different forbidden patterns), subtracting each kind separately
+removes some objects twice. Either make the bad cases disjoint by definition, as the maximal runs above are, or use
+inclusion--exclusion.
+\end{pitfall}
+
+% ======================================================================================================================
+\section[Reverse time and go offline]{Reverse time and go offline \hfill \gold}\label{sec:reverse}
+
+Some operations are easy in one direction and hard in the other. A disjoint set union merges components in almost constant
+time but cannot split them; a set supports insertion and deletion, but a max-heap cannot delete an arbitrary element. When
+the problem gives you every operation in advance, you can process them in whatever order is convenient, including
+\emph{backwards}. Deletions then become insertions.
+
+\begin{problem}{Network Breakdown (CSES)}
+A network has $n$ computers and $m$ connections. Connections are removed one at a time, $k$ times; after each removal, print
+the number of connected components. Limits: $n \le 10^5$, $m, k \le 2 \cdot 10^5$.
+\end{problem}
+
+Forwards, every removal can split a component, and nothing simple maintains that. Backwards, start from the final network
+(all $k$ connections already removed), compute its components with a DSU, then add the removed connections back in reverse
+order. The number of components before adding connection $i$ back is exactly the answer after removal $i$
+(Figure~\ref{fig:reverse}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[mini/.style={vtxs, minimum size=4.5mm}]
+  \newcommand{\ministate}[4]{% x offset, edges to draw, label below, components
+    \begin{scope}[xshift=#1 cm]
+      \node[mini] (a) at (0, 1.0) {1}; \node[mini] (b) at (1.0, 1.0) {2};
+      \node[mini] (c) at (1.0, 0) {3}; \node[mini] (d) at (0, 0) {4};
+      \foreach \u/\v in {#2} \draw[ed] (\u) -- (\v);
+      \node[lbl] at (0.5, -0.6) {#3};
+      \node[font=\sffamily\small\bfseries, text=fgink] at (0.5, -1.05) {#4};
+    \end{scope}}
+  \ministate{0}{a/b, b/c, c/d, a/d, a/c}{start}{1 comp.}
+  \ministate{3.2}{a/b, b/c, c/d, a/d}{after $-\{1,3\}$}{1}
+  \ministate{6.4}{a/b, c/d, a/d}{after $-\{2,3\}$}{1}
+  \ministate{9.6}{a/b, c/d}{after $-\{1,4\}$}{2}
+  \foreach \x in {1.4, 4.6, 7.8} {
+    \draw[->, line width=0.8pt, fggray, dashed] (\x, 0.5) -- ++(1.4, 0);
+    \draw[gded] ({\x+1.4}, -1.5) -- ++(-1.4, 0);
+  }
+  \node[font=\sffamily\scriptsize, text=fggray] at (6.05, 1.65) {forwards: each step removes an edge (a DSU cannot split)};
+  \node[font=\sffamily\scriptsize, text=fggreen!80!black] at (6.05, -1.95) {backwards: each step adds an edge (a DSU
+    merges in $\approx\Oh{1}$)};
+\end{tikzpicture}
+\caption{Forwards, the network loses edges; backwards, it gains them. Starting from the last state and adding the edges
+back in reverse order visits the same states, so the component counts can be read off the DSU. Output: \texttt{1 1 2}.}
+\label{fig:reverse}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n, m, k;
+    cin >> n >> m >> k;
+    set<pii> edges;
+    rep(i, m) {
+        int a, b;
+        cin >> a >> b;
+        edges.insert({min(a, b), max(a, b)});
+    }
+    vector<pii> removed(k);
+    for (auto& [a, b] : removed) {
+        cin >> a >> b;
+        if (a > b) swap(a, b);
+        edges.erase({a, b});
+    }
+    vi par(n + 1);
+    iota(all(par), 0);
+    auto root = [&](int x) {
+        while (x != par[x]) x = par[x] = par[par[x]];
+        return x;
+    };
+    int comps = n;
+    auto unite = [&](int a, int b) {
+        a = root(a), b = root(b);
+        if (a != b) par[a] = b, comps--;
+    };
+    for (auto [a, b] : edges) unite(a, b);  // the graph after every removal
+    vi ans(k);
+    per(i, k) {  // play the removals backwards: each one becomes an insertion
+        ans[i] = comps;
+        unite(removed[i].first, removed[i].second);
+    }
+    print(ans);
+}
+\end{code}
+
+\defn{Offline processing} is the general idea: when all queries are known before you must answer any of them, you may
+reorder them. Sort queries by their right endpoint and sweep the array once (distinct values in ranges,
+Chapter~\ref{ch:advds}); sort them into blocks and move two pointers (Mo's algorithm); answer them in a divide-and-conquer
+over time (CDQ); or process them in reverse. Online problems, where each query depends on the previous answer (often through
+an XOR with the last answer), deliberately forbid this.
+
+\begin{recognize}
+Deletions that would be insertions if time ran backwards; queries that are all given before any answer is needed; an
+operation your data structure supports in only one direction.
+\end{recognize}
+
+% ======================================================================================================================
+\section[Events and sweeps]{Events and sweeps \hfill \silver}\label{sec:events}
+
+Problems about intervals in time or space become simple when you stop thinking about the intervals and start thinking
+about their \emph{endpoints}. Each interval becomes two events, ``something starts'' and ``something ends''; sort the events
+and walk through them in order, maintaining the current state. This is a \defn{sweep}, and in two dimensions it becomes the
+sweep line of computational geometry (Chapter~\ref{ch:geometry}).
+
+\begin{problem}{Restaurant Customers (CSES)}
+Customer $i$ is in the restaurant from time $a_i$ to $b_i$. What is the largest number of customers present at the same
+time? Limits: $n \le 2\cdot10^5$, all times distinct.
+\end{problem}
+
+Turn each customer into an arrival ($+1$) and a departure ($-1$), sort the $2n$ events by time, and keep a running sum.
+The running sum is the number of customers present, and its maximum is the answer (Figure~\ref{fig:sweep}). Sorting costs
+$\Oh{n \log n}$; the walk is linear. If equal times were allowed, the order of simultaneous events would matter: to count
+someone who leaves at time $t$ and someone who arrives at $t$ as \emph{not} overlapping, process departures first. Sorting
+pairs $(t, \pm 1)$ does exactly that, since $-1 < +1$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.8cm]
+  \foreach \a/\b/\y in {2/5/3.3, 3/8/2.75, 4/6/2.2, 7/9/1.65} \ivl{\a}{\b}{\y}{fgblue!55}{};
+  \draw[->, line width=0.6pt, fgink!70] (0, 0) -- (10.5, 0) node[right, lbl] {time};
+  \draw[->, line width=0.6pt, fgink!70] (0, 0) -- (0, 1.25) node[above, lbl] {present};
+  \foreach \t in {0,...,10} \draw[line width=0.5pt, fgink!70] (\t, 0.06) -- (\t, -0.06) node[below, lbl] {\t};
+  \draw[line width=1.4pt, fgverm] (0,0) -- (2,0) -- (2,0.3) -- (3,0.3) -- (3,0.6) -- (4,0.6) -- (4,0.9) -- (5,0.9) --
+    (5,0.6) -- (6,0.6) -- (6,0.3) -- (7,0.3) -- (7,0.6) -- (8,0.6) -- (8,0.3) -- (9,0.3) -- (9,0) -- (10,0);
+  \foreach \y/\v in {0.3/1, 0.6/2, 0.9/3} \node[lbl, anchor=east] at (-0.1, \y) {\v};
+  \node[font=\sffamily\scriptsize\bfseries, text=fgverm] at (4.5, 1.2) {max 3};
+  \draw[xed] (4, 0.9) -- (4, 3.5); \draw[xed] (5, 0.9) -- (5, 3.5);
+\end{tikzpicture}
+\caption{Four customers (bars) and the number present over time (the step function below). Each arrival lifts the step
+by one and each departure lowers it; the maximum, 3, is reached between times 4 and 5.}
+\label{fig:sweep}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vector<pii> ev;  // (time, +1 for an arrival, -1 for a departure)
+    rep(i, n) {
+        int a, b;
+        cin >> a >> b;
+        ev.push_back({a, 1}), ev.push_back({b, -1});
+    }
+    sort(all(ev));
+    int cur = 0, best = 0;
+    for (auto [t, d] : ev) chmax(best, cur += d);
+    print(best);
+}
+\end{code}
+
+\begin{trick}[Coordinate compression plus a difference array]
+When the times are small integers (say up to $10^6$), skip the sort: add $+1$ at $a_i$ and $-1$ at $b_i$ in an array and
+take prefix sums (a difference array, Chapter~\ref{ch:prefix}). When they are large but few, compress them first. The sweep
+and the difference array are the same idea seen from two sides.
+\end{trick}
+
+% ======================================================================================================================
+\section[Invariants and colourings]{Invariants and colourings \hfill \silver}\label{sec:invariants}
+
+An \defn{invariant} is a quantity that an operation never changes. If the start and the goal have different values of an
+invariant, the goal is unreachable, no matter how clever the sequence of operations. Invariants are how contest problems
+prove that something is \emph{impossible}, and many ``print \texttt{NO} or a construction'' problems are really ``find the
+invariant, then show everything else is reachable''.
+
+\begin{problem}{The mutilated chessboard}
+Remove two opposite corner squares from an $8 \times 8$ board. Can the remaining 62 squares be tiled by 31 dominoes?
+\solution Colour the board like a chessboard (Figure~\ref{fig:chessboard}). Every domino covers one dark and one light square,
+wherever it is placed: that is the invariant. Opposite corners have the same colour, so the mutilated board has 30 squares of
+one colour and 32 of the other. Thirty-one dominoes would need 31 of each. Impossible.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[s/.style={minimum size=4.6mm, inner sep=0pt}]
+  \foreach \r in {0,...,7} \foreach \c in {0,...,7} {
+    \pgfmathtruncatemacro{\cpar}{mod(\r+\c,2)}
+    \ifnum\cpar=0 \fill[fgink!55] (\c*0.46, -\r*0.46) rectangle ++(0.46, -0.46);
+    \else \fill[fgfill] (\c*0.46, -\r*0.46) rectangle ++(0.46, -0.46); \fi
+  }
+  \draw[line width=0.6pt, fgink!70] (0, 0) rectangle (3.68, -3.68);
+  \foreach \r/\c in {0/0, 7/7} {
+    \fill[white] (\c*0.46, -\r*0.46) rectangle ++(0.46, -0.46);
+    \draw[fgverm, line width=1.2pt] (\c*0.46+0.08, -\r*0.46-0.08) -- ++(0.3, -0.3) (\c*0.46+0.38, -\r*0.46-0.08) -- ++(-0.3, -0.3);
+  }
+  \draw[line width=2pt, fgorange, rounded corners=2pt] (2*0.46+0.04, -3*0.46-0.04) rectangle (4*0.46-0.04, -4*0.46+0.04);
+  \draw[line width=2pt, fgorange, rounded corners=2pt] (5*0.46+0.04, -5*0.46-0.04) rectangle (6*0.46-0.04, -7*0.46+0.04);
+  \node[notel, anchor=west, text width=6.4cm] at (4.3, -1.84) {Every domino (orange) covers one dark and one light square,
+    horizontal or vertical. Both removed corners (red crosses) are dark, leaving 30 dark and 32 light squares: no tiling
+    can exist.};
+\end{tikzpicture}
+\caption{A colouring invariant. The count ``dark squares covered minus light squares covered'' is zero for any set of
+dominoes, but it would have to be $-2$ here.}
+\label{fig:chessboard}
+\end{figure}
+
+Parity is the most common invariant. If an operation swaps two elements of a permutation, the parity of the number of
+inversions flips every time; so whether a target permutation is reachable in an even number of swaps is decided before you
+start (this is why half the configurations of the 15-puzzle are unsolvable). If an operation replaces two numbers by their
+sum and difference, the parity of the total sum never changes. Other common invariants are a sum modulo some $m$, the
+greatest common divisor of all elements, the number of connected components, and weighted sums like $\sum_i a_i \cdot 2^i$.
+
+\begin{tip}[Finding the invariant]
+Apply the operation to small examples and write down what stays the same: the sum, its parity, the sum mod 3, the
+multiset of values, the gcd, the number of odd elements. When the problem colours something, try colouring it yourself:
+chessboard colouring for dominoes, colouring by $x \bmod 3$ or $(x + y) \bmod k$ for longer tiles.
+\end{tip}
+
+% ======================================================================================================================
+\section[Monovariants and termination]{Monovariants and termination \hfill \gold}\label{sec:monovariant}
+
+A \defn{monovariant} is a quantity that changes in only one direction: every operation strictly decreases it, say, and it
+cannot go below zero. Then the process must stop, and the number of steps is at most the starting value. Monovariants are
+how you prove that a local-improvement algorithm terminates, and they bound its running time.
+
+A classic example: ``while some adjacent pair is out of order, swap it''. Each swap removes exactly one inversion (a pair
+$i < j$ with $a_i > a_j$), and the number of inversions is at most $\binom n2$, so the process ends after exactly
+\emph{inversions} swaps. That count is also the minimum number of adjacent swaps that sorts the array, because no single
+swap can remove more than one inversion. Counting inversions quickly (merge sort or a Fenwick tree, $\Oh{n\log n}$) thus
+answers ``how many adjacent swaps are needed to sort?''.
+
+Monovariants also justify local search. ``While some vertex has more than half of its neighbours on its own side, move it
+to the other side'' terminates, because each move strictly increases the number of edges between the two sides, which is at
+most $m$. When it stops, every vertex has at least half of its neighbours across, which proves that a cut of at least $m/2$
+edges always exists, and finds one in at most $m$ moves.
+
+\begin{recognize}
+``Show that the process ends'', ``how many operations until nothing changes'', or a local-improvement algorithm whose
+running time you need to bound. Look for something that strictly improves: a sum, a count of bad pairs, a potential.
+\end{recognize}
+
+% ======================================================================================================================
+\section[Pigeonhole]{Pigeonhole \hfill \silver}\label{sec:pigeonhole}
+
+The \defn{pigeonhole principle}: if $n + 1$ objects go into $n$ boxes, some box holds two of them. It is as obvious as it
+sounds and as powerful as any theorem in this book, because it proves that something \emph{exists} without constructing
+it, and the proof usually shows how to find it.
+
+\begin{problem}{Subarray Divisibility (CSES)}
+Count the subarrays of $a_1, \dots, a_n$ whose sum is divisible by $n$ ($n \le 2\cdot10^5$, values may be negative).
+\solution The subarray $a_{l+1}, \dots, a_r$ has sum $P_r - P_l$, which is divisible by $n$ exactly when the prefix sums
+$P_l$ and $P_r$ have the same remainder mod $n$. Put the $n + 1$ prefix sums $P_0, \dots, P_n$ into $n$ boxes by remainder
+(Figure~\ref{fig:pigeonhole}); every pair inside one box is a good subarray. The pigeonhole principle adds a bonus: since
+there are $n + 1$ prefix sums and only $n$ remainders, \emph{some} box has two, so a divisible subarray always exists.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  % a = 3 1 4 1 5, prefix sums P_0..P_5 = 0 3 4 8 9 14, remainders 0 3 4 3 4 4
+  \arr{A}{0.35}{1.1}{3,1,4,1,5}
+  \node[lbl, anchor=east] at (0.2, 1.1) {$a$};
+  \arr{P}{0}{0}{0,3,4,8,9,14}
+  \node[lbl, anchor=east] at (-0.15, 0) {$P_0..P_5$};
+  \arrs{M}{0}{-0.85}{0/cool, 3/good, 4/hot, 3/good, 4/hot, 4/hot}
+  \node[lbl, anchor=east] at (-0.15, -0.85) {$P \bmod 5$};
+  \foreach \r/\x in {0/5.0, 1/6.3, 2/7.6, 3/8.9, 4/10.2} {
+    \draw[line width=0.7pt, fgink!70] (\x, 1.1) -- (\x, -0.95) -- (\x+1.1, -0.95) -- (\x+1.1, 1.1);
+    \node[lbl] at (\x+0.55, -1.2) {rem.\ \r};
+  }
+  \node[vtxs, cool, minimum size=5.5mm] at (5.55, -0.6) {$P_0$};
+  \node[vtxs, good, minimum size=5.5mm] at (9.45, -0.6) {$P_1$};
+  \node[vtxs, good, minimum size=5.5mm] at (9.45, 0.05) {$P_3$};
+  \node[vtxs, hot, minimum size=5.5mm] at (10.75, -0.6) {$P_2$};
+  \node[vtxs, hot, minimum size=5.5mm] at (10.75, 0.05) {$P_4$};
+  \node[vtxs, hot, minimum size=5.5mm] at (10.75, 0.7) {$P_5$};
+\end{tikzpicture}
+\caption{$n = 5$: six prefix sums and five possible remainders, so some box must hold two. Box 3 holds $P_1, P_3$ (the
+subarray $1, 4$); box 4 holds $P_2, P_4, P_5$ (the subarrays $4, 1$ and $4, 1, 5$ and $5$). In total
+$\binom22 + \binom32 = 4$ subarrays have a sum divisible by 5.}
+\label{fig:pigeonhole}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vi cnt(n, 0);  // how many prefixes so far have each remainder mod n
+    cnt[0] = 1;
+    ll pre = 0, ans = 0;
+    rep(i, n) {
+        ll x;
+        cin >> x;
+        pre = ((pre + x) % n + n) % n;
+        ans += cnt[pre]++;  // pair with earlier prefixes of the same remainder
+    }
+    print(ans);
+}
+\end{code}
+
+Pigeonhole arguments also bound search spaces. A sequence defined by $x_{i+1} = f(x_i)$ over $m$ possible values repeats
+within $m + 1$ steps, so it is eventually periodic (Chapter~\ref{ch:graphs}, functional graphs). Among any $n + 1$ integers
+in $[1, 2n]$, two are coprime (two are consecutive). Among 5 points in a $2 \times 2$ square, two are at distance at most
+$\sqrt2$. Whenever a problem says ``prove that there always exists'', look for boxes and pigeons.
+
+% ======================================================================================================================
+\section[The extremal principle]{The extremal principle \hfill \silver}\label{sec:extremal}
+
+\emph{Look at the largest, the smallest, the first or the last.} An extreme object has properties that ordinary objects do
+not, because nothing can exceed it. Many existence proofs, and many greedy algorithms, start by picking an extreme object
+and showing it must behave nicely.
+
+\begin{problem}{Every tree has two leaves}
+Show that every tree with at least two vertices has at least two leaves (vertices of degree 1).
+\solution Take a \emph{longest} path in the tree, with endpoints $u$ and $v$ (Figure~\ref{fig:extremal}). If $u$ had a
+neighbour $w$ other than the next vertex on the path, then either $w$ is on the path (and the tree would contain a cycle) or
+it is not (and prepending $w$ would make a longer path). Both are impossible, so $u$ has degree 1; the same holds for $v$.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[vtx, good] (u) at (0, 0) {$u$};
+  \node[vtx] (a) at (1.4, 0) {}; \node[vtx] (b) at (2.8, 0) {}; \node[vtx] (c) at (4.2, 0) {};
+  \node[vtx, good] (v) at (5.6, 0) {$v$};
+  \node[vtx] (x) at (2.8, 1.2) {}; \node[vtx] (y) at (4.2, -1.2) {}; \node[vtx] (z) at (1.4, -1.2) {};
+  \draw[hed] (u) -- (a) -- (b) -- (c) -- (v);
+  \draw[ed] (b) -- (x) (c) -- (y) (a) -- (z);
+  \node[vtx, dim, dashed] (w) at (-1.4, 0.9) {$w$};
+  \draw[xed] (u) -- (w);
+  \node[notel, anchor=west, text width=4.6cm] at (6.5, 0) {If $u$ had another neighbour $w$, the path $w, u, \dots, v$
+    would be longer than the longest path. So $u$ and $v$ are leaves.};
+\end{tikzpicture}
+\caption{The extremal principle: the endpoints of a longest path cannot have any other neighbour.}
+\label{fig:extremal}
+\end{figure}
+
+The same move appears everywhere in this book. The leftmost point of a point set is on its convex hull. The interval that
+ends first is in some optimal schedule (Section~\ref{sec:exchange}). In a graph where every vertex has degree at least $d$,
+a longest path's endpoint has all its neighbours on the path, so the graph has a cycle of length at least $d + 1$. The
+smallest counterexample to a claim (``consider a minimal counterexample'') is the extremal principle applied to proofs by
+contradiction, and it is exactly how induction proofs are usually discovered.
+
+% ======================================================================================================================
+\section[Symmetry and reflection]{Symmetry and reflection \hfill \gold}\label{sec:symmetry}
+
+Symmetry lets you count one representative and multiply, or count everything and divide. Unordered pairs are ordered pairs
+divided by two. ``Assume without loss of generality that $a \le b$'' halves the casework. Rotations of a necklace are
+counted by Burnside's lemma (Chapter~\ref{ch:combinatorics}). The most beautiful use of symmetry in contest counting is the
+\defn{reflection principle}.
+
+\begin{problem}{Balanced bracket sequences}
+How many sequences of $n$ opening and $n$ closing brackets are balanced (no prefix has more closing than opening brackets)?
+\solution Draw a sequence as a lattice path from $(0, 0)$ to $(n, n)$: an opening bracket is a step right, a closing one a
+step up. The sequence is balanced exactly when the path never goes above the diagonal, i.e.\ never touches the line
+$y = x + 1$. Count the bad paths: reflect the part of a bad path \emph{after its first touch} of $y = x + 1$ across that
+line (Figure~\ref{fig:reflection}). The result is a path to $(n - 1, n + 1)$, and every path to $(n - 1, n + 1)$ arises from
+exactly one bad path this way (it must cross the line, and reflecting back undoes the map). So there are $\binom{2n}{n-1}$
+bad paths, and the balanced ones number
+\[ \binom{2n}{n} - \binom{2n}{n-1} = \frac{1}{n + 1}\binom{2n}{n}, \]
+the Catalan number $C_n$.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[scale=0.78]
+  \draw[line width=0.3pt, fgline!60] (0, 0) grid (5, 5);
+  \draw[line width=0.8pt, fgink!40] (0, 0) -- (5, 5);
+  \draw[line width=1pt, fgverm, dashed] (0, 1) -- (4, 5);
+  \node[font=\sffamily\scriptsize, text=fgverm, anchor=south east] at (0, 1.05) {$y = x + 1$};
+  \draw[line width=2.2pt, fgblue] (0,0) -- (1,0) -- (1,1) -- (1,2) -- (2,2) -- (2,3) -- (3,3) -- (4,3) -- (4,4);
+  \draw[line width=2.2pt, fgorange, dash pattern=on 4pt off 2pt] (1,2) -- (1,3) -- (2,3) -- (2,4) -- (2,5) -- (3,5);
+  \node[circle, fill=white, draw=fgink, line width=1pt, minimum size=2.2mm, inner sep=0pt] at (1, 2) {};
+  \draw[line width=0.5pt, fgink!60] (0.88, 2) -- (-0.35, 2.55);
+  \node[font=\sffamily\scriptsize, anchor=east] at (-0.35, 2.55) {first touch};
+  \node[circle, fill=fgblue, minimum size=1.8mm, inner sep=0pt] at (4, 4) {};
+  \node[font=\sffamily\scriptsize, text=fgblue, anchor=west] at (4.15, 4) {$(4, 4)$};
+  \node[circle, fill=fgorange, minimum size=1.8mm, inner sep=0pt] at (3, 5) {};
+  \node[font=\sffamily\scriptsize, text=fgorange!80!black, anchor=west] at (3.15, 5.2) {$(3, 5)$};
+  \node[lbl, anchor=north] at (2.5, -0.15) {right = \texttt{(}, up = \texttt{)}};
+  \node[notel, anchor=west, text width=5.6cm] at (6.3, 2.5) {Blue: the bad path \texttt{( ) ) ( ) ( ( )}, which touches
+    $y = x + 1$ (red, dashed) at the white dot. Swapping right and up steps after that point reflects the rest of the path
+    (orange) and moves its end from $(4, 4)$ to $(3, 5)$. Every path to $(3, 5)$ arises this way exactly once.};
+\end{tikzpicture}
+\caption{The reflection principle. Reflecting the tail of a bad path across $y = x + 1$ moves its endpoint from $(n, n)$ to
+$(n - 1, n + 1)$, which turns ``count the bad paths'' into a single binomial coefficient.}
+\label{fig:reflection}
+\end{figure}
+
+\begin{fact}
+The reflection principle counts lattice paths that avoid a line for any start and end point, and it solves ballot problems
+(``candidate A is always strictly ahead during the count'') and bounded random walks. With several forbidden lines it
+becomes an alternating sum of reflections.
+\end{fact}
+
+% ======================================================================================================================
+\section[When the answer is small]{When the answer is small, enumerate it \hfill \plat}\label{sec:small-answer}
+
+Sometimes a quantity that looks like it could be huge is provably tiny, and then you can simply list all its values. The
+classic source is \emph{divisibility}: a chain of numbers where each divides the previous one can only have $\log_2 A + 1$
+distinct values below $A$, because each strict step at least halves the value.
+
+\begin{problem}{Subarrays with gcd 1}
+Count the subarrays whose greatest common divisor is 1 ($n \le 2 \cdot 10^5$, values up to $10^9$).
+\solution Fix the right end $i$ and look at the gcds of $a_l, \dots, a_i$ as $l$ moves left: each is a divisor of the
+previous one, so there are at most $\log_2 10^9 + 1 \approx 31$ distinct values (Figure~\ref{fig:gcdchain}). Store them as
+(value, count) pairs; moving to $i + 1$ means taking the gcd of every stored value with $a_{i+1}$ and merging equal
+neighbours. The total cost is $\Oh{n \log A}$ gcd computations instead of $\Oh{n^2}$ subarrays.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[g/.style={cellc, minimum width=8mm, minimum height=6.5mm, font=\sffamily\small}]
+  \foreach \v [count=\c from 0] in {12, 18, 6, 9, 3} \node[hdr] at (\c*0.8, 0.75) {\v};
+  \node[hdr, anchor=east] at (-0.55, 0.75) {$a$};
+  \foreach \r/\row in {0/{12}, 1/{6,18}, 2/{6,6,6}, 3/{3,3,3,9}, 4/{3,3,3,3,3}} {
+    \node[hdr, anchor=east] at (-0.55, -\r*0.65) {end $\r$};
+    \foreach \v [count=\c from 0] in \row {
+      \edef\st{\ifnum\v=3 good\else\ifnum\v=6 cool\else\ifnum\v=9 warn\else pur\fi\fi\fi}
+      \node[g, \st] at (\c*0.8, -\r*0.65) {\v};
+    }
+  }
+  \node[notel, anchor=west, text width=6.3cm] at (4.6, -1.3) {Row $i$ lists $\gcd(a_l, \dots, a_i)$ for every start $l$.
+    Reading any row from right to left, each value divides the one before it, so a row has at most $\log_2 A + 1$
+    \emph{distinct} values, however long it is. Row 3 is the chain $9 \to 3$ with multiplicities $1, 3$.};
+\end{tikzpicture}
+\caption{Subarray gcds of $12, 18, 6, 9, 3$, one row per right end. Colours mark equal values; every row is a short chain of
+divisors, which is what makes the $\Oh{n \log A}$ algorithm possible.}
+\label{fig:gcdchain}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vi a(n);
+    cin >> a;
+    vector<pll> cur;  // (gcd, count) for subarrays ending at i: a short chain
+    ll ones = 0;
+    rep(i, n) {
+        vector<pll> nxt{{a[i], 1}};
+        for (auto [g, c] : cur) {
+            ll h = gcd(g, a[i]);
+            if (nxt.back().first == h) nxt.back().second += c;
+            else nxt.push_back({h, c});
+        }
+        cur = nxt;
+        for (auto [g, c] : cur)
+            if (g == 1) ones += c;
+    }
+    print(ones);
+}
+\end{code}
+
+The same argument works for bitwise OR and AND over subarrays (each new element can only add or remove bits, at most 30
+times), for the number of distinct values of $\lfloor n / i \rfloor$ (at most $2\sqrt n$, Chapter~\ref{ch:numbertheory}), and
+for the number of distinct subtree sizes along a root path in heavy-light decomposition ($\Oh{\log n}$ light edges). A
+second family of small answers comes from sums: the harmonic sum $\frac n1 + \frac n2 + \dots + \frac nn \approx n \ln n$
+means that ``for each $d$, visit every multiple of $d$'' costs only $\Oh{n \log n}$ in total.
+
+\begin{trick}[Swap the loops]
+``For each $x$, iterate over its divisors'' costs $\Oh{n\sqrt n}$ if done naively, but ``for each $d$, iterate over its
+multiples'' touches the same pairs in $\Oh{n \log n}$ by the harmonic sum. Whenever a double loop's inner range depends on
+the outer variable, ask whether the other order is cheaper.
+\end{trick}
+
+% ======================================================================================================================
+\section[Heavy and light]{Heavy and light: the square-root split \hfill \plat}\label{sec:heavylight}
+
+When some objects are big and others small, a single method is often bad for one of the groups: iterating over an object
+costs its size, and precomputing an answer for an object costs a fixed amount. Split them at a threshold $B$: handle
+\emph{light} objects (size below $B$) by brute force and \emph{heavy} ones (size at least $B$) by precomputation. If the
+total size is $S$, there are at most $S / B$ heavy objects, and choosing $B = \sqrt S$ balances the two costs.
+
+\begin{problem}{Set intersections}
+There are $n$ sets of integers with total size $S \le 2\cdot10^5$, and $q$ queries ``how many elements do sets $x$ and $y$
+have in common?''.
+\solution If one of the two sets is light, iterate over it and look each element up in a hash set of the other: $\Oh{B}$
+per query. If both are heavy, answer from a table: for each heavy set $h$, mark its elements and scan every other set once,
+recording $|h \cap s|$ for all $s$; that is $\Oh{S}$ per heavy set and $\Oh{S \cdot S / B}$ in total. With $B = \sqrt S$
+everything costs $\Oh{(S + q)\sqrt S}$ (Figure~\ref{fig:heavylight}).
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.55cm, y=0.3cm]
+  \foreach \h [count=\i from 0] in {9.5, 8.2, 7.1, 3.1, 2.6, 2.2, 1.9, 1.6, 1.4, 1.2, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.5, 0.4} {
+    \pgfmathsetmacro{\st}{\h > 4 ? 1 : 0}
+    \ifdim\st pt>0.5pt \fill[fgverm!45, draw=fgverm] (\i, 0) rectangle ++(0.8, \h);
+    \else \fill[fgblue!30, draw=fgblue] (\i, 0) rectangle ++(0.8, \h); \fi
+  }
+  \draw[line width=1.2pt, fgink, dashed] (-0.3, 4) -- (18.3, 4) node[right, font=\sffamily\scriptsize] {$B = \sqrt S$};
+  \draw[->, line width=0.6pt, fgink!70] (-0.3, 0) -- (18.5, 0) node[right, lbl] {sets, by size};
+  \node[font=\sffamily\scriptsize, text=fgverm, align=center] at (1.4, 11.3) {heavy: at most $S/B$ of them\\precompute all answers};
+  \node[font=\sffamily\scriptsize, text=fgblue, align=center] at (11.5, 6.6) {light: each smaller than $B$\\brute force per query};
+\end{tikzpicture}
+\caption{The square-root split. Few objects can be large (their sizes add up to at most $S$), so they can afford expensive
+precomputation; the many small ones are cheap to handle directly.}
+\label{fig:heavylight}
+\end{figure}
+
+The split appears in graphs (vertices of degree above $\sqrt m$ are heavy; there are at most $2\sqrt m$ of them, which gives
+the $\Oh{m\sqrt m}$ triangle-counting algorithm), in strings (patterns longer than $\sqrt L$ are few), and in queries
+(rebuild a structure every $\sqrt q$ updates and brute force the pending ones, Chapter~\ref{ch:advds}). It rarely gives the
+fastest possible algorithm, but it often turns a problem nobody can see how to solve into one that is merely careful work.
+
+% ======================================================================================================================
+\section[Differences instead of values]{Differences instead of values \hfill \silver}\label{sec:differences}
+
+Operations on ranges of an array are awkward to reason about directly, but in the array of \emph{differences}
+$d_i = b_i - b_{i-1}$ they become local: adding 1 to $b_l, \dots, b_r$ changes only $d_l$ (up by one) and $d_{r+1}$ (down by
+one). Many ``minimum number of range operations'' problems collapse once rewritten this way.
+
+\begin{problem}{Range increments}
+Starting from an array of zeros, one operation adds 1 to every element of a subarray. What is the minimum number of
+operations that produce a given target $b$ ($b_i \ge 0$)?
+\solution With $b_0 = 0$ before the array, each operation raises one difference by one and lowers another by one (or none,
+at the end). The positive differences sum to $\sum_i \max(0, b_i - b_{i-1})$, and every operation raises that sum by at most
+one, so at least that many operations are needed. It is also enough: peel the target into horizontal layers
+(Figure~\ref{fig:differences}); each maximal horizontal run in a layer is one operation, and each run starts exactly at a
+rise.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.9cm, y=0.55cm]
+  % target 2 4 1 3 3 0 decomposed into maximal runs per layer
+  \foreach \l/\a/\b/\c in {1/0/5/fgblue, 2/0/2/fggreen, 2/3/5/fggreen, 3/1/2/fgorange, 3/3/5/fgorange, 4/1/2/fgpink} {
+    \fill[\c!35, draw=\c!80!black, line width=0.6pt, rounded corners=1pt] (\a+0.04, \l-0.96) rectangle (\b-0.04, \l-0.04);
+  }
+  \foreach \v [count=\i from 0] in {2,4,1,3,3,0} {
+    \node[font=\sffamily\small] at (\i+0.5, -0.65) {\v};
+  }
+  \node[lbl, anchor=east] at (-0.1, -0.65) {$b$};
+  \foreach \i/\d in {0/+2, 1/+2, 3/+2} \node[font=\sffamily\scriptsize\bfseries, text=fgverm] at (\i+0.5, -1.55) {\d};
+  \node[lbl, anchor=east] at (-0.1, -1.55) {rises};
+  \draw[line width=0.6pt, fgink!70] (0, 0) -- (6, 0);
+  \node[notel, anchor=west, text width=5.8cm] at (7, 2) {Each coloured bar is one operation (a maximal run inside one
+    layer). There are $1 + 2 + 2 + 1 = 6$ of them, and every bar starts at a position where $b$ rises: the rises
+    $2 + 2 + 2 = 6$ give the answer directly.};
+\end{tikzpicture}
+\caption{Target $2, 4, 1, 3, 3, 0$ cut into horizontal layers. The number of runs equals the sum of the positive
+differences $b_i - b_{i-1}$, and no sequence of range increments can do better.}
+\label{fig:differences}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    ll prev = 0, ops = 0;
+    rep(i, n) {
+        ll b;
+        cin >> b;
+        ops += max(0LL, b - prev);  // a rise of d starts d new ranges here
+        prev = b;
+    }
+    print(ops);
+}
+\end{code}
+
+Differences also turn ``add $x$ to a range'' into two point updates (the difference array of Chapter~\ref{ch:prefix}), turn
+arithmetic progressions into constants (take differences twice), and make ``all elements equal'' into ``all differences
+zero''. The inverse operation, prefix sums, turns a range query into two point queries. Keeping both views in mind is
+what makes range problems tractable.
+
+% ======================================================================================================================
+\section[Reductions to known problems]{Reductions to known problems \hfill \gold}\label{sec:reductions}
+
+The fastest way to solve a problem is to notice that it has already been solved. A large share of contest problems are
+classic problems wearing a costume, and part of training is building a mental catalogue of costumes.
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{Lp{6.2cm}}
+\toprule
+\thd{The problem says\ldots} & \thd{\ldots and is really} \\
+\midrule
+fewest non-increasing sequences covering an array & longest strictly increasing subsequence (Dilworth), Ch.~\ref{ch:dp} \\
+boxes that nest inside each other, maximise a chain & sort by one side, LIS on the other \\
+assign workers to jobs, each to at most one & bipartite matching or min-cost flow, Ch.~\ref{ch:flows} \\
+remove fewest vertices so no conflicting pair remains & vertex cover; on bipartite graphs, a matching (K\H{o}nig) \\
+variables with ``$x_u - x_v \le c$'' constraints & shortest paths with negative edges, Ch.~\ref{ch:shortest} \\
+each variable true or false, clauses of two literals & 2-SAT via strongly connected components, Ch.~\ref{ch:connectivity} \\
+minimum cost to make a sequence non-decreasing & slope trick, Ch.~\ref{ch:dpopt} \\
+minimise a maximum edge on a path & minimum spanning tree (its path is optimal), Ch.~\ref{ch:dsu} \\
+states and moves, fewest moves & BFS on an implicit graph, Ch.~\ref{ch:graphs} \\
+choose a subset with a sum constraint, maximise value & knapsack, Ch.~\ref{ch:dp} \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{tip}
+When a problem looks new, restate it with all names removed, then ask: what is the underlying object (sequence, graph,
+set system), what is the constraint, what is optimised? Compare that skeleton with the classics above and with the
+recognition table of Chapter~\ref{ch:craft}.
+\end{tip}
+
+\begin{summary}[Chapter summary]
+\begin{itemize}
+  \item Count by \textbf{contribution} and by \textbf{complement}; fix the part that makes the rest independent.
+  \item Reorder time: go \textbf{offline}, run it \textbf{backwards}, or \textbf{sweep} over sorted events.
+  \item Prove impossibility with \textbf{invariants} and termination with \textbf{monovariants}; prove existence with
+        \textbf{pigeonhole}, \textbf{extremal} objects and \textbf{reflection}.
+  \item Exploit \textbf{small answers} (divisor chains, harmonic sums), the \textbf{heavy/light} split, and
+        \textbf{differences} for range operations; above all, look for a known problem in disguise.
+\end{itemize}
+\end{summary}
+
+\begin{practice}
+\ppgroup{Contribution and complement}
+\begin{pplist}
+  \item Sum of Two Values
+  \item Subarray Sums II
+  \item Nearest Smaller Values
+  \item Distinct Numbers
+  \item Maximum Subarray Sum
+\end{pplist}
+\ppgroup{Offline, reversed, sweeps}
+\begin{pplist}
+  \item Restaurant Customers
+  \item Room Allocation
+  \item Network Breakdown
+  \item Nested Ranges Check
+  \item Distinct Values Queries
+\end{pplist}
+\ppgroup{Invariants, pigeonhole, differences}
+\begin{pplist}
+  \item Subarray Divisibility
+  \item Two Sets
+  \item Coin Piles
+  \item Increasing Array
+  \item Collecting Numbers
+  \item Bracket Sequences I
+\end{pplist}
+\end{practice}

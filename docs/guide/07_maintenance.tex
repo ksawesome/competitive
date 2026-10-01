@@ -1,0 +1,120 @@
+\chapter{Maintenance and Troubleshooting}\label{ch:maintenance}
+
+\section{VS Code tasks}
+
+All tools are VS Code tasks (\key{Ctrl+Shift+P}, \emph{Tasks: Run Task}), defined in \file{.vscode/tasks.json}.
+Each runs \file{tools/cp.py} with Python.
+
+\begin{center}
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{4.2cm}p{3.3cm}L}
+\toprule
+\thd{Task} & \thd{Shortcut} & \thd{Command} \\
+\midrule
+\texttt{cf-run} & \key{F5} & \texttt{cp.py test FILE} \\
+CP: Run With Typed Input & \key{Ctrl+F5} & \texttt{cp.py run FILE} \\
+CP: Stress Test & \key{Ctrl+Alt+X} & \texttt{cp.py stress FILE} \\
+CP: Quickstart & \key{Ctrl+Shift+N} & \texttt{cp.py new NAME} \\
+CP: Quickstart USACO & \key{Ctrl+Shift+U} & \texttt{cp.py new NAME -{}-usaco} \\
+CP: Archive Old Files & \key{Ctrl+Shift+Alt+C} & \texttt{cp.py archive} \\
+CP: Setup & --- & \texttt{cp.py setup -{}-check} \\
+CP: Build Docs & --- & \texttt{cp.py docs} \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{CP: Setup}
+
+Run it after changing anything in \file{library/}, the template, or the flags. It is idempotent, and does all of this:
+
+\begin{enumerate}
+  \item rebuilds the precompiled header for the current compiler and flags;
+  \item regenerates \file{snippets/cp-library.code-snippets} in the \emph{competitive} profile;
+  \item regenerates the shortcut block in the profile's \file{keybindings.json};
+  \item writes the four CPH settings (flags, template path, template variables, stderr handling);
+  \item regenerates \file{CHEATSHEET.md} and the generated parts of this guide (reference cards, keyboard maps);
+  \item with \texttt{-{}-check}: compiles every template as strict C++17, both as written and under
+        \cc{#define int long long}, and reports any warning.
+\end{enumerate}
+
+Reload VS Code once afterwards (\key{Ctrl+Shift+P}, \emph{Reload Window}) so new shortcuts take effect.
+
+\section{Adding your own template}
+
+Create a \file{.cpp} file in the right category folder. The header comments describe it; the code between
+\texttt{// @begin} and \texttt{// @end} is what gets pasted. Anything outside the markers exists only so the file
+compiles on its own (includes, a wrapper function providing the variables an \emph{inside solve()} snippet uses).
+
+\begin{code}
+// @name   Sum of a range (example)
+// @prefix cprangesum
+// @key    y z
+// @desc   [global] range_sum(P, l, r) = sum of a[l, r) from prefix sums P.
+// @usage  ll s = range_sum(P, l, r);
+// @complexity O(1)
+#include <bits/stdc++.h>
+using namespace std;
+using ll = long long;
+
+// @begin
+ll range_sum(const vector<ll>& P, int l, int r) { return P[r] - P[l]; }
+// @end
+\end{code}
+
+\begin{itemize}
+  \item \texttt{@key} is \texttt{t}, \texttt{y} or \texttt{u} (the leader) followed by a VS Code key name: a letter, a digit,
+        \texttt{shift+x}, or one of \texttt{-~=~[~]~;~'~,~.~/~\textasciigrave}. Setup refuses duplicate keys, prefixes and names.
+  \item \texttt{@desc} starts with \texttt{[global]} or \texttt{[inside solve]}; the rest is the one-line description.
+  \item \texttt{@usage} and \texttt{@complexity} are optional and feed the reference cards.
+  \item Do not end a \texttt{//} comment with a backslash (C++ would glue the next line into the comment).
+\end{itemize}
+
+Then run \emph{CP: Setup} (with its check) and reload VS Code.
+
+\section{Rebuilding these PDFs}
+
+\emph{CP: Build Docs} (\texttt{python tools/cp.py docs}) regenerates the reference and compiles
+\file{docs/guide.tex} and \file{docs/algorithms.tex} with TinyTeX's \texttt{pdflatex} (three passes, for the table of
+contents), writing \file{docs/GUIDE.pdf} and \file{docs/ALGORITHMS.pdf}. Build files go to \file{docs/build/}.
+\texttt{-{}-only guide} or \texttt{-{}-only algorithms} builds one of them. The shared look lives in
+\file{docs/cpstyle.sty}.
+
+\section{Troubleshooting}
+
+\begin{description}[style=nextline, font=\sffamily\bfseries\color{cpblue}]
+  \item[A shortcut does nothing]
+    Reload the window. Check you are in the \emph{competitive} profile (bottom-left gear) and in a \texttt{.cpp} file:
+    the template shortcuts only work in C++ editors.
+  \item[CPH says ``Compilation error'' about \texttt{debug.h}]
+    CPH's flags are missing \texttt{-I.../include}. Run \emph{CP: Setup}.
+  \item[CPH marks a correct test as failed]
+    If its Standard Error box shows output, \texttt{ignoreSTDERROR} was turned off; run \emph{CP: Setup}. Otherwise the
+    program exited with a non-zero code: press \key{F5} to see why.
+  \item[Compiles are slow again]
+    The compiler or flags changed and the precompiled header is stale. Run \emph{CP: Setup} (F5 rebuilds it
+    automatically too).
+  \item[GCC ``internal compiler error'' mentioning \texttt{bits/stdc++.h}]
+    CPH's flags were edited by hand and no longer match the precompiled header. Run \emph{CP: Setup}.
+  \item[Red squiggles under \texttt{bits/stdc++.h}]
+    IntelliSense is configured in \file{.vscode/settings.json} to use MSYS2's \texttt{g++} in C++17 mode with
+    \texttt{LOCAL} defined; if you moved the compiler, update \texttt{C\_Cpp.default.compilerPath}.
+  \item[A deep recursion crashes locally]
+    It should not with a 256\,MB stack; if it does, the recursion is deeper than about $10^6$ levels or each level holds a
+    big local array. Make it iterative or move the array out of the function.
+  \item[The stress tester says brute.cpp fails a sample]
+    Fix the brute force first; a wrong brute force makes every verdict meaningless.
+  \item[I changed the template and new files look old]
+    CPH reads \file{template/template.cpp} at file creation time; existing files are never changed.
+\end{description}
+
+\section{Undoing everything}
+
+\begin{enumerate}
+  \item In the profile folder, restore \file{keybindings.json\allowbreak.bak-cp-setup} and
+        \file{settings.json\allowbreak.bak-cp-setup} over the current files, and delete
+        \file{snippets/\allowbreak cp-library.code-snippets}.
+  \item Restore \file{template/template.cpp.bak} over \file{template/template.cpp}.
+  \item Delete \file{.vscode/}, \file{tools/}, \file{include/}, \file{library/}, \file{stress/}, \file{docs/} and
+        \file{CHEATSHEET.md} from the folder.
+\end{enumerate}
+Your solutions and CPH's test cases are never touched by any of the tools except the archive shortcut, which only
+moves them.

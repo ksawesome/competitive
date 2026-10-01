@@ -1,0 +1,7 @@
+This is makeindex, version 2.18 [TeX Live 2026] (kpathsea + Thai support).
+Scanning style file ./cpindex.ist........done (8 attributes redefined, 0 ignored).
+Scanning input file build/algorithms.idx....done (198 entries accepted, 0 rejected).
+Sorting entries.....done (1592 comparisons).
+Generating output file build/algorithms.ind....done (284 lines written, 0 warnings).
+Output written in build/algorithms.ind.
+Transcript written in build/algorithms.ilg.

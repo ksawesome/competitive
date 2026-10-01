@@ -1,0 +1,573 @@
+\chapter{Static Range Queries}\label{ch:static}
+
+A \defn{range query} asks for an aggregate (a sum, a minimum, a gcd, the number of distinct values) over a contiguous part $[l, r)$
+of an array. When the array never changes, preprocessing buys very fast queries, and when all queries are known in advance, they can
+be reordered to share work. This chapter covers the static and offline toolbox: sparse tables, their disjoint variant for any
+associative operation, Cartesian trees, square-root decomposition, and Mo's algorithm with its variants for updates and for trees.
+Chapter~\ref{ch:segtree} adds updates to the picture.
+
+\begin{chapterintro}{\gold\ \plat\ \ioi}{Chapter~\ref{ch:prefix} (prefix sums, monotonic stacks) and Chapter~\ref{ch:trees}
+(Euler tours, LCA).}
+  \item answer idempotent range queries in $\Oh{1}$ with a sparse table, and any associative one with a disjoint sparse table;
+  \item build a Cartesian tree in $\Oh{n}$, and use it to turn range minima into LCAs and to count subarrays by their minimum;
+  \item split an array into $\sqrt n$ blocks when nothing else fits, and rebuild periodically;
+  \item reorder offline queries with Mo's algorithm, including updates and paths in trees.
+\end{chapterintro}
+
+\begin{table}[htbp]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{3.6cm}>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{2.9cm}X@{}}
+\toprule
+structure & preprocessing & query & works for \\
+\midrule
+prefix sums & $\Oh{n}$ & $\Oh{1}$ & invertible operations: $+$, $\oplus$, products with inverses \\
+sparse table & $\Oh{n \log n}$ & $\Oh{1}$ & idempotent operations: min, max, gcd, AND, OR \\
+disjoint sparse table & $\Oh{n \log n}$ & $\Oh{1}$ & any associative operation \\
+Cartesian tree & $\Oh{n}$ & via LCA & minimum and its position, ``where is $a_i$ the minimum'' \\
+square-root decomposition & $\Oh{n}$ & $\Oh{\sqrt n}$ & almost anything, also with updates \\
+Mo's algorithm & offline & $\Oh{\sqrt n}$ amortised & statistics maintained by adding and removing one element \\
+\bottomrule
+\end{tabularx}
+\caption{The static range-query toolbox.}
+\label{tab:static}
+\end{table}
+
+% ======================================================================================================================
+\section[Sparse table]{Sparse table \hfill \gold}\label{sec:sparse}
+
+Prefix sums (Section~\ref{sec:prefix}) answer range sums because subtraction undoes addition. A minimum cannot be undone, but it has
+another property: it is \emph{idempotent}, $\min(x, x) = x$, so counting an element twice does no harm. A \defn{sparse table} stores
+the minimum of every block whose length is a power of two,
+\[ \mathit{st}[k][i] = \min(a_i, \dots, a_{i + 2^k - 1}) = \min\bigl(\mathit{st}[k-1][i],\ \mathit{st}[k-1][i + 2^{k-1}]\bigr), \]
+$\Oh{n \log n}$ values in all. A query $[l, r)$ takes the largest $k$ with $2^k \le r - l$; the two blocks of length $2^k$ that start at
+$l$ and end at $r$ cover the range, overlapping in the middle, and the answer is the smaller of their two minima
+(Figure~\ref{fig:sparse}). That is $\Oh{1}$ per query, with $k = \lfloor \log_2 (r - l) \rfloor$ from \cc{__lg}.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[blbl, anchor=east] at (-0.2, 0) {$a$};
+  \arrs{A}{0}{0}{5/n, 2/cool, 8/cool, 6/cool, 3/good, 9/good, 7/good, 4/good, 1/n, 6/n}
+  \idx{A}{10}
+  \foreach \lv/\vals/\yy in {1/{2,2,6,3,3,7,4,1,1}/-1.35, 2/{2,2,3,3,3,1,1}/-2.1, 3/{2,1,1}/-2.85}
+    { \node[blbl, anchor=east] at (-0.2, \yy) {$k = \lv$};
+      \arr{L\lv}{0}{\yy}{\vals} }
+  \node[cellc, hot, anchor=west] at (L2-2.west) {2};
+  \node[cellc, hot, anchor=west] at (L2-5.west) {3};
+  \draw[line width=1.6pt, draw=fgblue, rounded corners=2pt] ($(A-2.north west)+(0.04, 0.42)$) rectangle
+    ($(A-5.north east)+(-0.04, 0.12)$);
+  \draw[line width=1.6pt, draw=fggreen!70!black, rounded corners=2pt] ($(A-5.north west)+(0.04, 0.82)$) rectangle
+    ($(A-8.north east)+(-0.04, 0.52)$);
+  \node[font=\sffamily\scriptsize, text=fgblue] at ($(A-2.north west)!0.5!(A-5.north east)+(0, 0.27)$) {$[1, 5)$: min 2};
+  \node[font=\sffamily\scriptsize, text=fggreen!60!black] at ($(A-5.north west)!0.5!(A-8.north east)+(0, 0.67)$)
+    {$[4, 8)$: min 3};
+  \node[notel, anchor=west, text width=5.2cm] at (7.4, -1.1) {The query $[1, 8)$ has length 7, so $k = 2$: the blocks
+    $[1, 5)$ and $[4, 8)$, with minima $\mathit{st}[2][1] = 2$ and $\mathit{st}[2][4] = 3$ (red), overlap in position 4. The
+    answer is $\min(2, 3) = 2$.};
+\end{tikzpicture}
+\caption{A sparse table: row $k$ holds the minima of all blocks of length $2^k$. Any range is the union of two such blocks.}
+\label{fig:sparse}
+\end{figure}
+
+\begin{problem}{Static Range Minimum Queries (CSES)}
+Given $n \le 2 \cdot 10^5$ numbers and $q \le 2 \cdot 10^5$ queries, report the minimum of each range $[a, b]$.
+\end{problem}
+
+\begin{code}
+void solve() {  // SparseTable (cpsparse) is pasted above solve()
+    int n, q;
+    cin >> n >> q;
+    vi a(n);
+    for (ll& x : a) cin >> x;
+    SparseTable<ll> st(a);
+    while (q--) {
+        int l, r;
+        cin >> l >> r;
+        print(st.query(l - 1, r));  // positions [l - 1, r), 0-based
+    }
+}
+\end{code}
+
+\usetemplate{Sparse table}{Ctrl+Alt+T, R}{cpsparse}
+
+\begin{pitfall}[Only for idempotent operations]
+The two blocks overlap, so the elements in the middle are counted twice. For min, max, gcd, AND and OR that changes nothing; for a
+sum, a product or a count it is wrong. Use prefix sums for invertible operations and the disjoint sparse table below for the
+rest.
+\end{pitfall}
+
+\paragraph{LCA in $\Oh{1}$.} Writing down the vertices of a tree in the order a DFS passes through them (the full Euler tour of
+Section~\ref{sec:rooted}, $2n - 1$ entries), the LCA of $u$ and $v$ is the shallowest vertex between their first occurrences. With a
+sparse table over the depths, storing the vertex together with its depth, every LCA query becomes one range minimum: $\Oh{n \log n}$
+preprocessing and $\Oh{1}$ per query, the fastest LCA for very many queries.
+
+% ======================================================================================================================
+\section[Disjoint sparse table]{Disjoint sparse table \hfill \plat}\label{sec:disjointsparse}
+
+For an operation that is associative but neither idempotent nor invertible (products of matrices, compositions of functions,
+knapsack-like merges), the two blocks of a query must not overlap. The \defn{disjoint sparse table} arranges the precomputed values
+so that every range is the union of exactly two disjoint pieces. At level $h$, cut the array into blocks of length $2^h$; inside every
+block, store for each position the aggregate from that position to the block's middle (a suffix of the left half) or from the
+middle to that position (a prefix of the right half). For a query $[l, r]$ with $l < r$, the level is the highest bit where $l$ and
+$r$ differ, plus one: at that level $l$ and $r$ fall into the same block but different halves, so the answer is the suffix stored at
+$l$ combined with the prefix stored at $r$ (Figure~\ref{fig:disjoint}). Preprocessing is $\Oh{n \log n}$ operations and every query
+exactly one.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[blbl, anchor=east] at (-0.2, 0) {$a$};
+  \arrs{A}{0}{0}{3/n, 1/n, 4/n, 1/n, 5/n, 9/n, 2/n, 6/n}
+  \idx{A}{8}
+  \foreach \lv/\vals/\yy in {3/{9,6,5,1,5,14,16,22}/-1.35, 2/{4,1,4,5,14,9,2,8}/-2.1, 1/{3,1,4,1,5,9,2,6}/-2.85}
+    { \node[blbl, anchor=east] at (-0.2, \yy) {$h = \lv$};
+      \arr{H\lv}{0}{\yy}{\vals} }
+  \foreach \lv/\cells in {3/{4}, 2/{2, 6}, 1/{1, 3, 5, 7}}
+    \foreach \cc in \cells
+      \draw[line width=1.8pt, draw=fgverm] ($(H\lv-\cc.north east)+(0, 0.05)$) -- ($(H\lv-\cc.south east)+(0, -0.05)$);
+  \node[cellc, hot, anchor=west] at (H3-2.west) {6};
+  \node[cellc, hot, anchor=west] at (H3-7.west) {16};
+  \node[notel, anchor=west, text width=5.0cm] at (6.0, -1.6) {Sums of $3, 1, 4, 1, 5, 9, 2, 6$. Red bars are the block
+    middles of each level; left of a middle a cell holds the sum from it to the middle, right of a middle the sum from the
+    middle to it. The query $[1, 6]$: $1 \oplus 6 = 111_2$, so $h = 3$, and the answer is $6 + 16 = 22$ (red cells), with no
+    overlap.};
+\end{tikzpicture}
+\caption{A disjoint sparse table. Every range is the suffix of one half-block plus the prefix of the next, at the level where the
+two ends first fall into the same block.}
+\label{fig:disjoint}
+\end{figure}
+
+\begin{problem}{Composing linear functions}
+There are $n$ functions $f_i(x) = a_i x + b_i \pmod{10^9 + 7}$. Each of $q$ queries gives $l$, $r$ and $x$ and asks for $f_r(\cdots
+f_{l+1}(f_l(x)) \cdots)$ ($n, q \le 2 \cdot 10^5$).
+\solution Composition is associative: a pair $(a, b)$ followed by $(c, d)$ is $(ca, cb + d)$. It is not idempotent (applying a
+function twice is not the same as once) and not invertible when some $a_i = 0$, so neither prefix sums nor a sparse table work, and
+the disjoint sparse table answers each query with one composition.
+\end{problem}
+
+\begin{code}
+void solve() {  // DisjointSparse (cpdisjointsparse) is pasted above solve()
+    int n, q;
+    cin >> n >> q;
+    vector<pll> f(n);  // f_i(x) = a x + b (mod p)
+    for (auto& [a, b] : f) cin >> a >> b;
+    // (F then G)(x) = G(F(x)) = Ga (Fa x + Fb) + Gb: associative, but
+    // neither idempotent nor invertible, so a plain sparse table fails
+    auto then = [](pll F, pll G) {
+        ll a = G.first * F.first % MOD;
+        ll b = (G.first * F.second + G.second) % MOD;
+        return pll{a, b};
+    };
+    DisjointSparse<pll, decltype(then)> t(f, then);
+    while (q--) {
+        int l, r;
+        ll x;
+        cin >> l >> r >> x;
+        auto [a, b] = t.query(l - 1, r);  // f_l first, f_r last
+        print((a * x + b) % MOD);
+    }
+}
+\end{code}
+
+\usetemplate{Disjoint sparse table}{Ctrl+Alt+U, T}{cpdisjointsparse}
+
+\begin{trick}[The offline version: divide and conquer]
+When all queries are known in advance, the same idea needs only $\Oh{n}$ memory: split the array at its middle $m$, compute the
+suffix aggregates of the left half and the prefix aggregates of the right half, answer every query that crosses $m$ with one
+combination, and recurse on the queries that lie inside a half. It also works when the ``aggregate'' is a whole DP table, such as a
+bitset knapsack: ``can a subset of $a_l, \dots, a_r$ sum to $s$?'' is answered by combining the knapsacks of a suffix and a prefix,
+$\Oh{(n \log n + q) W / 64}$ in all.
+\end{trick}
+
+% ======================================================================================================================
+\section[Cartesian trees]{Cartesian trees \hfill \plat}\label{sec:cartesian}
+
+The \defn{Cartesian tree} of an array has the minimum as its root (the leftmost one, if it repeats), the Cartesian tree of the part
+to its left as the left subtree and the Cartesian tree of the part to its right as the right subtree (Figure~\ref{fig:cartesian}).
+It is a binary search tree by position and a heap by value, and it has two useful properties.
+\begin{itemize}
+  \item The minimum of $a_l, \dots, a_r$ is the LCA of $l$ and $r$ in the tree; range minimum and LCA are the same problem.
+  \item The subtree of $i$ is exactly the widest range in which $a_i$ is the minimum (the leftmost minimum, on ties). So $a_i$ is the
+        minimum of the $(\mathit{left}_i + 1)(\mathit{right}_i + 1)$ subarrays inside that range that contain $i$, where
+        $\mathit{left}_i$ and $\mathit{right}_i$ are the sizes of its subtrees.
+\end{itemize}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{ct/.style={vtx, minimum size=7mm}}
+  \foreach \ii/\val/\dd/\sy in {0/3/1/n, 1/1/0/hot, 2/4/2/n, 3/1/1/warn, 4/5/3/n, 5/9/4/n, 6/2/2/cool, 7/6/3/n}
+    \node[ct, \sy] (C\ii) at (0.9*\ii, -0.85*\dd) {\val};
+  \foreach \ua/\ub in {1/0, 1/3, 3/2, 3/6, 6/4, 4/5, 6/7} \draw[ed] (C\ua) -- (C\ub);
+  \node[blbl, anchor=east] at (-0.6, -4.4) {$a$};
+  \foreach \val [count=\ii from 0] in {3, 1, 4, 1, 5, 9, 2, 6} {
+    \node[cellc] (A\ii) at (0.9*\ii, -4.4) {\val};
+    \node[lbl] at (0.9*\ii, -4.98) {\ii};
+  }
+  \draw[mbrace] ($(A4.south west)+(0, -0.4)$) -- node[below=6pt, lbl] {subtree of the 2: $[4, 7]$} ($(A7.south east)+(0, -0.4)$);
+  \node[notel, anchor=west, text width=5.0cm] at (7.6, -1.6) {The Cartesian tree of $3, 1, 4, 1, 5, 9, 2, 6$, each vertex drawn
+    above its position. The root is the first 1 (red), the second 1 (orange) is its right child. The 2 at position 6 (blue)
+    rules positions 4 to 7: it is the minimum of $(2 + 1)(1 + 1) = 6$ subarrays.};
+\end{tikzpicture}
+\caption{A Cartesian tree is a heap by value and a binary search tree by position: in-order is array order.}
+\label{fig:cartesian}
+\end{figure}
+
+\paragraph{Linear-time construction.} Scan the array from left to right and keep the \emph{right spine} of the tree built so far, a
+stack of indices with increasing values. A new element $a_i$ pops every spine element larger than it; the last element popped becomes
+its left child, and $a_i$ becomes the right child of the new top of the stack. Every index is pushed and popped once: $\Oh{n}$. It is
+the same monotonic stack as for ``nearest smaller element'' (Section~\ref{sec:monostack-apps}), and the parent of $i$ is the larger
+of its two nearest smaller neighbours.
+
+\begin{problem}{Sum of subarray minimums, again}
+Compute the sum, modulo $10^9 + 7$, of the minimum of every subarray of $n \le 2 \cdot 10^5$ numbers.
+\solution Section~\ref{sec:contribution} solved this with two monotonic stacks; the Cartesian tree gives the same count as subtree
+sizes: $\sum_i a_i (\mathit{left}_i + 1)(\mathit{right}_i + 1)$. Ties need no special care, because each subarray is charged to the LCA
+of its ends, which is one vertex.
+\end{problem}
+
+\begin{code}
+void solve() {  // CartesianTree (cpcartesian) is pasted above solve()
+    int n;
+    cin >> n;
+    vi a(n);
+    for (ll& x : a) cin >> x;
+    CartesianTree ct(a);
+    // the subtree of i is the widest range in which a[i] is the minimum
+    // (the leftmost one, on ties): a[i] is the minimum of the subarrays in
+    // it that contain i, (left subtree + 1) * (right subtree + 1) of them
+    vi order{ct.root}, sub(n, 1);
+    rep(i, n) for (int c : {ct.lc[order[i]], ct.rc[order[i]]})
+        if (c != -1) order.push_back(c);
+    per(i, n) {  // children before parents
+        int v = order[i];
+        for (int c : {ct.lc[v], ct.rc[v]})
+            if (c != -1) sub[v] += sub[c];
+    }
+    ll ans = 0;
+    rep(i, n) {
+        ll left = ct.lc[i] == -1 ? 1 : sub[ct.lc[i]] + 1;
+        ll right = ct.rc[i] == -1 ? 1 : sub[ct.rc[i]] + 1;
+        ans = (ans + a[i] % MOD * (left * right % MOD)) % MOD;
+    }
+    print(ans);
+}
+\end{code}
+
+\usetemplate{Cartesian tree}{Ctrl+Alt+U, C}{cpcartesian}
+
+\begin{recognize}
+``For every element, the range where it is the minimum (or maximum)'', ``largest rectangle in a histogram'' (each bar's rectangle is
+its subtree), sums or counts over all subarrays by their minimum, and divide-and-conquer that always splits at the minimum: the
+recursion tree of that divide and conquer \emph{is} the Cartesian tree, so it can be built in $\Oh{n}$ instead of searching for each
+minimum.
+\end{recognize}
+
+% ======================================================================================================================
+\section[Square-root decomposition]{Square-root decomposition \hfill \plat}\label{sec:sqrt}
+
+Split the array into blocks of size $B$ and keep a summary of every block. A query covers some whole blocks, at most $n / B$ of them,
+and at most $2B$ loose elements at its two ends; an update changes one element and rebuilds one summary (Figure~\ref{fig:sqrt}). With
+$B \approx \sqrt n$ every operation costs $\Oh{\sqrt n}$. It is slower than a segment tree, but the summaries can be anything:
+sorted copies of the block, frequency tables, or answers to questions that do not combine across blocks.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \foreach \bb in {0, ..., 3} {
+    \foreach \ii in {0, ..., 3} {
+      \pgfmathtruncatemacro{\xx}{\bb * 4 + \ii}
+      \node[cellc] (Q\xx) at (\xx * 0.62 + \bb * 0.22, 0) {};
+    }
+    \node[seg, minimum width=2.35cm] (S\bb) at (\bb * 2.70 + 0.93, 0.9) {block \bb};
+  }
+  \foreach \xx in {3, 12, 13} \node[cellc, hot] at (Q\xx) {};
+  \foreach \bb in {1, 2} \node[seg, minimum width=2.35cm, fill=fggreen!20, draw=fggreen!70!black] at (S\bb) {block \bb};
+  \draw[mbrace] ($(Q3.south west)+(0, -0.12)$) -- node[below=6pt, lbl] {query $[3, 14)$} ($(Q13.south east)+(0, -0.12)$);
+  \node[notel, anchor=west, text width=4.1cm] at (11.3, 0.45) {The query uses the summaries of the whole blocks 1 and 2
+    (green) and looks at the three loose elements (red) one by one.};
+\end{tikzpicture}
+\caption{Square-root decomposition: at most $2B$ loose elements and $n / B$ whole blocks per query.}
+\label{fig:sqrt}
+\end{figure}
+
+\begin{problem}{Counting small values with updates}
+An array of $n \le 2 \cdot 10^5$ numbers receives $q \le 2 \cdot 10^5$ operations: assign a value to one element, or count the elements
+$\le x$ in a range $[l, r]$.
+\solution Keep every block sorted. An assignment replaces one value in its sorted block, $\Oh{B}$; a count binary-searches each whole
+block and checks the loose elements, $\Oh{(n / B) \log B + B}$. Balancing gives $B \approx \sqrt{n \log n}$, a few hundred; the program
+uses 512 and takes 0.46\,s for $n = q = 2 \cdot 10^5$. (A merge-sort tree or a wavelet tree answers the counts faster but cannot take the updates as easily.)
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, q;
+    cin >> n >> q;
+    vi a(n);
+    for (ll& x : a) cin >> x;
+    const int B = 512;  // the block size, about sqrt(n log n)
+    int nb = (n + B - 1) / B;
+    vvi blk(nb);  // the values of each block, kept sorted
+    rep(i, n) blk[i / B].push_back(a[i]);
+    for (auto& v : blk) sort(all(v));
+    while (q--) {
+        int type;
+        cin >> type;
+        if (type == 1) {  // a[i] = x: replace one value in its block
+            int i;
+            ll x;
+            cin >> i >> x;
+            i--;
+            auto& v = blk[i / B];
+            v.erase(lower_bound(all(v), a[i]));
+            v.insert(upper_bound(all(v), x), x);
+            a[i] = x;
+            continue;
+        }
+        int l, r;
+        ll x;
+        cin >> l >> r >> x;
+        l--;  // count the elements <= x in [l, r)
+        ll cnt = 0;
+        while (l < r && l % B) cnt += a[l++] <= x;  // the loose head
+        for (; l + B <= r; l += B) {  // whole blocks: one binary search each
+            auto& v = blk[l / B];
+            cnt += upper_bound(all(v), x) - v.begin();
+        }
+        while (l < r) cnt += a[l++] <= x;  // the loose tail
+        print(cnt);
+    }
+}
+\end{code}
+
+\begin{trick}[Rebuild every $\sqrt q$ operations]
+When updates are hard to apply to a static structure but easy to account for one by one, keep a \emph{buffer} of the pending updates.
+Every query asks the static structure and then corrects its answer for each buffered update; when the buffer reaches about $\sqrt q$
+entries, rebuild the structure from scratch with all of them applied. With rebuilds in $\Oh{n}$ and corrections in $\Oh{1}$, the total is
+$\Oh{(n + q)\sqrt q}$, and the structure itself never has to support updates.
+\end{trick}
+
+\begin{trick}[Heavy and light, beyond arrays]
+The square-root threshold balances work in many other settings. In a graph with $m$ edges, at most $2\sqrt m$ vertices have degree
+$\ge \sqrt m$; call them heavy. ``Precompute an answer for every heavy vertex, iterate over the neighbours of every light one'' keeps
+every query $\Oh{\sqrt m}$: triangle counting, sums over neighbours under updates, and set intersections all use it. In strings, there
+are at most $\Oh{\sqrt n}$ distinct pattern lengths when the total length is $n$, which bounds the work of hashing every length.
+\end{trick}
+
+% ======================================================================================================================
+\section[Mo's algorithm]{Mo's algorithm \hfill \plat}\label{sec:mo}
+
+Some statistics have no useful summary for a block, but are easy to update when the range grows or shrinks by one element: the
+number of distinct values, the number of pairs of equal values, the most frequent value. \defn{Mo's algorithm} answers many such
+queries offline by reordering them so that a window $[L, R)$ moving from query to query travels little. Sort the queries by the block
+of their left end ($B \approx n / \sqrt q$) and, within a block, by their right end, alternating the direction from block to block;
+then move the window step by step, calling \emph{add} and \emph{remove} (Figure~\ref{fig:mo}).
+
+\emph{Why $\Oh{(n + q)\sqrt q}$ moves.} Within one block, the right end only moves in one direction, $\Oh{n}$ per block, and there are
+$n / B = \sqrt q$ blocks: $\Oh{n \sqrt q}$. The left end moves at most $2B$ per query: $\Oh{qB} = \Oh{n \sqrt q}$. So the window moves
+$\Oh{n \sqrt q}$ steps in all, about $10^8$ cheap steps for $n = q = 2 \cdot 10^5$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[cpplot, width=8.6cm, height=6.6cm, xmin=-0.5, xmax=16.5, ymin=0, ymax=17, xlabel={left end $l$}, ylabel={right end $r$},
+  xtick={0, 4, 8, 12, 16}, ytick={0, 4, 8, 12, 16}]
+  \addplot[fgblue, line width=1pt, mark=*, mark size=2pt, ->] coordinates {(2,3) (1,5) (0,9) (3,15) (7,12) (5,7) (4,6) (8,12)
+    (11,14) (12,16) (12,15)};
+  \draw[dashed, fgline] (axis cs:3.5, 0) -- (axis cs:3.5, 17);
+  \draw[dashed, fgline] (axis cs:7.5, 0) -- (axis cs:7.5, 17);
+  \draw[dashed, fgline] (axis cs:11.5, 0) -- (axis cs:11.5, 17);
+\end{axis}
+\end{tikzpicture}
+\hspace{4mm}
+\begin{minipage}[b]{5.0cm}\sffamily\footnotesize\color{fgink!80}\raggedright
+Twelve queries on 16 elements, in the order Mo visits them; the dashed lines separate the blocks of the left end. In the first
+and third blocks $r$ increases, in the second and fourth it decreases. The window moves 57 steps in total, against 164 in the
+input order.\par\vspace{1.2cm}
+\end{minipage}
+\caption{Mo's order: left ends grouped in blocks, right ends sweeping up and down like a snake.}
+\label{fig:mo}
+\end{figure}
+
+\begin{problem}{Distinct Values Queries (CSES)}
+Report the number of distinct values in each of $q \le 2 \cdot 10^5$ ranges of an array of $n \le 2 \cdot 10^5$ numbers.
+\solution Compress the values to $0..n-1$ and keep a count per value: adding an element increases the number of distinct values when
+its count goes from 0 to 1, removing one decreases it when its count drops to 0.
+\end{problem}
+
+\begin{code}
+void solve() {  // Mo's algorithm (cpmo) is pasted above solve()
+    int n, q;
+    cin >> n >> q;
+    vi a(n);
+    for (ll& x : a) cin >> x;
+    vi vals = a;  // compress the values to 0, 1, ..., n - 1
+    sort(all(vals));
+    vals.erase(unique(all(vals)), vals.end());
+    for (ll& x : a) x = lower_bound(all(vals), x) - vals.begin();
+    vector<pii> qs(q);
+    for (auto& [l, r] : qs) cin >> l >> r, l--;  // [l, r)
+    vi cnt(n, 0), ans(q);
+    int distinct = 0;
+    mo(n, qs, [&](int i) { distinct += cnt[a[i]]++ == 0; },
+       [&](int i) { distinct -= --cnt[a[i]] == 0; },
+       [&](int qi) { ans[qi] = distinct; });
+    for (ll x : ans) print(x);
+}
+\end{code}
+
+\usetemplate{Mo's algorithm}{Ctrl+Alt+Y, O}{cpmo}
+
+This particular problem also has an $\Oh{(n + q) \log n}$ offline solution with a Fenwick tree, sweeping the right end and keeping
+only the last occurrence of every value (Section~\ref{sec:sweepqueries}); Mo's algorithm is the general tool for the statistics that have
+no such trick. With $n = q = 2 \cdot 10^5$ the program runs in 0.20\,s.
+
+\begin{trick}[Making Mo faster]
+\begin{itemize}
+  \item \textbf{Snake order}: alternate the direction of $r$ between blocks (the template does), which saves the return trip of the
+        right end, often 30--40\,\%.
+  \item \textbf{Hilbert order}: sort the queries along a Hilbert curve through the $(l, r)$ plane instead; consecutive queries are
+        then close in both coordinates, which is usually faster again.
+  \item \textbf{Rollback Mo}: when adding is easy but removing is not (a maximum, a DSU), keep the left end at the end of its block,
+        only add to the right, handle the part inside the block by adding and then undoing.
+\end{itemize}
+\end{trick}
+
+\subsection{Mo with updates}
+
+With point updates mixed into the queries, add time as a third coordinate: a query is $(l, r, t)$, the range after the first $t$
+updates. Applying or undoing an update when the window passes through it is a swap of the stored value, plus a remove and an add if
+the position lies inside the window. Sorting by (block of $l$, block of $r$, $t$) with blocks of $n^{2/3}$ gives $\Oh{n^{5/3}}$ moves,
+about $2 \cdot 10^8$ for $n = 10^5$: heavy, but often the only way. For distinct values with $n = 10^5$ elements and $10^5$
+operations, half of them updates, the program below takes 0.41\,s.
+
+\begin{code}
+void solve() {  // Mo with updates (cpmoupdates) is pasted above solve()
+    int n, q;
+    cin >> n >> q;
+    vi a(n);
+    for (ll& x : a) cin >> x;
+    vector<pll> upd;  // (position, new value)
+    vector<array<ll, 3>> qs;  // (l, r, updates before it), the range [l, r)
+    vi vals = a;
+    rep(i, q) {
+        int type;
+        ll x, y;
+        cin >> type >> x >> y;
+        if (type == 1) upd.push_back({x - 1, y}), vals.push_back(y);
+        else qs.push_back({x - 1, y, sz(upd)});
+    }
+    sort(all(vals));
+    vals.erase(unique(all(vals)), vals.end());
+    auto id = [&](ll v) { return lower_bound(all(vals), v) - vals.begin(); };
+    for (ll& x : a) x = id(x);
+    for (auto& [p, v] : upd) v = id(v);
+    vi cnt(sz(vals), 0), ans(sz(qs));
+    int distinct = 0;
+    auto add = [&](int i) { distinct += cnt[a[i]]++ == 0; };
+    auto del = [&](int i) { distinct -= --cnt[a[i]] == 0; };
+    auto apply = [&](int u, int L, int R) {  // toggle update u
+        auto& [p, v] = upd[u];
+        bool inside = L <= p && p < R;
+        if (inside) del(p);
+        swap(a[p], v);  // applying and undoing are the same swap
+        if (inside) add(p);
+    };
+    mo_with_updates(n, qs, add, del, apply, [&](int i) { ans[i] = distinct; });
+    for (ll x : ans) print(x);
+}
+\end{code}
+
+\usetemplate{Mo with updates}{Ctrl+Alt+U, Shift+O}{cpmoupdates}
+
+\subsection{Mo on trees}
+
+Questions about the \emph{path} between two vertices (``how many distinct colours on the path from $u$ to $v$'') become range questions
+through the Euler tour in which every vertex appears twice, once when the DFS enters it and once when it leaves
+(Figure~\ref{fig:motree}). For $u$ entered before $v$: if $u$ is an ancestor of $v$, the path is the range from $u$'s entry to $v$'s
+entry; otherwise it is the range from $u$'s exit to $v$'s entry, plus the LCA, which that range misses. In both cases the vertices of
+the range that appear \emph{exactly once} are the path: a vertex whose whole subtree lies in the range appears twice and cancels.
+So Mo's algorithm runs on the sequence with a ``toggle'' instead of add and remove; for distinct colours on paths with $n = q = 2
+\cdot 10^5$ the program below takes 0.62\,s.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \foreach \nm/\px/\py/\sy in {0/1.5/0/warn, 1/0.5/-1.0/good, 2/2.5/-1.0/good, 3/0/-2.0/n, 4/1.0/-2.0/good,
+      5/2.0/-2.0/good, 6/3.0/-2.0/n}
+    \node[vtx, \sy] (T\nm) at (\px, \py) {\nm};
+  \draw[ed] (T0) -- (T1) (T0) -- (T2) (T1) -- (T3) (T1) -- (T4) (T2) -- (T5) (T2) -- (T6);
+  \node[blbl, anchor=east] at (5.3, -0.5) {Euler tour};
+  \arrs{E}{5.45}{-0.5}{0/n, 1/n, 3/n, 3/n, 4/n, 4/good, 1/good, 2/good, 5/good, 5/n, 6/n, 6/n, 2/n, 0/n}
+  \idx{E}{14}
+  \cellframe{E-6}{E-9}{fgverm}
+  \node[notel, anchor=north west, text width=9.6cm] at (5.45, -1.25) {The path from 4 to 5: 4 is entered first and is not an
+    ancestor of 5, so take positions $5..8$, from the exit of 4 to the entry of 5. There, 4, 1, 2 and 5 each appear once: the path
+    minus its LCA 0 (orange), which is added separately. Inside a range, a vertex seen twice is a whole subtree that the path
+    does not touch.};
+\end{tikzpicture}
+\caption{Mo on trees: a path is a range of the doubled Euler tour, toggling vertices, plus possibly the LCA.}
+\label{fig:motree}
+\end{figure}
+
+\begin{code}
+void solve() {  // Mo on trees (cpmotree) is pasted above solve()
+    int n, q;
+    cin >> n >> q;
+    vi c(n);
+    for (ll& x : c) cin >> x;
+    vvi adj(n);
+    rep(i, n - 1) {
+        int a, b;
+        cin >> a >> b;
+        a--, b--;
+        adj[a].push_back(b);
+        adj[b].push_back(a);
+    }
+    vi vals = c;  // compress the colours
+    sort(all(vals));
+    vals.erase(unique(all(vals)), vals.end());
+    for (ll& x : c) x = lower_bound(all(vals), x) - vals.begin();
+    vector<pii> qs(q);
+    for (auto& [u, v] : qs) cin >> u >> v, u--, v--;
+    vi cnt(n, 0), ans(q);
+    int distinct = 0;
+    mo_on_tree(adj, 0, qs, [&](int v) { distinct += cnt[c[v]]++ == 0; },
+               [&](int v) { distinct -= --cnt[c[v]] == 0; },
+               [&](int i) { ans[i] = distinct; });
+    for (ll x : ans) print(x);
+}
+\end{code}
+
+\usetemplate{Mo on trees}{Ctrl+Alt+U, O}{cpmotree}
+
+\begin{recognize}
+Many range (or path) queries, no updates or few, a statistic that is easy to maintain when one element enters or leaves but does not
+combine across blocks (distinct counts, the mode, pairs of equal values, inversions with a Fenwick tree), and $n, q \le 2 \cdot 10^5$.
+If the queries must be answered online, Mo's algorithm does not apply; persistent structures (Chapter~\ref{ch:segtree}) usually do.
+\end{recognize}
+
+\begin{summary}[Chapter summary]
+\begin{itemize}
+  \item Idempotent operations: a sparse table, two overlapping power-of-two blocks per query, $\Oh{1}$. LCA is a range minimum over
+        the Euler tour.
+  \item Any associative operation: a disjoint sparse table, one suffix and one prefix per query, $\Oh{1}$; offline, divide and
+        conquer does the same in linear memory.
+  \item The Cartesian tree, built with one monotonic stack, makes range minima LCAs and subtrees ``ranges where $a_i$ is the
+        minimum''.
+  \item Square-root decomposition handles summaries that nothing else supports, and periodic rebuilds replace hard updates.
+  \item Mo's algorithm reorders offline queries so that a window moves $\Oh{n \sqrt q}$ steps; time as a third coordinate handles
+        updates, and the doubled Euler tour handles paths.
+\end{itemize}
+\end{summary}
+
+\begin{practice}
+\begin{pplist}
+  \item Static Range Sum Queries
+  \item Static Range Minimum Queries
+  \item Range Xor Queries
+  \item Distinct Values Queries
+  \item Advertisement
+  \item Subarray Distinct Values
+\end{pplist}
+\end{practice}

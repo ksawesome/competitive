@@ -1,0 +1,142 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\@writefile{toc}{\contentsline {chapter}{\numberline {8}Binary Search and Unimodal Optimisation}{94}{chapter.8}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{ch:binsearch}{{8}{94}{Binary Search and Unimodal Optimisation}{chapter.8}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {8.1}Searching a sorted array}{94}{section.8.1}\protected@file@percent }
+\newlabel{sec:bsearch-array}{{8.1}{94}{Searching a sorted array}{section.8.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.1.1}The standard library}{94}{subsection.8.1.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {8.1}{\ignorespaces Binary search for the first element $\ge 23$. The blue bars delimit the range $[lo, hi)$ that may still contain the boundary; grey cells are already decided, and red marks the middle element compared in each step.}}{95}{figure.caption.125}\protected@file@percent }
+\newlabel{fig:bsearch-steps}{{8.1}{95}{Binary search for the first element $\ge 23$. The blue bars delimit the range $[lo, hi)$ that may still contain the boundary; grey cells are already decided, and red marks the middle element compared in each step}{figure.caption.125}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {8.2}{\ignorespaces \texttt  {lower\_bound} and \texttt  {upper\_bound} on a sorted array with repeated values. The copies of $x$ occupy exactly the positions from \texttt  {lower\_bound} up to (not including) \texttt  {upper\_bound}.}}{95}{figure.caption.126}\protected@file@percent }
+\newlabel{fig:lowerupper}{{8.2}{95}{\texttt {lower\_bound} and \texttt {upper\_bound} on a sorted array with repeated values. The copies of $x$ occupy exactly the positions from \texttt {lower\_bound} up to (not including) \texttt {upper\_bound}}{figure.caption.126}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {8.2}Binary search on a monotone predicate}{96}{section.8.2}\protected@file@percent }
+\newlabel{sec:predicate}{{8.2}{96}{Binary search on a monotone predicate}{section.8.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {8.3}{\ignorespaces Monotone predicates. Top: false up to some point, true afterwards; binary search finds the first true value. Bottom: the ``maximise'' form, true up to some point; its last true value is one less than its first false value.}}{96}{figure.caption.127}\protected@file@percent }
+\newlabel{fig:monotone}{{8.3}{96}{Monotone predicates. Top: false up to some point, true afterwards; binary search finds the first true value. Bottom: the ``maximise'' form, true up to some point; its last true value is one less than its first false value}{figure.caption.127}{}}
+\newlabel{tpl:cpbsearch}{{8.2}{97}{Binary search on a monotone predicate}{section*.128}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.2.1}Beyond monotonicity: keep a half that surely contains an answer}{97}{subsection.8.2.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {8.4}{\ignorespaces Finding a local minimum by binary search. Each step compares $a_{mid}$ with $a_{mid+1}$ and keeps the half on the downhill side; that half is guaranteed to contain a local minimum, although not necessarily the global one.}}{98}{figure.caption.129}\protected@file@percent }
+\newlabel{fig:localmin}{{8.4}{98}{Finding a local minimum by binary search. Each step compares $a_{mid}$ with $a_{mid+1}$ and keeps the half on the downhill side; that half is guaranteed to contain a local minimum, although not necessarily the global one}{figure.caption.129}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {8.3}Binary search on the answer}{98}{section.8.3}\protected@file@percent }
+\newlabel{sec:bsearch-answer}{{8.3}{98}{Binary search on the answer}{section.8.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {8.5}{\ignorespaces The greedy check for stalls $1, 2, 4, 8, 9$ and $k = 3$ cows. With $d = 3$ the cows go to 1, 4 and 8; with $d = 4$ only two fit (1 and 8). The answer is 3, the largest $d$ that passes.}}{99}{figure.caption.130}\protected@file@percent }
+\newlabel{fig:cows}{{8.5}{99}{The greedy check for stalls $1, 2, 4, 8, 9$ and $k = 3$ cows. With $d = 3$ the cows go to 1, 4 and 8; with $d = 4$ only two fit (1 and 8). The answer is 3, the largest $d$ that passes}{figure.caption.130}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.3.1}The $k$-th smallest element of an implicit set}{99}{subsection.8.3.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {8.6}{\ignorespaces The $5 \times 5$ multiplication table. The entries $\le 8$ (blue) form a staircase; row $i$ contributes $\min (n, \lfloor 8/i \rfloor )$ of them (right).}}{100}{figure.caption.131}\protected@file@percent }
+\newlabel{fig:multtable}{{8.6}{100}{The $5 \times 5$ multiplication table. The entries $\le 8$ (blue) form a staircase; row $i$ contributes $\min (n, \lfloor 8/i \rfloor )$ of them (right)}{figure.caption.131}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {8.4}Real numbers and fractional programming}{100}{section.8.4}\protected@file@percent }
+\newlabel{sec:bsearch-real}{{8.4}{100}{Real numbers and fractional programming}{section.8.4}{}}
+\newlabel{tpl:cpbsreal}{{8.4}{100}{Real numbers and fractional programming}{section*.132}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.4.1}Maximising a ratio}{101}{subsection.8.4.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Dinkelbach's method.}{101}{paragraph*.133}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {8.7}{\ignorespaces Fractional programming with three choices. The best ratio $\lambda ^\ast = 4$ is the root of the upper envelope $g$ (thick blue). Dinkelbach's method starts at $\lambda _0 = 0$, where the best line is $10 - 4\lambda $; its root gives $\lambda _1 = 10/4$. At $\lambda _1$ the best line is $4 - \lambda $, whose root $\lambda _2 = 4$ is the answer.}}{102}{figure.caption.134}\protected@file@percent }
+\newlabel{fig:dinkelbach}{{8.7}{102}{Fractional programming with three choices. The best ratio $\lambda ^\ast = 4$ is the root of the upper envelope $g$ (thick blue). Dinkelbach's method starts at $\lambda _0 = 0$, where the best line is $10 - 4\lambda $; its root gives $\lambda _1 = 10/4$. At $\lambda _1$ the best line is $4 - \lambda $, whose root $\lambda _2 = 4$ is the answer}{figure.caption.134}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {8.5}Ternary search}{102}{section.8.5}\protected@file@percent }
+\newlabel{sec:ternary}{{8.5}{102}{Ternary search}{section.8.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {8.8}{\ignorespaces One step of ternary search for a maximum. Since $f(m_1) < f(m_2)$, the maximum cannot lie in $[0, m_1]$ (grey), which is discarded.}}{102}{figure.caption.135}\protected@file@percent }
+\newlabel{fig:ternary}{{8.8}{102}{One step of ternary search for a maximum. Since $f(m_1) < f(m_2)$, the maximum cannot lie in $[0, m_1]$ (grey), which is discarded}{figure.caption.135}{}}
+\@writefile{toc}{\contentsline {paragraph}{Integers: binary search on the slope.}{102}{paragraph*.136}\protected@file@percent }
+\newlabel{tpl:cpternary}{{8.5}{103}{Integers: binary search on the slope}{section*.137}{}}
+\@writefile{toc}{\contentsline {paragraph}{Convexity is the real condition.}{103}{paragraph*.138}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {8.6}Parallel binary search}{104}{section.8.6}\protected@file@percent }
+\newlabel{sec:parallel-bs}{{8.6}{104}{Parallel binary search}{section.8.6}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {8.9}{\ignorespaces Parallel binary search with $m = 7$ events, so every range starts as $[0, 8]$ (8 means ``never''). In each round the queries are checked in order of their middles during a single replay of the events; ``yes'' means connected after \emph  {mid} events. After round 4 every range is a single value; for $q_3$ it is $[1, 1]$.}}{104}{figure.caption.139}\protected@file@percent }
+\newlabel{fig:pbs}{{8.9}{104}{Parallel binary search with $m = 7$ events, so every range starts as $[0, 8]$ (8 means ``never''). In each round the queries are checked in order of their middles during a single replay of the events; ``yes'' means connected after \emph {mid} events. After round 4 every range is a single value; for $q_3$ it is $[1, 1]$}{figure.caption.139}{}}
+\@setckpt{algorithms/07_binary_search}{
+\setcounter{page}{106}
+\setcounter{equation}{0}
+\setcounter{enumi}{2}
+\setcounter{enumii}{0}
+\setcounter{enumiii}{0}
+\setcounter{enumiv}{0}
+\setcounter{footnote}{0}
+\setcounter{mpfootnote}{0}
+\setcounter{part}{2}
+\setcounter{chapter}{8}
+\setcounter{section}{6}
+\setcounter{subsection}{0}
+\setcounter{subsubsection}{0}
+\setcounter{paragraph}{0}
+\setcounter{subparagraph}{0}
+\setcounter{figure}{9}
+\setcounter{table}{0}
+\setcounter{parentequation}{0}
+\setcounter{lstnumber}{26}
+\setcounter{tcbbreakpart}{1}
+\setcounter{tcblayer}{0}
+\setcounter{tcolorbox@number}{323}
+\setcounter{tcblisting}{59}
+\setcounter{tcbrastercolumn}{1}
+\setcounter{tcbrasterrow}{1}
+\setcounter{tcbrasternum}{1}
+\setcounter{tcbraster}{1}
+\setcounter{cpsegfig}{0}
+\setcounter{LT@tables}{0}
+\setcounter{LT@chunks}{0}
+\setcounter{nlinenum}{0}
+\setcounter{ALG@line}{7}
+\setcounter{ALG@rem}{0}
+\setcounter{ALG@nested}{0}
+\setcounter{ALG@Lnr}{2}
+\setcounter{ALG@blocknr}{15}
+\setcounter{ALG@storecount}{0}
+\setcounter{ALG@tmpcounter}{0}
+\setcounter{algpx@codeBoxCount}{0}
+\setcounter{algpx@nestedCBoxCount}{0}
+\setcounter{algpx@startedBoxesCount}{0}
+\setcounter{algpx@endedBoxesCount}{0}
+\setcounter{algpx@nestedBoxedStringCount}{0}
+\setcounter{algpx@nestedBoxedStringMaxCount}{0}
+\setcounter{algpx@indentCount}{7}
+\setcounter{algpx@lastIndentEnded}{6}
+\setcounter{algpx@pageCount}{0}
+\setcounter{algpx@tmpCount}{0}
+\setcounter{caption@flags}{2}
+\setcounter{continuedfloat}{0}
+\setcounter{float@type}{16}
+\setcounter{section@level}{0}
+\setcounter{Item}{8}
+\setcounter{Hfootnote}{0}
+\setcounter{bookmark@seq@number}{0}
+\setcounter{algpx@indentEndPage-0@totc}{0}
+\setcounter{algpx@indentEndPage-1@totc}{0}
+\setcounter{algpx@indentEndPage-2@totc}{0}
+\setcounter{algpx@indentEndPage-3@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-2@totc}{3}
+\setcounter{algpx@indentEndCoordIndex-0@totc}{3}
+\setcounter{algpx@indentEndPage-4@totc}{0}
+\setcounter{algpx@indentEndPage-5@totc}{0}
+\setcounter{algpx@indentEndPage-6@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-4@totc}{6}
+\setcounter{algpx@indentEndPage-7@totc}{0}
+\setcounter{algpx@indentEndPage-8@totc}{0}
+\setcounter{algpx@indentEndPage-9@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-8@totc}{9}
+\setcounter{algpx@indentEndPage-10@totc}{0}
+\setcounter{algpx@indentEndPage-11@totc}{0}
+\setcounter{algpx@indentEndPage-12@totc}{0}
+\setcounter{algpx@indentEndPage-13@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-12@totc}{13}
+\setcounter{algpx@indentEndCoordIndex-10@totc}{13}
+\setcounter{algpx@indentEndPage-14@totc}{0}
+\setcounter{algpx@indentEndPage-15@totc}{0}
+\setcounter{algpx@indentEndPage-16@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-15@totc}{16}
+\setcounter{algpx@indentEndPage-17@totc}{0}
+\setcounter{algpx@indentEndPage-18@totc}{1}
+\setcounter{algpx@indentEndPage-19@totc}{1}
+\setcounter{algpx@indentEndCoordIndex-18@totc}{19}
+\setcounter{lstlisting}{0}
+\setcounter{algpx@indentEndPage-0}{0}
+\setcounter{algpx@indentEndPage-1}{0}
+\setcounter{algpx@indentEndPage-2}{0}
+\setcounter{algpx@indentEndPage-3}{0}
+\setcounter{algpx@indentEndCoordIndex-2}{3}
+\setcounter{algpx@indentEndCoordIndex-0}{3}
+\setcounter{algpx@indentEndPage-4}{0}
+\setcounter{algpx@indentEndPage-5}{0}
+\setcounter{algpx@indentEndPage-6}{0}
+\setcounter{algpx@indentEndCoordIndex-4}{6}
+}

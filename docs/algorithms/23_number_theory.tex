@@ -1,0 +1,1251 @@
+\chapter{Number Theory}\label{ch:numbertheory}
+
+Number theory enters competitive programming in two ways. Some problems are about integers themselves: divisors, primes, greatest
+common divisors, fractions. Many more simply ask for an answer ``modulo $10^9 + 7$'', and then modular arithmetic, inverses and fast
+exponentiation become everyday tools. This chapter covers both, from divisor enumeration and sieves to the techniques of the highest
+levels: factoring 64-bit numbers, discrete logarithms and square roots modulo a prime, M\"obius inversion, and summing multiplicative
+functions up to $10^{10}$ and beyond.
+
+\begin{chapterintro}{\silver\ \gold\ \plat\ \ioi}{Chapter~\ref{ch:complexity} (the harmonic sum) and Chapter~\ref{ch:cpp} (integer
+types and overflow).}
+  \item enumerate divisors, compute gcds and sieve primes, with the bounds that make these fast;
+  \item test primality and factor numbers up to $10^{18}$ with Miller--Rabin and Pollard's rho;
+  \item compute modulo a prime: powers, inverses, exponents reduced by Fermat and Euler, and towers of powers;
+  \item solve linear congruences and systems of them with the extended Euclidean algorithm and the Chinese remainder theorem;
+  \item find primitive roots, discrete logarithms and modular square roots;
+  \item count with the M\"obius function and floor-division blocks, and sum $\varphi$, $\mu$ and primes far beyond any sieve;
+  \item find the simplest fraction in an interval with the Stern--Brocot tree.
+\end{chapterintro}
+
+% ======================================================================================================================
+\section[Divisors]{Divisors \hfill \silver}\label{sec:divisors}
+
+An integer $d$ divides $n$, written $d \mid n$, if $n = kd$ for some integer $k$. Divisors come in pairs $(d, n/d)$, and in every
+pair one member is at most $\sqrt n$: if both were larger, their product would exceed $n$ (Figure~\ref{fig:divpairs}). So trying
+$d = 1, 2, \dots, \lfloor \sqrt n \rfloor$ and recording both $d$ and $n/d$ whenever $d \mid n$ lists all divisors in $\Oh{\sqrt n}$
+time, about $10^6$ steps for $n = 10^{12}$. The same loop factorises $n$: divide out each $d$ as long as it divides, and whatever is
+left above 1 at the end is a prime.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.38cm]
+  \fill[fgsky!32] (0.4, -0.26) rectangle (6, 0.26);
+  \draw[line width=0.6pt, fgink!70] (0, 0) -- (37.2, 0);
+  \foreach \dd/\ee in {1/36, 2/18, 3/12, 4/9} {
+    \pgfmathsetmacro{\hh}{0.45 + 0.065 * (\ee - \dd)}
+    \draw[line width=0.9pt, draw=fgverm!80] (\dd, 0.08) .. controls (\dd, \hh) and (\ee, \hh) .. (\ee, 0.08);
+  }
+  \draw[line width=0.9pt, draw=fgverm!80] (6, 0.08) .. controls (5.2, 0.9) and (6.8, 0.9) .. (6, 0.08);
+  \foreach \dd in {1, 2, 3, 4, 6, 9, 12, 18, 36} {
+    \fill[fgblue] (\dd, 0) circle (2.4pt);
+    \node[lbl, below=3pt] at (\dd, 0) {\dd};
+  }
+  \draw[line width=0.8pt, draw=fggray, dashed] (6, 0.95) -- (6, 2.55);
+  \node[lbl, above] at (6, 2.55) {$\sqrt{36} = 6$};
+\end{tikzpicture}
+\caption{Divisors come in pairs around $\sqrt n$. The divisors of 36 pair up as $d \cdot (36/d) = 36$: (1, 36), (2, 18), (3, 12),
+(4, 9) and (6, 6). Every pair has a member in the shaded part $d \le \sqrt{36}$, so a loop up to 6 finds all nine.}
+\label{fig:divpairs}
+\end{figure}
+
+\usetemplate{Factorize + divisors (trial division)}{Ctrl+Alt+T, Shift+P}{cpfactor}
+
+\paragraph{Counting divisors.} If $n = p_1^{e_1} p_2^{e_2} \cdots p_k^{e_k}$, a divisor of $n$ chooses an exponent between 0 and $e_i$
+for every prime independently. Hence the number of divisors and their sum are
+\[
+  d(n) = \prod_{i=1}^{k} (e_i + 1), \qquad
+  \sigma(n) = \prod_{i=1}^{k} \bigl(1 + p_i + \dots + p_i^{e_i}\bigr) = \prod_{i=1}^{k} \frac{p_i^{e_i + 1} - 1}{p_i - 1},
+\]
+and the product of all divisors is $n^{d(n)/2}$, since the divisors pair up into products equal to $n$. For $12 = 2^2 \cdot 3$:
+$d = 3 \cdot 2 = 6$, $\sigma = 7 \cdot 4 = 28$, and the product is $12^3 = 1728$.
+
+Numbers have surprisingly few divisors (Table~\ref{tab:divcounts}): even below $10^{18}$ no number has more than 103\,680, and a rough
+rule of thumb is $d(n) \approx \sqrt[3]{n}$ for the numbers that occur in contests. So a loop over all divisors of a value, or over
+all pairs of divisors, is often affordable.
+
+\begin{table}[htbp]
+\centering\small
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+$n \le$ & $10^3$ & $10^6$ & $10^9$ & $10^{12}$ & $10^{15}$ & $10^{18}$ \\
+\midrule
+largest $d(n)$ & 32 & 240 & 1\,344 & 6\,720 & 26\,880 & 103\,680 \\
+attained at & 840 & 720\,720 & 735\,134\,400 & $9.6 \cdot 10^{11}$ & $8.7 \cdot 10^{14}$ & $9.0 \cdot 10^{17}$ \\
+\bottomrule
+\end{tabular}
+\caption{The largest number of divisors below each bound (computed by a search over prime exponents).}
+\label{tab:divcounts}
+\end{table}
+
+\paragraph{The harmonic trick.} Instead of finding the divisors of each number, it is often better to turn the loop around and visit,
+for every $d$, all multiples of $d$ up to $N$. That costs $N/1 + N/2 + \dots + N/N \approx N \ln N$ steps in total: $1.4 \cdot 10^7$
+for $N = 10^6$. The divisor sieve computes $d(x)$ and $\sigma(x)$ for all $x \le N$ this way, and the same loop builds the list of
+divisors of every number.
+
+\usetemplate{Divisor sieve (count + sum)}{Ctrl+Alt+T, Shift+2}{cpdivsieve}
+
+\begin{problem}{Common Divisors (CSES)}
+Given $n \le 2 \cdot 10^5$ integers between 1 and $10^6$, find the largest greatest common divisor of two of them.
+\solution The answer is the largest $d$ that divides at least two of the numbers. Count how many times each value occurs; then, for
+$d$ from $10^6$ downwards, count the input numbers among the multiples of $d$, and stop at the first $d$ with at least two. In the
+worst case the scan runs down to $d = 1$ and costs the harmonic sum: 0.11\,s when the input is all 78\,498 primes below $10^6$.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    const int A = 1000000;
+    vi cnt(A + 1);
+    rep(i, n) {
+        int x;
+        cin >> x;
+        cnt[x]++;
+    }
+    for (int d = A; d >= 1; d--) {  // the largest d that divides two numbers
+        int multiples = 0;
+        for (int m = d; m <= A; m += d) multiples += cnt[m];  // A / d steps
+        if (multiples >= 2) {
+            print(d);
+            return;
+        }
+    }
+}
+\end{code}
+
+% ======================================================================================================================
+\section[GCD and LCM]{GCD and LCM \hfill \silver}\label{sec:gcd}
+
+The greatest common divisor obeys $\gcd(a, b) = \gcd(b, a \bmod b)$ and $\gcd(a, 0) = a$. The rule holds because $a \bmod b = a - qb$:
+a number that divides $a$ and $b$ divides $a - qb$, and a number that divides $b$ and $a - qb$ divides $a$, so both pairs have the same
+common divisors. Geometrically, Euclid's algorithm cuts the largest possible squares off an $a \times b$ rectangle until none is left;
+the last square's side is the gcd (Figure~\ref{fig:euclid}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[scale=0.42]
+  \tikzset{sq/.style={line width=0.8pt, rounded corners=0.5pt}}
+  \draw[sq, draw=fgblue, fill=fgsky!28] (0, 0) rectangle (8, 8);
+  \draw[sq, draw=fgblue, fill=fgsky!28] (8, 0) rectangle (16, 8);
+  \draw[sq, draw=fgorange!85!black, fill=fgorange!22] (16, 0) rectangle (21, 5);
+  \draw[sq, draw=fggreen, fill=fggreen!20] (16, 5) rectangle (19, 8);
+  \draw[sq, draw=fgpink!80!black, fill=fgpink!25] (19, 5) rectangle (21, 7);
+  \draw[sq, draw=fgverm, fill=fgverm!18] (19, 7) rectangle (20, 8);
+  \draw[sq, draw=fgverm, fill=fgverm!18] (20, 7) rectangle (21, 8);
+  \foreach \cx/\cy/\side in {4/4/8, 12/4/8, 18.5/2.5/5, 17.5/6.5/3}
+    \node[font=\sffamily\small\bfseries, text=fgink] at (\cx, \cy) {\side};
+  \node[font=\sffamily\scriptsize\bfseries, text=fgink] at (20, 6) {2};
+  \draw[line width=0.6pt, fgink!60] (0, -0.6) -- (21, -0.6);
+  \node[lbl, below] at (10.5, -0.6) {21};
+  \draw[line width=0.6pt, fgink!60] (-0.6, 0) -- (-0.6, 8);
+  \node[lbl, left] at (-0.6, 4) {8};
+  \node[notel, anchor=west, text width=5.6cm, align=left] at (22.6, 4) {%
+    \swatch{cool}\ $21 = 2 \cdot 8 + 5$\\
+    \swatch{warn}\ \ $8 = 1 \cdot 5 + 3$\\
+    \swatch{good}\ \ $5 = 1 \cdot 3 + 2$\\
+    \swatch{pur}\ \ $3 = 1 \cdot 2 + 1$\\
+    \swatch{hot}\ \ $2 = 2 \cdot 1 + 0$\\[3pt]
+    so $\gcd(21, 8) = 1$: the smallest squares have side 1.};
+\end{tikzpicture}
+\caption{Euclid's algorithm on $21 \times 8$: each division step cuts off as many squares of the shorter side as fit. A square of side
+$g$ tiles the whole rectangle exactly when $g$ divides both sides.}
+\label{fig:euclid}
+\end{figure}
+
+\paragraph{Why it is fast.} After two steps the larger number has at least halved: if $b \le a/2$ then $a \bmod b < b \le a/2$, and if
+$b > a/2$ then $a \bmod b = a - b < a/2$. So Euclid's algorithm takes at most $2\log_2 \min(a, b) + 2$ steps. The worst inputs are
+consecutive Fibonacci numbers, where every quotient is 1 (Lam\'e's theorem): $\gcd(F_{n+1}, F_n)$ takes $n$ steps, and $F_{90}
+\approx 2.9 \cdot 10^{18}$, so no pair of 64-bit numbers needs more than about 90.
+
+C++17 provides \cc{std::gcd} and \cc{std::lcm} in \texttt{<numeric>}. Compute the least common multiple as \cc{a / gcd(a, b) * b},
+dividing first: $\mathrm{lcm}(a, b)$ may fit in 64 bits when $a \cdot b$ does not. The lcm of many numbers grows quickly, so check for
+overflow, or work with the maximum exponent of every prime instead.
+
+\begin{fact}[GCD identities]
+$\gcd(a, b) = \gcd(a - b, b)$, so the gcd of an array does not change when one element is replaced by its difference with another, and
+the gcd of all pairwise differences $|a_i - a_j|$ equals $\gcd(a_2 - a_1, a_3 - a_1, \dots, a_n - a_1)$. $\gcd(F_m, F_n) = F_{\gcd(m,
+n)}$ for Fibonacci numbers, and $\gcd(2^m - 1, 2^n - 1) = 2^{\gcd(m, n)} - 1$. Finally, $\gcd(a, b) \cdot \mathrm{lcm}(a, b) = ab$,
+and for every prime the exponent in the gcd is the minimum of the two exponents, in the lcm the maximum.
+\end{fact}
+
+\paragraph{Few distinct gcds.} Along a prefix $a_1, a_1 a_2, \dots$, the running gcd changes only by dropping to a proper divisor, which
+at least halves it; so the prefix gcds of an array take at most $\log_2 A + 1$ distinct values when the elements are at most $A$. The
+same holds for the gcds of the subarrays that end at a fixed position, since extending a subarray to the left can only make its gcd
+smaller. Keeping these few values, each with the number of subarrays that have it, answers questions about all $\Oh{n^2}$ subarrays
+in $\Oh{n \log A}$ (Figure~\ref{fig:gcdruns}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[y=0.68cm]
+  \tikzset{chip/.style={draw=fgblue, fill=fgfill, rounded corners=2pt, line width=0.6pt, font=\sffamily\scriptsize,
+    inner sep=2.5pt, minimum height=4.6mm}, chiphot/.style={chip, draw=fgverm, fill=fgverm!15}}
+  \node[blbl] at (0, 0.85) {$i$};
+  \node[blbl] at (0.9, 0.85) {$a_i$};
+  \node[blbl, anchor=west] at (1.8, 0.85) {(gcd, number of subarrays ending at $i$)};
+  \node[blbl] at (8.6, 0.85) {gcd 1};
+  \foreach \ii/\av/\runs/\cnt in {0/12/{12/1/chip}/0, 1/18/{18/1/chip, 6/1/chip}/0, 2/8/{8/1/chip, 2/2/chip}/0,
+      3/3/{3/1/chip, 1/3/chiphot}/3, 4/9/{9/1/chip, 3/1/chip, 1/3/chiphot}/3} {
+    \node[lbl] at (0, -\ii) {\ii};
+    \node[font=\ttfamily\small] at (0.9, -\ii) {\av};
+    \foreach \gv/\cv/\cst [count=\kk from 0] in \runs
+      \node[\cst, anchor=west] at (1.8 + 1.55*\kk, -\ii) {$\gv \times \cv$};
+    \node[font=\sffamily\small\bfseries, text=fgverm] at (8.6, -\ii) {\cnt};
+  }
+  \node[notel, anchor=west, text width=5.4cm] at (9.5, -2) {From one row to the next: start a new run $(a_i, 1)$, replace
+    every gcd $g$ by $\gcd(g, a_i)$, and merge equal neighbours. Each row has at most $\log_2 A + 1$ entries; here 6
+    subarrays have gcd 1.};
+\end{tikzpicture}
+\caption{The gcds of all subarrays ending at each position of $12, 18, 8, 3, 9$, as runs (gcd $\times$ count).}
+\label{fig:gcdruns}
+\end{figure}
+
+\begin{problem}{Coprime subarrays}
+Count the subarrays of $a_1, \dots, a_n$ whose gcd is 1 ($n \le 2 \cdot 10^5$, $a_i \le 10^9$).
+\solution Maintain the runs of Figure~\ref{fig:gcdruns}. The runs are ordered by decreasing gcd, each gcd dividing the one before, so
+if any subarray ending at $i$ has gcd 1, it belongs to the last run. The program takes 0.08\,s for $n = 2 \cdot 10^5$ even on inputs
+built to keep 30 runs at every position.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vector<pll> runs, next;  // (g, c): c subarrays end here and have gcd g
+    ll ans = 0;
+    rep(i, n) {
+        ll x;
+        cin >> x;
+        next = {{x, 1}};
+        for (auto [g, c] : runs) {  // extend every subarray by x
+            ll h = gcd(g, x);
+            if (h == next.back().first) next.back().second += c;  // merge
+            else next.push_back({h, c});
+        }
+        swap(runs, next);
+        if (runs.back().first == 1) ans += runs.back().second;  // smallest gcd
+    }
+    print(ans);
+}
+\end{code}
+
+% ======================================================================================================================
+\section[Primes and sieves]{Primes and sieves \hfill \silver}\label{sec:sieve}
+
+A prime has exactly two divisors, 1 and itself. To list all primes up to $N$, the \defn{sieve of Eratosthenes} walks through
+$2, 3, \dots$ and, at every number $p$ not yet crossed out, which must be prime, crosses out the multiples of $p$. It can start at $p^2$,
+because a smaller multiple $kp$ with $k < p$ has a prime factor below $p$ and is already crossed out; for the same reason the outer
+loop can stop at $\sqrt N$. The total work is $\sum_{p \le N} N/p \approx N \ln \ln N$, because the sum of the reciprocals of the
+primes up to $N$ grows like $\ln \ln N$: practically linear.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{gc/.style={draw=white, line width=0.8pt, minimum size=6.2mm, inner sep=0pt, font=\sffamily\scriptsize},
+    sv0/.style={gc, fill=white, draw=fgink, line width=1pt, font=\sffamily\scriptsize\bfseries},
+    sv1/.style={gc, fill=fgpaper, text=fggray}, sv2/.style={gc, fill=fgsky!35}, sv3/.style={gc, fill=fgorange!35},
+    sv5/.style={gc, fill=fggreen!30}, sv7/.style={gc, fill=fgpink!40}}
+  \foreach \nn in {1, ..., 100} {
+    \pgfmathtruncatemacro{\rowy}{floor((\nn - 1) / 10)}
+    \pgfmathtruncatemacro{\colx}{mod(\nn - 1, 10)}
+    \pgfmathtruncatemacro{\spf}{\nn == 1 ? 1 : (mod(\nn, 2) == 0 ? 2 : (mod(\nn, 3) == 0 ? 3 :
+      (mod(\nn, 5) == 0 ? 5 : (mod(\nn, 7) == 0 ? 7 : 0))))}
+    \pgfmathtruncatemacro{\cls}{\nn == 1 ? 1 : (\spf == \nn ? 0 : \spf)}
+    \node[sv\cls] at (0.66*\colx, -0.66*\rowy) {\nn};
+  }
+  \legendat{(7.3, -0.5)}{sv0/prime (25 of them), sv2/smallest prime factor 2, sv3/smallest prime factor 3,
+    sv5/smallest prime factor 5, sv7/smallest prime factor 7}
+  \node[notel, anchor=north west, text width=5.6cm] at (7.15, -2.7) {Every composite number up to 100 has a prime factor of at most
+    $\sqrt{100} = 10$, so crossing out the multiples of 2, 3, 5 and 7 leaves exactly the primes. The colour is the smallest prime
+    factor, the one that crosses the number out in the linear sieve.};
+\end{tikzpicture}
+\caption{The numbers up to 100, coloured by their smallest prime factor.}
+\label{fig:sieve}
+\end{figure}
+
+\paragraph{The linear sieve.} The library's sieve records the smallest prime factor $\mathit{spf}[x]$ of every $x \le N$ and crosses out
+each composite exactly once: the number $i \cdot p$ is crossed out from $i$, for every prime $p$ up to $\mathit{spf}[i]$, and then
+$p = \mathit{spf}[i \cdot p]$, so no number is visited twice. With $\mathit{spf}$ available, any $x \le N$ factorises in $\Oh{\log x}$
+steps by dividing by $\mathit{spf}[x]$ repeatedly.
+
+\usetemplate{Sieve (primes + smallest prime factor)}{Ctrl+Alt+T, P}{cpsieve}
+
+Measured: up to $N = 10^7$ the plain sieve takes 0.015\,s and the linear sieve with its 40\,MB array of smallest factors 0.036\,s. At
+$N = 10^8$, a \cc{vector<bool>} sieve (12.5\,MB, one bit per number) takes 0.21\,s but a \cc{vector<char>} sieve (100\,MB) takes 0.55\,s:
+at this size memory traffic, not the number of operations, decides.
+
+\begin{fact}[Prime facts]
+There are 25 primes below 100, 168 below $10^3$, 1\,229 below $10^4$, 78\,498 below $10^6$, 664\,579 below $10^7$, 5\,761\,455 below
+$10^8$, 50\,847\,534 below $10^9$ and 4\,118\,054\,813 below $10^{11}$: about $N / \ln N$. The gap between consecutive primes is small:
+at most 282 below $10^9$ (after 436\,273\,009) and at most about 1\,500 below $10^{18}$, so the next prime after $x$ is found by testing
+candidates one by one. Useful primes: $10^9 + 7$, $998\,244\,353 = 119 \cdot 2^{23} + 1$ (for the NTT), and $2^{61} - 1$ (for hashing).
+\end{fact}
+
+\subsection{The segmented sieve}
+
+A sieve up to $10^{12}$ is impossible, but the primes in a short \emph{window} $[L, R]$ of a large range are easy: a composite $x \le R$
+has a prime factor of at most $\sqrt R$, so it suffices to sieve the primes up to $\sqrt R$ and cross out their multiples inside the
+window, starting from the first multiple that is at least $L$ (and at least $p^2$, so that $p$ itself survives).
+
+\begin{problem}{Primes in a window}
+Count the primes in $[L, R]$, where $R \le 10^{12}$ and $R - L \le 10^6$.
+\solution The segmented sieve: $10^6$ numbers in the small sieve and $10^6$ in the window. For the window just below $10^{12}$ the
+program finds 36\,400 primes in 0.06\,s.
+\end{problem}
+
+\begin{code}
+void solve() {
+    ll L, R;
+    cin >> L >> R;
+    ll s = sqrtl((long double)R);
+    while (s * s > R) s--;
+    while ((s + 1) * (s + 1) <= R) s++;
+    vector<char> small(s + 1, 1);       // small[p]: p is a prime up to sqrt(R)
+    vector<char> window(R - L + 1, 1);  // window[x - L]: no prime factor found
+    for (ll p = 2; p <= s; p++) {
+        if (!small[p]) continue;
+        for (ll q = p * p; q <= s; q += p) small[q] = 0;
+        ll first = max(p * p, cdiv(L, p) * p);  // the first multiple to cross
+        for (ll q = first; q <= R; q += p) window[q - L] = 0;
+    }
+    ll cnt = 0;
+    for (ll x = max(L, 2LL); x <= R; x++) cnt += window[x - L];
+    print(cnt);
+}
+\end{code}
+
+\begin{pitfall}[Square roots in floating point]
+\cc{sqrt(x)} for a 64-bit $x$ is computed in \cc{double}, with 53 bits of precision, and can be off by one near perfect squares. Take the
+floating-point value as a guess and correct it with integer comparisons, as the two \cc{while} loops above do.
+\end{pitfall}
+
+% ======================================================================================================================
+\section[Primality and factoring large numbers]{Primality and factoring large numbers \hfill \ioi}\label{sec:pollard}
+
+Trial division up to $\sqrt n$ is fine for $n \le 10^{12}$ (or $10^{14}$ with a precomputed list of primes), but not for $n$ near
+$10^{18}$. Two randomised algorithms take over: Miller--Rabin decides whether $n$ is prime, and Pollard's rho splits a composite.
+
+\paragraph{Miller--Rabin.} Fermat's little theorem says $a^{n-1} \equiv 1 \pmod n$ for prime $n$ and $a$ not divisible by $n$. The
+converse fails: 561 $= 3 \cdot 11 \cdot 17$ satisfies the congruence for every $a$ coprime to it (a \emph{Carmichael number}). Miller and
+Rabin strengthen the test with one more fact about primes: $x^2 \equiv 1 \pmod n$ has only the solutions $x \equiv \pm 1$. Write
+$n - 1 = 2^s d$ with $d$ odd and look at the sequence $a^d, a^{2d}, a^{4d}, \dots, a^{2^s d}$, each the square of the one before. For
+prime $n$ it ends in 1, and the element just before its first 1 must be $-1$ (unless the sequence starts with 1). A composite $n$ fails
+this test for at least three quarters of all bases $a$, and for 64-bit numbers the seven bases 2, 325, 9\,375, 28\,178, 450\,775,
+9\,780\,504 and 1\,795\,265\,022 are known to catch every composite, so the test is deterministic.
+
+\begin{pseudo}{Miller--Rabin test for an odd $n > 3$}
+\begin{algorithmic}[1]
+\State write $n - 1 = 2^s d$ with $d$ odd
+\ForAll{bases $a$ in the fixed list}
+  \State $x \gets a^d \bmod n$
+  \If{$x = 1$ or $x = n - 1$} \State \textbf{continue} \Comment{this base proves nothing} \EndIf
+  \State square $x$ up to $s - 1$ times, stopping when $x = n - 1$
+  \If{$x \ne n - 1$} \State \Return \emph{composite} \Comment{a square root of 1 other than $\pm 1$, or Fermat fails} \EndIf
+\EndFor
+\State \Return \emph{prime}
+\end{algorithmic}
+\end{pseudo}
+
+Every multiplication is modulo a number up to $10^{18}$, whose products need 128 bits: use \cc{__int128}, or the long-double trick in
+the template, which computes the quotient $\lfloor ab/n \rfloor$ in floating point and corrects the remainder in 64-bit arithmetic.
+
+\paragraph{Pollard's rho.} Let $p$ be an unknown prime factor of $n$, and iterate $x_{i+1} = x_i^2 + c \bmod n$. Modulo $p$ the
+sequence behaves like a random one in a set of $p$ values, so by the birthday paradox it repeats after about $\sqrt{\pi p / 2}$ steps
+and then cycles forever: drawn out, it looks like the Greek letter $\rho$ (Figure~\ref{fig:rho}). We cannot see the sequence modulo
+$p$, but when $x_i \equiv x_j \pmod p$, the difference $x_i - x_j$ is a multiple of $p$, and $\gcd(x_i - x_j, n)$ reveals it. Floyd's
+cycle detection compares $x_i$ with $x_{2i}$: once $i$ is past the tail and a multiple of the cycle length, they agree modulo $p$.
+Since $p \le \sqrt n$ for the smallest factor, a factor appears after about $n^{1/4}$ steps.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{rn/.style={vtx, minimum size=7mm, font=\sffamily\scriptsize}, ra/.style={->, line width=0.8pt, draw=fgink!70,
+    shorten >=1pt, shorten <=1pt}}
+  % modulo 83: tail 2, 5, 26, 13 and cycle 4, 17, 41, 22, 70
+  \foreach \vv/\yy [count=\ii from 0] in {2/0, 5/1.1, 26/2.2, 13/3.3} {
+    \node[rn] (A\ii) at (0, \yy) {\vv};
+    \node[lbl, anchor=east] at (-0.42, \yy) {$x_{\ii}$};
+  }
+  \foreach \vv/\ang [count=\ii from 4] in {4/-90, 17/-18, 41/54, 22/126, 70/198} {
+    \node[rn, cool] (A\ii) at ($(0, 5.6)+(\ang:1.25)$) {\vv};
+  }
+  \foreach \ii/\jj in {0/1, 1/2, 2/3, 3/4} \draw[ra] (A\ii) -- (A\jj);
+  \foreach \ii/\jj in {4/5, 5/6, 6/7, 7/8, 8/4} \draw[ra] (A\ii) to[bend right=24] (A\jj);
+  \node[lbl, anchor=west] at (0.4, 3.82) {$x_4 = x_9$};
+  \node[title] at (0, 7.6) {modulo 83};
+  % modulo 97: tail 2 and cycle 5, 26, 95
+  \node[rn] (B0) at (4.4, 2.2) {2};
+  \node[lbl, anchor=east] at (3.98, 2.2) {$x_0$};
+  \foreach \vv/\ang [count=\ii from 1] in {5/-90, 26/30, 95/150} \node[rn, warn] (B\ii) at ($(4.4, 4.1)+(\ang:1.0)$) {\vv};
+  \draw[ra] (B0) -- (B1);
+  \foreach \ii/\jj in {1/2, 2/3, 3/1} \draw[ra] (B\ii) to[bend right=30] (B\jj);
+  \node[title] at (4.4, 5.6) {modulo 97};
+  \node[notel, anchor=west, text width=6.6cm] at (6.3, 3.3) {$n = 8051 = 83 \cdot 97$, $x_0 = 2$, $x_{i+1} = x_i^2 + 1$: the
+    sequence is 2, 5, 26, 677, 7474, 2839, 871, \dots\ Modulo 97 it enters a cycle of length 3 after one step, modulo 83 a cycle of
+    length 5 after four. Floyd's check finds $x_3 \equiv x_6 \pmod{97}$ first: $\gcd(871 - 677, 8051) = 97$.};
+\end{tikzpicture}
+\caption{The $\rho$ shapes of Pollard's sequence modulo the two prime factors of 8051. The factor whose $\rho$ closes first is found
+first.}
+\label{fig:rho}
+\end{figure}
+
+\usetemplate{Miller--Rabin + Pollard rho}{Ctrl+Alt+Y, X}{cppollard}
+
+\begin{problem}{Factoring big numbers}
+Print the prime factorisations of $q \le 100$ numbers up to $10^{18}$.
+\solution \cc{BigFactor::factor} tests primality and otherwise splits the number with Pollard's rho, recursively. The hardest inputs
+are products of two primes of about $10^9$; 100 of them take 0.11\,s in total.
+\end{problem}
+
+\begin{code}
+void solve() {  // BigFactor (cppollard) is pasted above solve()
+    int q;
+    cin >> q;
+    while (q--) {
+        ll x;
+        cin >> x;
+        auto f = BigFactor::factor(x);  // prime factors with repeats, unsorted
+        sort(all(f));
+        print(f);
+    }
+}
+\end{code}
+
+% ======================================================================================================================
+\section[Modular arithmetic]{Modular arithmetic \hfill \gold}\label{sec:modular}
+
+``Print the answer modulo $10^9 + 7$'' means that the true answer is huge and that every computation may be done modulo $M = 10^9 + 7$.
+We write $a \equiv b \pmod M$ when $M \mid a - b$. Addition, subtraction and multiplication respect congruences, so intermediate
+results can be reduced at every step:
+\begin{gather*}
+  (a + b) \bmod M = \bigl((a \bmod M) + (b \bmod M)\bigr) \bmod M, \\
+  (a b) \bmod M = \bigl((a \bmod M)(b \bmod M)\bigr) \bmod M .
+\end{gather*}
+Division is different: $\frac{a}{b} \bmod M$ is not $\frac{a \bmod M}{b \bmod M}$, and is computed with an inverse, below.
+
+\begin{pitfall}[Negative numbers and overflow]
+In C++ \cc|(-7) % 3 == -1|: the remainder takes the sign of the dividend. After a subtraction write \cc|((a - b) % M + M) % M|. Two
+residues below $10^9 + 7$ multiply to about $10^{18}$, which fits in a \cc{long long} but not in an \cc{int}; for moduli up to
+$10^{18}$, multiply in \cc{__int128} or with the long-double trick of Section~\ref{sec:pollard}.
+\end{pitfall}
+
+\paragraph{Fast exponentiation.} $a^e$ needs only $\Oh{\log e}$ multiplications: square $a$ repeatedly to get $a, a^2, a^4, a^8,
+\dots$, and multiply together the powers that correspond to the 1-bits of $e$ (Figure~\ref{fig:binexp}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \foreach \ee/\vv/\bb/\pst [count=\ii from 0] in {1/3/1/hot, 2/9/0/n, 4/81/1/hot, 8/561/0/n, 16/721/1/hot} {
+    \node[cellc, \pst, minimum width=10mm, minimum height=8mm] (P\ii) at (2.05*\ii, 0) {\vv};
+    \node[lbl] at (2.05*\ii, 0.62) {$a^{\ee}$};
+    \node[font=\sffamily\small\bfseries, text=fgblue] at (2.05*\ii, -0.75) {\bb};
+  }
+  \foreach \ii in {0, ..., 3} {
+    \pgfmathtruncatemacro{\jj}{\ii + 1}
+    \draw[->, line width=0.8pt, draw=fgink!60] (P\ii) -- node[above=1pt, lbl] {square} (P\jj);
+  }
+  \node[lbl, anchor=east] at (-0.8, -0.75) {bits of 21};
+  \node[notel, anchor=west, text width=4.2cm] at (8.95, 0) {$a = 3$ modulo 1000. Since $21 = 10101_2$,
+    $3^{21} = 3^{16} \cdot 3^4 \cdot 3^1 \equiv 721 \cdot 81 \cdot 3 \equiv 203$: four squarings and two more products.};
+\end{tikzpicture}
+\caption{Binary exponentiation computes $3^{21} \bmod 1000$ from the powers $3^{2^k}$ selected by the bits of 21.}
+\label{fig:binexp}
+\end{figure}
+
+\paragraph{Inverses.} The inverse of $a$ modulo $M$ is the number $a^{-1}$ with $a \cdot a^{-1} \equiv 1 \pmod M$. It exists exactly when
+$\gcd(a, M) = 1$, and there are three ways to compute it:
+\begin{itemize}
+  \item For prime $M$, \textbf{Fermat's little theorem} $a^{M-1} \equiv 1$ gives $a^{-1} = a^{M-2}$, one fast exponentiation. (Proof:
+        multiplying the nonzero residues $1, 2, \dots, M - 1$ by $a$ permutes them, so $a^{M-1} (M-1)! \equiv (M-1)!$, and $(M-1)!$
+        can be cancelled because it is coprime to $M$.)
+  \item For any $M$, the extended Euclidean algorithm (Section~\ref{sec:extgcd}) finds $x$ and $y$ with $ax + My = 1$, and then $x$ is
+        the inverse.
+  \item All inverses of $1, \dots, n$ modulo a prime $M$ in $\Oh{n}$: $\mathit{inv}[1] = 1$ and $\mathit{inv}[i] = -\lfloor M/i \rfloor
+        \cdot \mathit{inv}[M \bmod i] \bmod M$. Writing $M = qi + r$ gives $qi + r \equiv 0$, so $i \equiv -r/q$ and $i^{-1} \equiv
+        -q \cdot r^{-1}$, where $r < i$ has been handled already.
+\end{itemize}
+
+\usetemplate{Modular power + inverse / Mint}{Ctrl+Alt+T, M / Shift+M}{cpmodpow, cpmint}
+
+\begin{trick}[Use Mint]
+The library's \texttt{mint} type overloads \cc{+ - * /} so that modular code reads like ordinary arithmetic and cannot forget a
+reduction, at no cost in speed. To work modulo $998\,244\,353$, change \cc{MOD} in the template.
+\end{trick}
+
+\paragraph{Exponents modulo $M - 1$.} By Fermat, $a^{e} \equiv a^{e \bmod (M - 1)} \pmod M$ when $M$ is prime and $M \nmid a$:
+exponents live modulo $M - 1$, not modulo $M$. This is the key to the next two problems.
+
+\begin{problem}{Exponentiation II (CSES)}
+Answer $n \le 10^5$ queries: compute $a^{b^c} \bmod (10^9 + 7)$ for $0 \le a, b, c \le 10^9$ (with $0^0 = 1$).
+\solution Reduce the exponent modulo $M - 1$: compute $e = b^c \bmod (M - 1)$, then $a^e \bmod M$. Two cases need a second look. If
+$a = 0$, the answer is 0 unless $b^c = 0$; but $e = 0$ could also mean that $M - 1 = 2 \cdot 500\,000\,003$ divides $b^c$, which needs
+$b \ge 10^9 + 6$, outside the limits. And $b = 0$ with $c = 0$ gives $0^0 = 1$, which \cc{modpow} returns. $2 \cdot 10^5$ queries
+take 0.19\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // modpow (cpmodpow) is pasted above solve()
+    int n;
+    cin >> n;
+    while (n--) {
+        ll a, b, c;
+        cin >> a >> b >> c;
+        ll e = modpow(b, c, MOD - 1);  // Fermat: exponents work modulo MOD - 1
+        print(modpow(a, e));
+    }
+}
+\end{code}
+
+\begin{problem}{Divisor Analysis (CSES)}
+A number is given by its factorisation $\prod x_i^{k_i}$ ($n \le 10^5$ distinct primes $x_i \le 10^6$, exponents $k_i \le 10^9$).
+Print the number, the sum and the product of its divisors, modulo $10^9 + 7$.
+\solution The number and the sum follow from the formulas of Section~\ref{sec:divisors}, with the geometric series $1 + x + \dots + x^k
+= (x^{k+1} - 1)/(x - 1)$ computed with an inverse. The product is $N^{d(N)/2}$, but $d(N)$ is only known modulo $M$, and as an
+exponent it is needed modulo $M - 1$. Build the product prime by prime instead. If $P$ is the product of the divisors of $N$ and $N$
+gains the factor $x^k$, every old divisor $D$ becomes $D, Dx, \dots, Dx^k$, so the new product is $P^{k+1} \cdot x^{(0 + 1 + \dots + k)
+\cdot d(N)}$. All exponents are reduced modulo $M - 1$, so the count is also kept modulo $M - 1$. 78\,498 primes take 0.11\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // modpow (cpmodpow) is pasted above solve()
+    int n;
+    cin >> n;
+    ll cnt = 1, sum = 1, prod = 1, cnt2 = 1;  // cnt2: the count mod MOD - 1
+    rep(i, n) {
+        ll x, k;
+        cin >> x >> k;
+        cnt = cnt * ((k + 1) % MOD) % MOD;
+        ll geo = (modpow(x, k + 1) - 1 + MOD) % MOD * modinv(x - 1) % MOD;
+        sum = sum * geo % MOD;  // 1 + x + ... + x^k
+        ll tri = k * (k + 1) / 2 % (MOD - 1);  // the exponent 0 + ... + k
+        prod = modpow(prod, k + 1) * modpow(modpow(x, tri), cnt2) % MOD;
+        cnt2 = cnt2 * ((k + 1) % (MOD - 1)) % (MOD - 1);
+    }
+    print(cnt, sum, prod);
+}
+\end{code}
+
+% ======================================================================================================================
+\section[Extended Euclid and linear congruences]{Extended Euclid and linear congruences \hfill \gold}\label{sec:extgcd}
+
+\textbf{B\'ezout's identity} says that $\gcd(a, b)$ can be written as $ax + by$ for integers $x$ and $y$. The \defn{extended Euclidean
+algorithm} finds them alongside the gcd. If $(x_1, y_1)$ solves the smaller problem, $b x_1 + (a \bmod b) y_1 = g$, substitute $a \bmod
+b = a - \lfloor a/b \rfloor b$ and regroup:
+\[
+  a y_1 + b \bigl(x_1 - \lfloor a/b \rfloor y_1\bigr) = g, \qquad\text{so}\qquad x = y_1, \quad y = x_1 - \lfloor a/b \rfloor y_1,
+\]
+starting from $\gcd(g, 0) = g = g \cdot 1 + 0 \cdot 0$. Equivalently, carry along every remainder its expression as a combination of
+$a$ and $b$ (Table~\ref{tab:extgcd}).
+
+\begin{table}[htbp]
+\centering\small
+\begin{tabular}{@{}rrrrrl@{}}
+\toprule
+remainder $r$ & next $r'$ & $q = \lfloor r / r' \rfloor$ & $s$ & $t$ & $r = 240 s + 46 t$ \\
+\midrule
+240 & 46 & 5 & 1 & 0 & $240 = 240$ \\
+46 & 10 & 4 & 0 & 1 & $46 = 46$ \\
+10 & 6 & 1 & 1 & $-5$ & $10 = 240 - 5 \cdot 46$ \\
+6 & 4 & 1 & $-4$ & 21 & $6 = -960 + 966$ \\
+4 & 2 & 2 & 5 & $-26$ & $4 = 1200 - 1196$ \\
+\textbf{2} & 0 & & $\mathbf{-9}$ & \textbf{47} & $2 = -2160 + 2162$ \\
+\bottomrule
+\end{tabular}
+\caption{The extended Euclidean algorithm on $(240, 46)$: every row's coefficients are the row two above minus $q$ times the row
+above. It ends with $\gcd(240, 46) = 2 = 240 \cdot (-9) + 46 \cdot 47$.}
+\label{tab:extgcd}
+\end{table}
+
+\usetemplate{Extended GCD}{Ctrl+Alt+T, X}{cpextgcd}
+
+\paragraph{Linear Diophantine equations.} $ax + by = c$ has integer solutions exactly when $g = \gcd(a, b)$ divides $c$: every
+combination $ax + by$ is a multiple of $g$, and multiplying B\'ezout's identity by $c/g$ produces a solution $(x_0, y_0)$. All solutions
+are then $x = x_0 + k\,b/g$, $y = y_0 - k\,a/g$ for integers $k$, so counting the solutions in a box, or finding the one with the
+smallest non-negative $x$, is a matter of division.
+
+\begin{problem}{Linear congruences}
+For each query, find the smallest $x \ge 0$ with $ax \equiv b \pmod m$, or report that there is none ($0 \le a, b < m \le 10^9$).
+\solution $ax \equiv b \pmod m$ means $ax + my = b$ for some $y$: a linear Diophantine equation. It is solvable exactly when $g =
+\gcd(a, m)$ divides $b$, and then its solutions form one residue class modulo $m/g$, namely $x \equiv x_0 \cdot b/g$, where $a x_0 + m
+y_0 = g$. $2 \cdot 10^5$ queries take 0.16\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // ext_gcd (cpextgcd) is pasted above solve()
+    int t;
+    cin >> t;
+    while (t--) {
+        ll a, b, m;
+        cin >> a >> b >> m;
+        ll x, y, g = ext_gcd(a, m, x, y);  // a x + m y = g
+        if (b % g) {
+            print(-1);  // a x - b is a multiple of m only if g divides b
+            continue;
+        }
+        ll mod = m / g;  // the solutions repeat with period m / g
+        print((x % mod * (b / g % mod) % mod + mod) % mod);
+    }
+}
+\end{code}
+
+% ======================================================================================================================
+\section[Chinese remainder theorem]{Chinese remainder theorem \hfill \plat}\label{sec:crt}
+
+If $m_1$ and $m_2$ are coprime, the pair of residues $(x \bmod m_1, x \bmod m_2)$ determines $x$ modulo $m_1 m_2$, and every pair of
+residues occurs exactly once (Figure~\ref{fig:crt}). This is the \defn{Chinese remainder theorem}: a system of congruences modulo
+coprime moduli has exactly one solution modulo their product.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \foreach \rr/\row in {0/{0,6,12,3,9}, 1/{10,1,7,13,4}, 2/{5,11,2,8,14}} {
+    \node[lbl, anchor=east] at (-0.55, -0.8*\rr) {$x \bmod 3 = \rr$};
+    \foreach \xv [count=\ccol from 0] in \row {
+      \pgfmathtruncatemacro{\hit}{\xv == 8 ? 1 : 0}
+      \ifnum\hit=1
+        \node[cellc, hot, minimum width=9mm, minimum height=7mm] at (1.05*\ccol, -0.8*\rr) {\xv};
+      \else
+        \node[cellc, minimum width=9mm, minimum height=7mm] at (1.05*\ccol, -0.8*\rr) {\xv};
+      \fi
+    }
+  }
+  \foreach \ccol in {0, ..., 4} \node[lbl] at (1.05*\ccol, 0.62) {\ccol};
+  \node[lbl, anchor=east] at (-0.55, 0.62) {$x \bmod 5 =$};
+  \node[notel, anchor=west, text width=5.8cm] at (5.0, -0.8) {Each $x$ from 0 to 14 sits at the cell (its remainder modulo 3,
+    its remainder modulo 5). All 15 cells are different, so a pair of remainders determines $x$: $x \equiv 2 \pmod 3$ and $x \equiv
+    3 \pmod 5$ give $x \equiv 8 \pmod{15}$.};
+\end{tikzpicture}
+\caption{The Chinese remainder theorem for the moduli 3 and 5.}
+\label{fig:crt}
+\end{figure}
+
+To solve $x \equiv r_1 \pmod{m_1}$ and $x \equiv r_2 \pmod{m_2}$ for moduli that need not be coprime, write $x = r_1 + m_1 t$. The
+second congruence becomes $m_1 t \equiv r_2 - r_1 \pmod{m_2}$, a linear congruence: with $g = \gcd(m_1, m_2)$ it is solvable exactly
+when $g \mid r_2 - r_1$, and then $t \equiv \frac{r_2 - r_1}{g} \cdot \bigl(\frac{m_1}{g}\bigr)^{-1} \pmod{m_2/g}$. The solution is
+unique modulo $\mathrm{lcm}(m_1, m_2) = m_1 m_2 / g$. Many congruences are combined two at a time, folding each one into the result
+so far.
+
+\usetemplate{CRT (any moduli)}{Ctrl+Alt+Y, 1}{cpcrt}
+
+\begin{problem}{Systems of congruences}
+Find the smallest $x \ge 0$ satisfying $n \le 2 \cdot 10^5$ congruences $x \equiv r_i \pmod{m_i}$, or report that there is none. The lcm
+of all moduli is below $10^{18}$.
+\solution Fold the congruences into one with \cc{crt}. The template multiplies modulo the lcm with the long-double trick, because
+$m_1 t$ alone can exceed 64 bits. All $2 \cdot 10^5$ congruences take 0.11\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // crt (cpcrt) is pasted above solve()
+    int n;
+    cin >> n;
+    ll r = 0, m = 1;  // x = r (mod m) satisfies the congruences read so far
+    bool ok = true;
+    rep(i, n) {
+        ll ri, mi;
+        cin >> ri >> mi;
+        if (!ok) continue;
+        auto [r2, m2] = crt(r, m, ri, mi);
+        if (m2 == -1) ok = false;  // two congruences contradict each other
+        else r = r2, m = m2;
+    }
+    print(ok ? r : -1);
+}
+\end{code}
+
+\begin{trick}[CRT as a tool]
+When a modulus is composite and awkward, say $M = p_1^{e_1} p_2^{e_2}$, compute the answer modulo each prime power separately, where
+inverses and Lucas-type theorems work, and glue the results with CRT. The same idea lets the NTT multiply polynomials whose coefficients
+exceed any single NTT prime: convolve modulo three primes and reconstruct each coefficient (Chapter~\ref{ch:linalg}).
+\end{trick}
+
+% ======================================================================================================================
+\section[Euler's totient function]{Euler's totient function \hfill \plat}\label{sec:totient}
+
+\defn{Euler's totient} $\varphi(n)$ counts the integers $1 \le k \le n$ with $\gcd(k, n) = 1$. Removing the multiples of each prime factor
+of $n$ (the fraction $1/p$ of the numbers, independently for different primes) gives
+\[
+  \varphi(n) = n \prod_{p \mid n} \Bigl(1 - \frac{1}{p}\Bigr), \qquad\text{for example}\quad \varphi(12) = 12 \cdot \tfrac12 \cdot
+  \tfrac23 = 4 .
+\]
+$\varphi$ is \emph{multiplicative}: $\varphi(ab) = \varphi(a)\varphi(b)$ for coprime $a$ and $b$, which also follows from the Chinese
+remainder theorem. A sieve computes $\varphi$ for all numbers up to $N$, like the sieve of Eratosthenes.
+
+\usetemplate{Euler's totient}{Ctrl+Alt+Y, Shift+E}{cpphi}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{fr/.style={cellc, minimum width=10.5mm, minimum height=8mm, font=\small},
+    d1/.style={fill=fgyellow!55}, d2/.style={fill=fgpink!35}, d3/.style={fill=fggreen!28}, d4/.style={fill=fgorange!32},
+    d6/.style={fill=fgsky!40}, d12/.style={fill=fgblue!22}}
+  \foreach \fnum/\fden/\fst [count=\kk from 1] in {1/12/d12, 1/6/d6, 1/4/d4, 1/3/d3, 5/12/d12, 1/2/d2, 7/12/d12, 2/3/d3, 3/4/d4,
+      5/6/d6, 11/12/d12, 1/1/d1} {
+    \node[fr, \fst] at (1.12*\kk, 0) {$\frac{\fnum}{\fden}$};
+    \node[lbl] at (1.12*\kk, 0.65) {$\frac{\kk}{12}$};
+  }
+  \foreach \fden/\cnt/\fst [count=\kk from 0] in {12/4/d12, 6/2/d6, 4/2/d4, 3/2/d3, 2/1/d2, 1/1/d1} {
+    \node[draw=fgline, minimum size=3mm, inner sep=0pt, \fst] at (1.6 + 2.1*\kk, -1.05) {};
+    \node[lbl, anchor=west] at (1.8 + 2.1*\kk, -1.05) {$\varphi(\fden) = \cnt$};
+  }
+\end{tikzpicture}
+\caption{The fractions $\frac{k}{12}$ in lowest terms. The ones with denominator $d$ are the $\frac{j}{d}$ with $\gcd(j, d) = 1$, so
+there are $\varphi(d)$ of them, and $\sum_{d \mid n} \varphi(d) = n$: here $4 + 2 + 2 + 2 + 1 + 1 = 12$.}
+\label{fig:totient}
+\end{figure}
+
+\paragraph{Euler's theorem.} If $\gcd(a, m) = 1$ then $a^{\varphi(m)} \equiv 1 \pmod m$. The proof is the one for Fermat's theorem with
+the $\varphi(m)$ residues coprime to $m$ in place of all nonzero residues; for prime $m$, $\varphi(m) = m - 1$ and the two theorems
+coincide. So exponents modulo any $m$ can be reduced modulo $\varphi(m)$, provided $a$ is coprime to $m$. For other $a$ a weaker but
+universal statement holds, the \emph{generalised Euler theorem}:
+\[
+  a^{e} \equiv a^{(e \bmod \varphi(m)) + \varphi(m)} \pmod m \qquad\text{for all } a \text{ and all } e \ge \varphi(m) .
+\]
+(For each prime power $p^k \| m$: if $p \nmid a$, Euler's theorem applies; if $p \mid a$, both sides are $\equiv 0 \pmod{p^k}$, because
+both exponents are at least $\varphi(m) \ge \varphi(p^k) \ge k$.)
+
+\begin{problem}{Power towers}
+Compute $a_1^{a_2^{\,\cdots^{a_k}}} \bmod m$ for $k \le 10^5$ numbers $1 \le a_i \le 10^9$ and $m \le 10^9$.
+\solution Evaluate the tower from the top with the generalised theorem: the exponent of $a_1$ is needed modulo $\varphi(m)$, its own
+exponent modulo $\varphi(\varphi(m))$, and so on. The chain $m, \varphi(m), \varphi(\varphi(m)), \dots$ reaches 1 within about $2
+\log_2 m$ steps, since $\varphi(x)$ is even for $x > 2$ and $\varphi$ of an even number is at most half of it; beyond that point
+everything is 0 modulo 1. The theorem needs to know whether an exponent is at least $\varphi(m)$, which its residue does not tell.
+The trick is a modified reduction, $x \mathbin{\mathrm{md}} m = x$ if $x < m$ and $x \bmod m + m$ otherwise: it keeps the residue and
+also remembers whether $x \ge m$. Since all $a_i \ge 1$, products never shrink, and reducing every intermediate result with
+$\mathrm{md}$ instead of $\bmod$ keeps both pieces of information correct. 0.07\,s for $k = 10^5$.
+\end{problem}
+
+\begin{code}
+ll md(ll x, ll m) { return x < m ? x : x % m + m; }  // remembers x >= m
+ll power_md(ll a, ll e, ll m) {  // a^e, reduced with md
+    ll r = 1;
+    for (a = md(a, m); e; e >>= 1, a = md(a * a, m))
+        if (e & 1) r = md(r * a, m);
+    return r;
+}
+ll tower(const vi& a, int i, ll m) {  // a[i]^(a[i+1]^(...)), reduced with md
+    if (i == sz(a) - 1 || m == 1) return md(a[i], m);
+    return power_md(a[i], tower(a, i + 1, phi(m)), m);
+}
+void solve() {  // phi (cpphi) is pasted above solve()
+    int k;
+    ll m;
+    cin >> k >> m;
+    vi a(k);
+    for (ll& x : a) cin >> x;
+    print(tower(a, 0, m) % m);
+}
+\end{code}
+
+\begin{fact}[Totient identities]
+$\sum_{d \mid n} \varphi(d) = n$ (Figure~\ref{fig:totient}). The number of pairs $1 \le a, b \le n$ with $\gcd(a, b) = 1$ is $2
+\sum_{k=1}^{n} \varphi(k) - 1$, about $\frac{6}{\pi^2} n^2$. The fractions in lowest terms in $(0, 1]$ with denominator at most $n$
+(the Farey sequence) number $\sum_{k=1}^{n} \varphi(k)$. And $\varphi(n) \ge \sqrt{n/2}$, so the totient chain of any $m$ is short.
+\end{fact}
+
+% ======================================================================================================================
+\section[Primitive roots and discrete logarithms]{Primitive roots and discrete logarithms \hfill \ioi}\label{sec:dlog}
+
+The powers $a, a^2, a^3, \dots$ of a number $a$ coprime to $m$ repeat with some period, the \defn{order} of $a$: the smallest $k \ge 1$
+with $a^k \equiv 1 \pmod m$. By Euler's theorem the order divides $\varphi(m)$ (otherwise the remainder of $\varphi(m)$ divided by
+the order would be a smaller exponent giving 1). A \defn{primitive root}, or generator, is a $g$ of order exactly $\varphi(m)$: its powers
+run through all residues coprime to $m$ (Figure~\ref{fig:primroot}). Primitive roots exist exactly for $m = 1, 2, 4, p^k$ and $2p^k$
+with $p$ an odd prime; in particular every prime has them.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{pr/.style={vtx, minimum size=7mm}, pa/.style={->, line width=0.9pt, shorten >=1pt, shorten <=1pt}}
+  \foreach \sx/\pn/\ttx in {0/A/{multiplying by 3}, 6.2/B/{multiplying by 2}} {
+    \foreach \vv/\ang in {1/90, 3/30, 2/-30, 6/-90, 4/-150, 5/150} \node[pr] (Q\pn\vv) at ($(\sx, 0)+(\ang:1.5)$) {\vv};
+    \node[title] at (\sx, 2.4) {\ttx};
+  }
+  \foreach \ua/\ub in {1/3, 3/2, 2/6, 6/4, 4/5, 5/1} \draw[pa, draw=fgblue] (QA\ua) to[bend left=18] (QA\ub);
+  \foreach \ua/\ub in {1/2, 2/4, 4/1} \draw[pa, draw=fgverm] (QB\ua) -- (QB\ub);
+  \foreach \ua/\ub in {3/6, 6/5, 5/3} \draw[pa, draw=fggreen] (QB\ua) -- (QB\ub);
+  \node[notel, anchor=west, text width=4.6cm] at (8.4, 0) {Modulo 7, the powers of 3 are 3, 2, 6, 4, 5, 1: all six residues,
+    so 3 is a primitive root. The powers of 2 are 2, 4, 1: 2 has order 3, and multiplying by it splits the residues into two
+    cycles.};
+\end{tikzpicture}
+\caption{A primitive root generates every nonzero residue; any other element generates only a subgroup.}
+\label{fig:primroot}
+\end{figure}
+
+To find a primitive root, try $g = 2, 3, \dots$: $g$ is a generator exactly when $g^{\varphi(m)/q} \not\equiv 1$ for every prime $q$
+dividing $\varphi(m)$, because an order that is a proper divisor of $\varphi(m)$ divides one of the numbers $\varphi(m)/q$. Generators
+are plentiful, so the search stops quickly: the smallest primitive root of $998\,244\,353$ is 3 and that of $10^9 + 7$ is 5.
+
+\usetemplate{Primitive root}{Ctrl+Alt+U, G}{cpprimroot}
+
+\paragraph{Baby-step giant-step.} The \defn{discrete logarithm} problem asks for $x$ with $a^x \equiv b \pmod m$. Trying $x = 0, 1, 2,
+\dots$ takes up to $m$ steps; the baby-step giant-step algorithm needs only $\Oh{\sqrt m}$. Choose $n \approx \sqrt m$ and write the
+unknown exponent as $x = np - q$ with $1 \le p \le n$ and $0 \le q \le n$. Then $a^x \equiv b$ becomes $a^{np} \equiv b \cdot a^q$.
+Store the $n + 1$ \emph{baby steps} $b \cdot a^q$ in a hash map, then compute the \emph{giant steps} $a^{n}, a^{2n}, \dots$ until one
+of them is in the map (Figure~\ref{fig:bsgs}). Every $x$ up to $n^2 \ge m$ has such a representation, and the powers of $a$ repeat with
+period at most $m$, so if any solution exists, one is found. When $\gcd(a, m) > 1$, $a$ has no inverse and the equation cannot be
+simply divided; the template first divides out the common factors one at a time, adding 1 to the answer for each.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.52cm]
+  \draw[line width=0.6pt, fgink!70] (0, 0) -- (16.6, 0);
+  \foreach \tk in {0, ..., 16} \draw[line width=0.5pt, fgink!70] (\tk, 0.07) -- (\tk, -0.07);
+  \foreach \tk in {0, 4, 8, 12, 16} \node[lbl, below=2pt] at (\tk, 0) {\tk};
+  \foreach \gs in {0, 4, 8} \draw[->, line width=1pt, draw=fgblue] (\gs, 0.12) to[bend left=50]
+    node[above, font=\sffamily\scriptsize, text=fgblue] {$\cdot a^4$} (\gs + 4, 0.12);
+  \draw[->, line width=1pt, draw=fgverm] (12, -0.12) to[bend left=50] node[below, font=\sffamily\scriptsize, text=fgverm]
+    {$q = 3$ back} (9, -0.12);
+  \fill[fgverm] (9, 0) circle (2.6pt);
+  \node[font=\sffamily\scriptsize\bfseries, text=fgverm, anchor=south west, inner sep=1pt] at (9.15, 0.06) {$x = 9$};
+  \node[lbl, anchor=east] at (-0.3, 0) {exponent};
+  \begin{scope}[shift={(0, -2.2)}]
+    \node[blbl, anchor=east] at (-0.3, 0) {baby $5 \cdot 2^q$};
+    \arrs{Bb}{0}{0}{5/n, 10/n, 7/n, 1/hot, 2/n}
+    \idx{Bb}{5}
+    \node[blbl, anchor=east] at (11.0, 0) {giant $2^{4p}$};
+    \arrs{Gg}{11.4}{0}{3/n, 9/n, 1/hot}
+    \idxfrom{Gg}{3}{1}
+  \end{scope}
+  \node[notel, anchor=west, text width=4.6cm] at (18.3, -0.9) {$2^x \equiv 5 \pmod{13}$ with $n = 4$. The giant step $2^{12}
+    \equiv 1$ equals the baby step $5 \cdot 2^3 \equiv 1$, so $2^{12 - 3} \equiv 5$ and $x = 9$.};
+\end{tikzpicture}
+\caption{Baby-step giant-step: giant steps of length $n$ forward, then one baby-step distance back.}
+\label{fig:bsgs}
+\end{figure}
+
+\usetemplate{Discrete logarithm (baby-step giant-step)}{Ctrl+Alt+U, L}{cpdlog}
+
+\begin{problem}{Discrete logarithms}
+Answer 100 queries: the smallest $x \ge 0$ with $a^x \equiv b \pmod m$, or $-1$ ($m \le 10^9$, any $m$).
+\solution \cc{discrete_log}. The baby steps go into the hash map in increasing $q$, so each value keeps its largest $q$; the first
+giant step $p$ that matches therefore gives the smallest $x = np - q$. 100 queries with prime moduli near $10^9$ take 0.22\,s:
+$\Oh{\sqrt m} \approx 3 \cdot 10^4$ hash operations each.
+\end{problem}
+
+\begin{code}
+void solve() {  // discrete_log (cpdlog) is pasted above solve()
+    int q;
+    cin >> q;
+    while (q--) {
+        ll a, b, m;
+        cin >> a >> b >> m;
+        print(discrete_log(a, b, m));  // the smallest x >= 0, or -1
+    }
+}
+\end{code}
+
+\begin{trick}[Logarithms turn powers into products]
+With a primitive root $g$ modulo a prime $p$, every nonzero residue is $g^y$ for a unique $y$ modulo $p - 1$. Then $x^k \equiv b$
+becomes $k y \equiv \log_g b \pmod{p - 1}$ for $x = g^y$: a linear congruence, solved as in Section~\ref{sec:extgcd}. The same change of
+variables turns products of residues into sums of exponents, which is how the NTT's roots of unity are found:
+$g^{(p-1)/2^k}$ has order $2^k$.
+\end{trick}
+
+% ======================================================================================================================
+\section[Square roots modulo a prime]{Square roots modulo a prime \hfill \ioi}\label{sec:sqrtmod}
+
+Modulo an odd prime $p$, exactly half of the nonzero residues are squares (\emph{quadratic residues}): $x$ and $-x$ have the same
+square, so the $p - 1$ nonzero residues give $(p - 1)/2$ squares. \textbf{Euler's criterion} tells them apart: for $a \not\equiv 0$,
+$a^{(p-1)/2} \equiv 1$ if $a$ is a square and $-1$ if not. (Write $a = g^y$ with a primitive root $g$: $a$ is a square exactly when $y$
+is even, and $g^{y (p-1)/2}$ is 1 exactly then.)
+
+To find a square root, two cases. If $p \equiv 3 \pmod 4$, then $x = a^{(p+1)/4}$ works: $x^2 = a^{(p+1)/2} = a \cdot a^{(p-1)/2} =
+a$. Otherwise the \textbf{Tonelli--Shanks} algorithm writes $p - 1 = s \cdot 2^e$ with $s$ odd, picks any non-square $z$, and starts with
+\[
+  x = a^{(s+1)/2}, \qquad t = a^s, \qquad c = z^s, \qquad \text{so that } x^2 = a \cdot t .
+\]
+$t$ has an order $2^i$ that divides $2^e$. If $t = 1$, $x$ is a root. Otherwise multiply $x$ by $b = c^{2^{r - i - 1}}$, where $c$
+has order $2^r$: $b$ has order $2^{i+1}$, so $b^2$ has order exactly $2^i$, like $t$, and $t$ becomes $t b^2$, whose order is at most $2^{i-1}$; then $c \gets b^2$ and $r \gets i$. The order of $t$ shrinks at
+every round, so at most $e$ rounds are needed, each costing $\Oh{\log p}$ multiplications. For $a = 10$, $p = 13$: $p - 1 = 3 \cdot
+2^2$, $z = 2$, and the start $x = 9$, $t = 12$, $c = 8$; $t$ has order 2, so $b = 8$, giving $x = 9 \cdot 8 \equiv 7$ and $t = 1$.
+Indeed $7^2 = 49 \equiv 10$, and the other root is $13 - 7 = 6$.
+
+\usetemplate{Square root modulo a prime (Tonelli--Shanks)}{Ctrl+Alt+U, Q}{cpsqrtmod}
+
+\begin{problem}{Quadratic congruences}
+For each query, list the solutions of $x^2 + bx + c \equiv 0 \pmod p$ for an odd prime $p \le 10^9$.
+\solution Complete the square, exactly as over the reals: $x = (-b \pm \sqrt{b^2 - 4c})/2$, where the square root is taken modulo $p$
+and the division by 2 is a multiplication by $2^{-1} = (p + 1)/2$. There are two solutions if the discriminant is a nonzero square,
+one if it is 0, and none otherwise. $2 \cdot 10^5$ queries take 0.25\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // sqrt_mod (cpsqrtmod) is pasted above solve()
+    int q;
+    cin >> q;
+    while (q--) {
+        ll b, c, p;  // x^2 + b x + c = 0 (mod p), p an odd prime
+        cin >> b >> c >> p;
+        ll disc = ((b * b - 4 * c) % p + p) % p;  // x = (-b +- sqrt(disc)) / 2
+        ll s = sqrt_mod(disc, p);
+        if (s == -1) {
+            print(0);
+            continue;
+        }
+        ll inv2 = (p + 1) / 2;  // the inverse of 2 modulo an odd prime
+        set<ll> roots;
+        for (ll t : {s, p - s}) roots.insert(((t - b) % p + p) % p * inv2 % p);
+        print(sz(roots), vi(all(roots)));
+    }
+}
+\end{code}
+
+% ======================================================================================================================
+\section[M\"obius inversion and Dirichlet convolution]{M\"obius inversion and Dirichlet convolution \hfill \ioi}\label{sec:mobius}
+
+The \defn{M\"obius function} is $\mu(n) = 0$ if $n$ is divisible by the square of a prime, and otherwise $(-1)^k$ where $k$ is the
+number of prime factors of $n$: $\mu(1) = 1$, $\mu(2) = \mu(3) = -1$, $\mu(4) = 0$, $\mu(6) = 1$. Its defining property is
+\[
+  \sum_{d \mid n} \mu(d) = [n = 1] .
+\]
+For $n > 1$ with $k \ge 1$ distinct prime factors, only the squarefree divisors count, and choosing $j$ of the $k$ primes contributes
+$\binom{k}{j}(-1)^j$, which sums to $(1 - 1)^k = 0$: inclusion--exclusion over the prime factors (Figure~\ref{fig:mobius}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{mn/.style={vtx, minimum size=8mm}, ml/.style={font=\sffamily\scriptsize\bfseries, inner sep=1pt}}
+  \node[mn, good] (m1) at (0, 0) {1};
+  \node[mn, hot] (m2) at (-2.1, 1.35) {2};  \node[mn, hot] (m3) at (0, 1.35) {3};  \node[mn, hot] (m5) at (2.1, 1.35) {5};
+  \node[mn, good] (m6) at (-2.1, 2.7) {6};  \node[mn, good] (m10) at (0, 2.7) {10};  \node[mn, good] (m15) at (2.1, 2.7) {15};
+  \node[mn, hot] (m30) at (0, 4.05) {30};
+  \draw[ed] (m1) -- (m2) (m1) -- (m3) (m1) -- (m5) (m2) -- (m6) (m2) -- (m10) (m3) -- (m6) (m3) -- (m15) (m5) -- (m10)
+    (m5) -- (m15) (m6) -- (m30) (m10) -- (m30) (m15) -- (m30);
+  \foreach \nd/\mv/\cl/\side/\opp in {m1/{+1}/fggreen/east/west, m10/{+1}/fggreen/east/west, m15/{+1}/fggreen/east/west,
+      m3/{-1}/fgverm/east/west, m5/{-1}/fgverm/east/west, m30/{-1}/fgverm/east/west, m6/{+1}/fggreen/west/east,
+      m2/{-1}/fgverm/west/east}
+    \node[ml, text=\cl, anchor=\opp, inner sep=2.5pt] at (\nd.\side) {$\mv$};
+  \node[notel, anchor=west, text width=6.4cm] at (3.6, 2.0) {The divisors of $30 = 2 \cdot 3 \cdot 5$, each joined to its
+    multiples by one more prime, with $\mu$ beside every node: $+1$ (green) for an even number of primes, $-1$ (red) for an odd
+    number. The sum is $1 - 3 + 3 - 1 = 0$. For $n = 12$ the divisors 4 and 12 contain a square and have $\mu = 0$, and the rest
+    again cancel: $1 - 1 - 1 + 1 = 0$.};
+\end{tikzpicture}
+\caption{The divisors of 30 and their M\"obius values.}
+\label{fig:mobius}
+\end{figure}
+
+The property turns a coprimality condition into a sum: $[\gcd(a, b) = 1] = \sum_{d \mid \gcd(a, b)} \mu(d)$. Summing over pairs and
+exchanging the order of summation gives, for example, the number of pairs $1 \le a, b \le N$ with $\gcd(a, b) = 1$:
+\[
+  \sum_{a, b \le N} \; \sum_{d \mid a,\, d \mid b} \mu(d) \;=\; \sum_{d=1}^{N} \mu(d) \Bigl\lfloor \frac{N}{d} \Bigr\rfloor^2 .
+\]
+More generally, \textbf{M\"obius inversion} states that if $g(n) = \sum_{d \mid n} f(d)$ for all $n$, then $f(n) = \sum_{d \mid n}
+\mu(d)\, g(n/d)$. In counting problems it appears as ``count the objects whose gcd is \emph{divisible} by $k$, which is easy, then
+invert to get the objects whose gcd is \emph{exactly} $k$''.
+
+\usetemplate{M\"obius sieve}{Ctrl+Alt+Y, Shift+M}{cpmobius}
+
+\paragraph{Dirichlet convolution.} Both statements are best seen through the \defn{Dirichlet convolution} $(f * g)(n) = \sum_{d \mid
+n} f(d)\, g(n/d)$. It is commutative and associative, its identity is $\varepsilon(n) = [n = 1]$, and the defining property of $\mu$
+says $\mu * \mathbf{1} = \varepsilon$, where $\mathbf{1}(n) = 1$: $\mu$ is the inverse of $\mathbf{1}$. M\"obius inversion is just
+``$g = f * \mathbf{1}$ implies $f = g * \mu$''. Table~\ref{tab:dirichlet} lists the identities that come up; the convolution of two
+multiplicative functions is multiplicative again.
+
+\begin{table}[htbp]
+\centering\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+identity & in words & used for \\
+\midrule
+$\mu * \mathbf{1} = \varepsilon$ & $\sum_{d \mid n} \mu(d) = [n = 1]$ & coprimality conditions \\
+$\mathbf{1} * \mathbf{1} = d$ & divisors are pairs $(d, n/d)$ & divisor counts \\
+$\mathrm{id} * \mathbf{1} = \sigma$ & the sum of the divisors & divisor sums \\
+$\varphi * \mathbf{1} = \mathrm{id}$ & $\sum_{d \mid n} \varphi(d) = n$ & prefix sums of $\varphi$ (Du's sieve) \\
+$\mu * \mathrm{id} = \varphi$ & $\varphi(n) = \sum_{d \mid n} \mu(d)\, n/d$ & gcd sums \\
+$\varphi * d = \sigma$ & combine the two lines above & \\
+\bottomrule
+\end{tabular}
+\caption{Dirichlet convolutions of the basic arithmetic functions; $\mathrm{id}(n) = n$.}
+\label{tab:dirichlet}
+\end{table}
+
+\begin{problem}{Counting Coprime Pairs (CSES)}
+Given $n \le 10^5$ integers between 1 and $10^6$, count the pairs with $\gcd = 1$.
+\solution Let $c_d$ be the number of input values divisible by $d$; then $\binom{c_d}{2}$ pairs have a gcd divisible by $d$, and the
+pairs with gcd 1 number $\sum_d \mu(d) \binom{c_d}{2}$. Computing all $c_d$ is the harmonic loop over multiples, restricted to
+squarefree $d$. The program takes 0.10\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // mobius_sieve (cpmobius) is pasted above solve()
+    int n;
+    cin >> n;
+    const int A = 1000000;
+    vi cnt(A + 1);
+    rep(i, n) {
+        int x;
+        cin >> x;
+        cnt[x]++;
+    }
+    vi mu = mobius_sieve(A);
+    ll ans = 0;
+    for (int d = 1; d <= A; d++) {
+        if (!mu[d]) continue;
+        ll m = 0;  // how many of the numbers are multiples of d
+        for (int k = d; k <= A; k += d) m += cnt[k];
+        ans += mu[d] * m * (m - 1) / 2;  // pairs whose gcd is a multiple of d
+    }
+    print(ans);
+}
+\end{code}
+
+% ======================================================================================================================
+\section[Floor-division blocks]{Floor-division blocks \hfill \plat}\label{sec:floorblocks}
+
+Sums such as $\sum_{d=1}^{n} f(d) \lfloor n/d \rfloor$ appear whenever divisibility is counted from the divisor's side, and with $n$
+up to $10^{12}$ they cannot be summed term by term. But $\lfloor n/d \rfloor$ takes few distinct values.
+
+\begin{fact}[Floor-division blocks]
+As $d$ runs from 1 to $n$, $\lfloor n/d \rfloor$ takes at most $2\sqrt n$ distinct values: for $d \le \sqrt n$ there are at most
+$\sqrt n$ values of $d$, and for $d > \sqrt n$ the quotient itself is below $\sqrt n$. Each value is taken on a contiguous block of
+$d$, and the block that starts at $l$ ends at $r = \lfloor n / \lfloor n/l \rfloor \rfloor$, the largest $d$ with the same quotient.
+\end{fact}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[cpplot, width=14.5cm, height=5.2cm, xmin=0.3, xmax=30.7, ymin=0, ymax=32, xlabel={$d$},
+  ylabel={$\lfloor 30 / d \rfloor$}, xtick={1, 2, 3, 4, 5, 6, 7, 8, 11, 16, 30}, ytick={1, 5, 10, 15, 30}, grid=none]
+  \addplot[ybar, bar shift=0pt, bar width=0.34cm, fill=fgblue!45, draw=fgblue] coordinates
+    {(1,30) (3,10) (5,6) (7,4) (11,2) (12,2) (13,2) (14,2) (15,2)};
+  \addplot[ybar, bar shift=0pt, bar width=0.34cm, fill=fgorange!45, draw=fgorange!85!black] coordinates
+    {(2,15) (4,7) (6,5) (8,3) (9,3) (10,3) (16,1) (17,1) (18,1) (19,1) (20,1) (21,1) (22,1) (23,1) (24,1) (25,1) (26,1) (27,1)
+     (28,1) (29,1) (30,1)};
+  \draw[line width=0.8pt, draw=fggray, dashed] (axis cs:5.48, 0) -- (axis cs:5.48, 30);
+  \node[font=\sffamily\scriptsize, text=fggray, anchor=west] at (axis cs:5.7, 26) {$d = \sqrt{30}$};
+  \node[font=\sffamily\scriptsize, text=fgink, anchor=west, align=left] at (axis cs:12, 17)
+    {10 distinct values in 10 blocks; to the right of $\sqrt{30}$\\ every quotient is below $\sqrt{30}$ and covers a run of $d$};
+\end{axis}
+\end{tikzpicture}
+\caption{$\lfloor 30/d \rfloor$ for $d = 1, \dots, 30$, coloured block by block.}
+\label{fig:floorblocks}
+\end{figure}
+
+\usetemplate{Floor-division blocks}{Ctrl+Alt+Y, Shift+F}{cpfloorblocks}
+
+\begin{problem}{Sum of Divisors (CSES)}
+Compute $\sigma(1) + \sigma(2) + \dots + \sigma(n)$ modulo $10^9 + 7$ for $n \le 10^{12}$, where $\sigma$ is the sum of divisors.
+\solution Count from the divisor's side: $d$ divides $\lfloor n/d \rfloor$ of the numbers up to $n$, so the sum is $\sum_{d} d \lfloor
+n/d \rfloor$. On a block $[l, r]$ with quotient $q$ the terms add up to $q \cdot (l + \dots + r) = q \cdot (l + r)(r - l + 1)/2$. One of
+the two factors is even and is halved before reducing modulo $M$, since $(l + r)(r - l + 1)$ itself can exceed 64 bits. About $2
+\cdot 10^6$ blocks take 0.08\,s for $n = 10^{12}$.
+\end{problem}
+
+\begin{code}
+void solve() {  // for_each_floor_block (cpfloorblocks) is pasted above solve()
+    ll n;
+    cin >> n;
+    ll ans = 0;
+    for_each_floor_block(n, [&](ll l, ll r, ll q) {  // d in [l, r] divides q
+        ll a = l + r, b = r - l + 1;  // numbers up to n; l + ... + r = a b / 2
+        if (a % 2 == 0) a /= 2;
+        else b /= 2;
+        ans = (ans + q % MOD * (a % MOD) % MOD * (b % MOD)) % MOD;
+    });
+    print(ans);
+}
+\end{code}
+
+\begin{trick}[Two quotients at once]
+Sums like $\sum_d f(d) \lfloor n/d \rfloor \lfloor m/d \rfloor$, which appear in counting coprime pairs in an $n \times m$ box, need
+blocks on which \emph{both} quotients are constant: end the block at $r = \min(\lfloor n / \lfloor n/l \rfloor \rfloor, \lfloor m /
+\lfloor m/l \rfloor \rfloor)$. There are still only $\Oh{\sqrt n + \sqrt m}$ blocks.
+\end{trick}
+
+% ======================================================================================================================
+\section[Prefix sums of multiplicative functions]{Prefix sums of multiplicative functions \hfill \ioi}\label{sec:dusieve}
+
+How do we compute $\Phi(n) = \varphi(1) + \dots + \varphi(n)$ or $M(n) = \mu(1) + \dots + \mu(n)$ for $n = 10^{10}$, or count the primes
+up to $10^{11}$, when no sieve reaches that far? Both techniques below work on the $\Oh{\sqrt n}$ values $\lfloor n/d \rfloor$ only,
+using the fact that $\lfloor \lfloor n/a \rfloor / b \rfloor = \lfloor n/(ab) \rfloor$: a quotient of a quotient is again one of these
+values.
+
+\paragraph{Du's sieve.} Sum the identity $\varphi * \mathbf{1} = \mathrm{id}$ over $k \le n$ and group the terms by the divisor $e = k/d$
+that plays the role of $\mathbf{1}$:
+\[
+  \frac{n(n+1)}{2} = \sum_{k \le n} \sum_{d \mid k} \varphi(d) = \sum_{e=1}^{n} \Phi\Bigl(\Bigl\lfloor \frac{n}{e} \Bigr\rfloor\Bigr)
+  \qquad\Longrightarrow\qquad
+  \Phi(n) = \frac{n(n+1)}{2} - \sum_{e=2}^{n} \Phi\Bigl(\Bigl\lfloor \frac{n}{e} \Bigr\rfloor\Bigr) .
+\]
+The sum on the right runs over floor-division blocks, and every $\Phi$ it needs is at a smaller value of the form $\lfloor n/e
+\rfloor$. Sieve $\Phi$ directly up to $n^{2/3}$, and compute the larger values recursively with memoisation. The large values are
+$\lfloor n/i \rfloor$ for $i \le n^{1/3}$, each costing $\Oh{\sqrt{n/i}}$ blocks, and $\sum_{i \le n^{1/3}} \sqrt{n/i} =
+\Oh{n^{2/3}}$, which matches the cost of the sieve. The same recipe works for any $f$ for which some $g$ makes the prefix sums of $g$
+and of $f * g$ easy: for $\mu$, $g = \mathbf{1}$ and $\mu * \mathbf{1} = \varepsilon$ give $M(n) = 1 - \sum_{e=2}^{n} M(\lfloor n/e
+\rfloor)$.
+
+\usetemplate{Du's sieve ($\varphi$ and $\mu$ prefix sums)}{Ctrl+Alt+U, D}{cpdusieve}
+
+\begin{problem}{Totient and Mertens sums}
+Compute $\Phi(n) \bmod (10^9 + 7)$ and $M(n)$ exactly, for $n \le 10^{10}$.
+\solution Du's sieve. For $n = 10^{10}$ the program takes 0.34\,s and prints $M(10^{10}) = -33\,722$, the known value of the Mertens
+function. An independent exact computation gives $\Phi(10^{10}) = 30\,396\,355\,092\,886\,216\,366$, which matches the printed
+residue; note that this is about $\frac{3}{\pi^2} n^2$, as the density of coprime pairs predicts.
+\end{problem}
+
+\begin{code}
+void solve() {  // DuSieve (cpdusieve) is pasted above solve()
+    ll n;
+    cin >> n;
+    DuSieve ds(n);
+    print(ds.phi_sum(n), ds.mu_sum(n));  // Phi(n) mod MOD and M(n)
+}
+\end{code}
+
+\paragraph{Lucy's algorithm for counting primes.} Let $S(v, p)$ be the number of integers in $[2, v]$ that are prime or have no prime
+factor up to $p$: what remains of $[2, v]$ after sieving with the primes up to $p$. At the start $S(v, 1) = v - 1$, and for $p > \sqrt
+v$ nothing more is removed, so $S(v, \sqrt v) = \pi(v)$. Sieving with a prime $p$ removes the numbers whose smallest prime factor is $p$:
+those are $p \cdot m$ with $m \le v/p$ and $m$ free of primes below $p$, so
+\[
+  S(v, p) = S(v, p - 1) - \bigl(S(\lfloor v/p \rfloor, p - 1) - S(p - 1, p - 1)\bigr),
+\]
+where the subtracted $S(p - 1, p - 1) = \pi(p - 1)$ counts the primes below $p$, which are not removed. Again only the values $v =
+\lfloor n/d \rfloor$ ever occur, so keep one number per such value and update them in place, from the largest $v$ down, for each prime
+$p \le \sqrt n$ in turn (Figure~\ref{fig:lucy}). The work is about $n^{3/4}/\log n$ operations. Replacing ``count 1'' by ``add $k$''
+sums the primes instead, and the \emph{min\_25 sieve} extends the idea to sums of any multiplicative function whose values at primes are
+polynomials.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[blbl, anchor=east] at (-0.2, 0.75) {$v$};
+  \foreach \vv [count=\ii] in {30, 15, 10, 7, 6, 5, 4, 3, 2, 1} \node[lbl] at (0.35 + 0.7*\ii - 0.7, 0.75) {\vv};
+  \node[blbl, anchor=east] at (-0.2, 0) {start: $v - 1$};
+  \arrs{La}{0}{0}{29/n, 14/n, 9/n, 6/n, 5/n, 4/n, 3/n, 2/n, 1/n, 0/n}
+  \node[blbl, anchor=east] at (-0.2, -0.8) {after $p = 2$};
+  \arrs{Lb}{0}{-0.8}{15/warn, 8/warn, 5/warn, 4/warn, 3/warn, 3/warn, 2/warn, 2/n, 1/n, 0/n}
+  \node[blbl, anchor=east] at (-0.2, -1.6) {after $p = 3$};
+  \arrs{Lc}{0}{-1.6}{11/warn, 6/warn, 4/warn, 4/n, 3/n, 3/n, 2/n, 2/n, 1/n, 0/n}
+  \node[blbl, anchor=east] at (-0.2, -2.4) {after $p = 5$: $\pi(v)$};
+  \arrs{Ld}{0}{-2.4}{10/good, 6/good, 4/good, 4/good, 3/good, 3/good, 2/good, 2/good, 1/good, 0/good}
+  \node[notel, anchor=west, text width=5.5cm] at (7.3, -1.2) {$n = 30$ has ten distinct quotients $v = \lfloor 30/d \rfloor$.
+    Sieving by 2 changes every $v \ge 4$: $S(30)$ becomes $29 - (S(15) - S(1)) = 15$. Sieving by 3 changes every $v \ge 9$, by 5
+    only $v \ge 25$; 4 is skipped because $S(4) = S(3)$ shows it is not prime. The last row is $\pi(v)$: $\pi(30) = 10$.};
+\end{tikzpicture}
+\caption{Lucy's algorithm for $n = 30$; orange cells changed in that round.}
+\label{fig:lucy}
+\end{figure}
+
+\usetemplate{Prime counting (Lucy)}{Ctrl+Alt+U, P}{cpprimecount}
+
+\begin{problem}{Counting primes}
+Compute $\pi(n)$ and the sum of the primes up to $n$ (modulo $10^9 + 7$) for $n \le 10^{11}$.
+\solution Lucy's algorithm, run twice (count and sum). For $n = 10^{11}$ the program prints $\pi(n) = 4\,118\,054\,813$ in 0.49\,s,
+using two arrays of $\sqrt n \approx 3.2 \cdot 10^5$ entries.
+\end{problem}
+
+\begin{code}
+void solve() {  // prime_count (cpprimecount) is pasted above solve()
+    ll n;
+    cin >> n;
+    print(prime_count(n), prime_sum(n));  // pi(n) and the prime sum mod MOD
+}
+\end{code}
+
+% ======================================================================================================================
+\section[The Stern--Brocot tree]{The Stern--Brocot tree \hfill \ioi}\label{sec:sternbrocot}
+
+Start with the two ``fractions'' $\frac01$ and $\frac10$ and repeatedly insert, between any two neighbours $\frac ab$ and $\frac cd$,
+their \emph{mediant} $\frac{a + c}{b + d}$. The fractions inserted form the \defn{Stern--Brocot tree} (Figure~\ref{fig:sternbrocot}),
+and it has three remarkable properties. Neighbours always satisfy $bc - ad = 1$, so every fraction appears in lowest terms. Every
+positive rational number appears exactly once. And the tree is a binary search tree: a fraction lies between the two neighbours that
+created it.
+
+\begin{figure}[htbp]
+\centering
+\begin{minipage}{0.6\linewidth}
+\centering
+\begin{forest}
+  rectree, for tree={font=\small, s sep=2.6mm, l sep=5mm, inner sep=2pt, minimum width=7mm, align=center}
+  [$\frac11$, hot
+    [$\frac12$, hot
+      [$\frac13$, hot [$\frac14$] [$\frac25$, good]]
+      [$\frac23$ [$\frac35$] [$\frac34$]]]
+    [$\frac21$
+      [$\frac32$ [$\frac43$] [$\frac53$]]
+      [$\frac31$ [$\frac52$] [$\frac41$]]]]
+\end{forest}
+\end{minipage}%
+\begin{minipage}{0.38\linewidth}
+\small\sffamily\color{fgink!80}
+The simplest fraction strictly between $\frac13$ and $\frac12$: start at $\frac11$, which is too big, go left to $\frac12$, still not
+inside, left again to $\frac13$, not inside, and right to $\frac25$, which is inside. The first fraction met inside an interval has
+the smallest denominator in it.
+\end{minipage}
+\caption{The top of the Stern--Brocot tree, with the search for the simplest fraction in $(\frac13, \frac12)$.}
+\label{fig:sternbrocot}
+\end{figure}
+
+The path from the root spells the continued fraction: $[a_0; a_1, \dots, a_k]$ is reached by $a_0$ moves right, $a_1$ left, $a_2$
+right, and so on, with the last run one move shorter. For $\frac25 = [0; 2, 2]$ the path is left, left, right. A path can be long
+($\frac{1}{n}$ lies $n - 1$ moves down), but walking each run of equal moves at once, as Euclid's algorithm does with its quotients,
+takes $\Oh{\log}$ steps. Two searches matter in practice:
+\begin{itemize}
+  \item \textbf{The simplest fraction in an interval.} The first fraction met inside an open interval $(\alpha, \beta)$ has the smallest
+        denominator (and the smallest numerator) of all fractions inside: every fraction in the interval lies in that node's subtree,
+        and descendants have larger denominators.
+  \item \textbf{The best approximation with bounded denominator.} The closest fraction to a real $x$ with denominator at most $N$ is
+        one of the last two fractions on the search path for $x$ before the denominators exceed $N$: a convergent of the continued
+        fraction or a semiconvergent.
+\end{itemize}
+
+\usetemplate{Stern--Brocot (simplest fraction, best approximation)}{Ctrl+Alt+U, B}{cpsternbrocot}
+
+\begin{problem}{Simplest fractions}
+For each query $0 \le \frac ab < \frac cd$ (numbers up to $10^9$), print the fraction $\frac pq$ with $\frac ab < \frac pq < \frac cd$
+that has the smallest $q$, and among those the smallest $p$.
+\solution \cc{simplest_between} implements the walk recursively, in the style of Euclid: it subtracts the common integer part of
+both bounds and, once both lie in $(0, 1]$, swaps the roles of numerator and denominator, which mirrors the tree. $10^5$ queries take
+0.11\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // simplest_between (cpsternbrocot) is pasted above solve()
+    int t;
+    cin >> t;
+    while (t--) {
+        ll a, b, c, d;
+        cin >> a >> b >> c >> d;
+        auto [p, q] = simplest_between(a, b, c, d);  // a/b < p/q < c/d
+        print(p, q);
+    }
+}
+\end{code}
+
+\begin{recognize}
+``Find a fraction between two given ones with the smallest denominator'', ``the closest rational with denominator at most $N$'',
+``rational points on a line through the origin'', or a binary search over rationals: all are walks down the Stern--Brocot tree. Comparing
+fractions exactly needs 128-bit products, or care to keep numerators and denominators small.
+\end{recognize}
+
+\begin{summary}[Chapter summary]
+\begin{itemize}
+  \item Divisors pair up around $\sqrt n$; numbers below $10^{18}$ have at most 103\,680 of them; looping over multiples of every $d$
+        costs only $N \ln N$.
+  \item Euclid's algorithm halves the numbers every two steps; the gcds of all subarrays ending at a position take $\Oh{\log A}$ values.
+  \item Sieves run in practically linear time, and a segmented sieve finds the primes of any short window below $10^{12}$ or more;
+        Miller--Rabin with seven fixed bases and Pollard's rho handle all 64-bit numbers.
+  \item Modulo a prime, divide with Fermat inverses and reduce exponents modulo $p - 1$; modulo anything, reduce exponents with the
+        (generalised) Euler theorem and invert with the extended Euclidean algorithm.
+  \item Linear congruences reduce to B\'ezout's identity; systems of them combine two at a time by the Chinese remainder theorem.
+  \item Primitive roots turn powers into products; baby-step giant-step finds discrete logarithms in $\Oh{\sqrt m}$; Tonelli--Shanks
+        finds square roots modulo a prime.
+  \item $\mu$ converts coprimality into sums over divisors; Dirichlet convolution organises the identities; floor-division blocks
+        evaluate the resulting sums in $\Oh{\sqrt n}$.
+  \item Du's sieve sums $\varphi$ and $\mu$ in $\Oh{n^{2/3}}$ and Lucy's algorithm counts primes in about $n^{3/4}$, both by working
+        only on the values $\lfloor n/d \rfloor$; the Stern--Brocot tree finds simplest fractions and best approximations.
+\end{itemize}
+\end{summary}
+
+\begin{practice}
+\ppgroup{Number theory}
+\begin{pplist}
+  \item Exponentiation
+  \item Exponentiation II
+  \item Counting Divisors
+  \item Common Divisors
+  \item Sum of Divisors
+  \item Divisor Analysis
+  \item Prime Multiples
+  \item Counting Coprime Pairs
+  \item Next Prime
+\end{pplist}
+\end{practice}

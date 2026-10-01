@@ -1,0 +1,105 @@
+\documentclass[11pt, openany]{book}
+\newcommand{\cpwithindex}{}  % cpstyle: load imakeidx and index every \defn term
+\usepackage{cpstyle}
+\hypersetup{pdftitle={The Competitive Programming Handbook}, pdfauthor={Kshitish Madbhavi}}
+\setcounter{tocdepth}{1}
+\input{algorithms/roadmap}
+% `python tools/cp.py docs --chapter NN` defines \cponly to typeset one chapter (cross-references come from the last
+% full build)
+\ifdefined\cponly
+  \includeonly{\cponly}
+  % the .aux files of skipped chapters restore every counter, including those that algpseudocodex creates on the fly
+  % while typesetting a skipped chapter; ignore counters this run has not defined
+  \makeatletter
+  \let\cp@setcounter\setcounter
+  \def\setcounter#1#2{\@ifundefined{c@#1}{}{\cp@setcounter{#1}{#2}}}
+  \makeatother
+\fi
+\newcommand{\chapterfile}[1]{\include{algorithms/#1}}
+
+\begin{document}
+\frontmatter
+\input{algorithms/cover}
+\input{algorithms/about}
+\tableofcontents
+\chapterfile{00_preface}
+
+\mainmatter
+\partdesc{How to attack a problem, how to know whether an idea is fast enough, the C++ you need, and the data structures
+every solution is built from.}
+\part{Foundations}
+\chapterfile{01_approach}
+\chapterfile{01b_patterns}
+\chapterfile{02_complexity}
+\chapterfile{03_cpp_stl}
+\chapterfile{04_data_structures}
+
+\partdesc{The techniques that solve most Bronze and Silver problems and appear inside nearly every harder one: exhaustive
+search, sorting and greedy choices, binary search, prefix sums, two pointers and bit manipulation.}
+\part{Core Techniques}
+\chapterfile{05_complete_search}
+\chapterfile{06_sorting_greedy}
+\chapterfile{07_binary_search}
+\chapterfile{08_prefix_two_pointers}
+\chapterfile{09_bits_rectangles}
+
+\partdesc{Traversals, shortest paths, spanning trees, connectivity and flows: modelling a problem as a graph and choosing
+the right algorithm for it.}
+\part{Graphs}
+\chapterfile{10_graph_basics}
+\chapterfile{11_shortest_paths}
+\chapterfile{12_dsu_mst_topo}
+\chapterfile{13_connectivity}
+\chapterfile{14_flows}
+
+\partdesc{Rooted trees, the Euler tour, binary lifting, DP on trees, and the decompositions (heavy-light, centroid, virtual
+trees) that turn tree queries into array queries.}
+\part{Trees}
+\chapterfile{15_tree_techniques}
+\chapterfile{16_tree_decompositions}
+
+\partdesc{From the first recurrence to the optimizations that decide olympiad medals: knapsack, subsequences, bitmask,
+range, digit and profile DP, convex hull trick, divide and conquer, Knuth, Aliens and slope trick.}
+\part{Dynamic Programming}
+\chapterfile{17_dp_fundamentals}
+\chapterfile{18_dp_patterns}
+\chapterfile{19_dp_optimizations}
+
+\partdesc{Answering questions about ranges of an array, with and without updates: sparse tables, Fenwick and segment trees
+in all their forms, square-root techniques, treaps and offline methods.}
+\part{Range Queries and Data Structures}
+\chapterfile{20_static_queries}
+\chapterfile{21_fenwick_segment}
+\chapterfile{22_advanced_ds}
+
+\partdesc{Number theory, modular arithmetic, combinatorics, linear algebra and polynomials: the mathematics that appears in
+contests, with the algorithms that compute it.}
+\part{Mathematics}
+\chapterfile{23_number_theory}
+\chapterfile{24_combinatorics}
+\chapterfile{25_linear_algebra_poly}
+
+\partdesc{Searching, hashing and suffix structures for strings; vectors, hulls and sweeps for geometry.}
+\part{Strings and Geometry}
+\chapterfile{26_strings}
+\chapterfile{27_geometry}
+
+\partdesc{Randomization, interactive problems, bitsets, matroids and vectorization; the craft of contests; and a catalogue
+of the tricks experienced competitors reach for.}
+\part{Special Topics and Contest Craft}
+\chapterfile{28_special_topics}
+\chapterfile{29_contest_craft}
+\chapterfile{31_tricks}
+
+\partdesc{Classic problems solved end to end, from reading the limits to tested code. Use them alongside Parts II--VIII.}
+\part{Practice}
+\chapterfile{30_worked_problems}
+
+\appendix
+\chapterfile{A_cheatsheets}
+\chapterfile{B_notation}
+\chapterfile{C_templates}
+
+\backmatter
+\printindex
+\end{document}

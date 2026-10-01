@@ -1,0 +1,142 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\@writefile{toc}{\contentsline {chapter}{\numberline {3}Complexity and Constraints}{29}{chapter.3}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{ch:complexity}{{3}{29}{Complexity and Constraints}{chapter.3}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.1}Counting operations}{29}{section.3.1}\protected@file@percent }
+\newlabel{sec:counting-ops}{{3.1}{29}{Counting operations}{section.3.1}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.2}Big-O notation}{30}{section.3.2}\protected@file@percent }
+\newlabel{sec:bigo}{{3.2}{30}{Big-O notation}{section.3.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.1}{\ignorespaces How fast common complexities grow (both axes logarithmic). Each curve crosses the one-second budget (dashed) at the largest $n$ it can handle: $n!$ near 11, $2^n$ near 27, $n^3$ near 460, $n^2$ near $10^4$, $n\log n$ near $4.5\cdot 10^6$. Polynomials are straight lines in this view; exponentials bend upwards and escape almost immediately.}}{30}{figure.caption.43}\protected@file@percent }
+\newlabel{fig:growth}{{3.1}{30}{How fast common complexities grow (both axes logarithmic). Each curve crosses the one-second budget (dashed) at the largest $n$ it can handle: $n!$ near 11, $2^n$ near 27, $n^3$ near 460, $n^2$ near $10^4$, $n\log n$ near $4.5\cdot 10^6$. Polynomials are straight lines in this view; exponentials bend upwards and escape almost immediately}{figure.caption.43}{}}
+\@writefile{toc}{\contentsline {paragraph}{Worst case, average case, amortized.}{30}{paragraph*.44}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3.3}What the limits tell you}{31}{section.3.3}\protected@file@percent }
+\newlabel{sec:constraints}{{3.3}{31}{What the limits tell you}{section.3.3}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3.1}{\ignorespaces Limits and the complexities that fit in about one second.}}{31}{table.caption.45}\protected@file@percent }
+\newlabel{tab:constraints}{{3.1}{31}{Limits and the complexities that fit in about one second}{table.caption.45}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.2}{\ignorespaces The largest input each complexity can process with about $10^8$ operations. Moving one row up the table costs orders of magnitude of input size; this is why the limits reveal the intended complexity so reliably.}}{31}{figure.caption.46}\protected@file@percent }
+\newlabel{fig:maxn}{{3.2}{31}{The largest input each complexity can process with about $10^8$ operations. Moving one row up the table costs orders of magnitude of input size; this is why the limits reveal the intended complexity so reliably}{figure.caption.46}{}}
+\@writefile{toc}{\contentsline {paragraph}{Several parameters.}{31}{paragraph*.47}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{The small limit is the hint.}{31}{paragraph*.48}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Sums over test cases.}{32}{paragraph*.49}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Other time limits.}{32}{paragraph*.50}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Memory limits.}{32}{paragraph*.51}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3.4}Analysing loops}{32}{section.3.4}\protected@file@percent }
+\newlabel{sec:loops}{{3.4}{32}{Analysing loops}{section.3.4}{}}
+\@writefile{toc}{\contentsline {paragraph}{Independent nested loops multiply.}{32}{paragraph*.52}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Dependent loops sum.}{32}{paragraph*.53}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Loops that halve are logarithmic.}{32}{paragraph*.54}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Square-root loops.}{32}{paragraph*.55}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{The harmonic sum.}{32}{paragraph*.56}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Loops over submasks.}{32}{paragraph*.57}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3.5}Amortized analysis}{33}{section.3.5}\protected@file@percent }
+\newlabel{sec:amortized}{{3.5}{33}{Amortized analysis}{section.3.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.1}The aggregate method}{33}{subsection.3.5.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3.3}{\ignorespaces The cost of 32 \texttt  {push\_back} calls with capacity doubling. A few pushes are expensive (red: they copy the whole vector), but the average cost per push (green) never exceeds 3.}}{33}{figure.caption.58}\protected@file@percent }
+\newlabel{fig:doubling}{{3.3}{33}{The cost of 32 \texttt {push\_back} calls with capacity doubling. A few pushes are expensive (red: they copy the whole vector), but the average cost per push (green) never exceeds 3}{figure.caption.58}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.2}The potential method}{33}{subsection.3.5.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3.6}Recursion}{34}{section.3.6}\protected@file@percent }
+\newlabel{sec:recursion}{{3.6}{34}{Recursion}{section.3.6}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.4}{\ignorespaces The recursion tree of merge sort, $T(n) = 2T(n/2) + \Theta (n)$. Every level does $\Theta (n)$ work in total and there are $\log _2 n$ levels, so $T(n) = \Theta (n \log n)$.}}{34}{figure.caption.59}\protected@file@percent }
+\newlabel{fig:mergesort-tree}{{3.4}{34}{The recursion tree of merge sort, $T(n) = 2T(n/2) + \Theta (n)$. Every level does $\Theta (n)$ work in total and there are $\log _2 n$ levels, so $T(n) = \Theta (n \log n)$}{figure.caption.59}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.5}{\ignorespaces Work per level of the recursion tree in the three cases of the master theorem. Geometric decrease means the top level dominates; a constant means $\log n$ equal levels; geometric increase means the leaves dominate.}}{35}{figure.caption.60}\protected@file@percent }
+\newlabel{fig:master}{{3.5}{35}{Work per level of the recursion tree in the three cases of the master theorem. Geometric decrease means the top level dominates; a constant means $\log n$ equal levels; geometric increase means the leaves dominate}{figure.caption.60}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.7}Memory}{35}{section.3.7}\protected@file@percent }
+\newlabel{sec:memory}{{3.7}{35}{Memory}{section.3.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.6}{\ignorespaces The same three rows stored two ways. A vector of vectors pays a header and an allocation per row and scatters the rows; a flat array with offsets stores only the data and one integer per row.}}{36}{figure.caption.61}\protected@file@percent }
+\newlabel{fig:vecvec}{{3.6}{36}{The same three rows stored two ways. A vector of vectors pays a header and an allocation per row and scatters the rows; a flat array with offsets stores only the data and one integer per row}{figure.caption.61}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.8}How fast is an operation, really?}{36}{section.3.8}\protected@file@percent }
+\newlabel{sec:measured}{{3.8}{36}{How fast is an operation, really?}{section.3.8}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.9}Constant factors that matter}{36}{section.3.9}\protected@file@percent }
+\newlabel{sec:constants}{{3.9}{36}{Constant factors that matter}{section.3.9}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3.2}{\ignorespaces Measured cost of common operations (GCC 15, \texttt  {-O2}, averaged over $10^6$ to $10^9$ repetitions).}}{37}{table.caption.62}\protected@file@percent }
+\newlabel{tab:measured}{{3.2}{37}{Measured cost of common operations (GCC 15, \texttt {-O2}, averaged over $10^6$ to $10^9$ repetitions)}{table.caption.62}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.10}Estimating before coding}{37}{section.3.10}\protected@file@percent }
+\newlabel{sec:estimate}{{3.10}{37}{Estimating before coding}{section.3.10}{}}
+\@setckpt{algorithms/02_complexity}{
+\setcounter{page}{39}
+\setcounter{equation}{0}
+\setcounter{enumi}{3}
+\setcounter{enumii}{0}
+\setcounter{enumiii}{0}
+\setcounter{enumiv}{0}
+\setcounter{footnote}{0}
+\setcounter{mpfootnote}{0}
+\setcounter{part}{1}
+\setcounter{chapter}{3}
+\setcounter{section}{10}
+\setcounter{subsection}{0}
+\setcounter{subsubsection}{0}
+\setcounter{paragraph}{0}
+\setcounter{subparagraph}{0}
+\setcounter{figure}{6}
+\setcounter{table}{2}
+\setcounter{parentequation}{0}
+\setcounter{lstnumber}{1}
+\setcounter{tcbbreakpart}{1}
+\setcounter{tcblayer}{0}
+\setcounter{tcolorbox@number}{116}
+\setcounter{tcblisting}{12}
+\setcounter{tcbrastercolumn}{1}
+\setcounter{tcbrasterrow}{1}
+\setcounter{tcbrasternum}{1}
+\setcounter{tcbraster}{0}
+\setcounter{cpsegfig}{0}
+\setcounter{LT@tables}{0}
+\setcounter{LT@chunks}{0}
+\setcounter{nlinenum}{0}
+\setcounter{ALG@line}{0}
+\setcounter{ALG@rem}{0}
+\setcounter{ALG@nested}{0}
+\setcounter{ALG@Lnr}{2}
+\setcounter{ALG@blocknr}{15}
+\setcounter{ALG@storecount}{0}
+\setcounter{ALG@tmpcounter}{0}
+\setcounter{algpx@codeBoxCount}{0}
+\setcounter{algpx@nestedCBoxCount}{0}
+\setcounter{algpx@startedBoxesCount}{0}
+\setcounter{algpx@endedBoxesCount}{0}
+\setcounter{algpx@nestedBoxedStringCount}{0}
+\setcounter{algpx@nestedBoxedStringMaxCount}{0}
+\setcounter{algpx@indentCount}{0}
+\setcounter{algpx@lastIndentEnded}{0}
+\setcounter{algpx@pageCount}{0}
+\setcounter{algpx@tmpCount}{0}
+\setcounter{caption@flags}{2}
+\setcounter{continuedfloat}{0}
+\setcounter{float@type}{16}
+\setcounter{section@level}{0}
+\setcounter{Item}{6}
+\setcounter{Hfootnote}{0}
+\setcounter{bookmark@seq@number}{0}
+\setcounter{algpx@indentEndPage-0@totc}{0}
+\setcounter{algpx@indentEndPage-1@totc}{0}
+\setcounter{algpx@indentEndPage-2@totc}{0}
+\setcounter{algpx@indentEndPage-3@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-2@totc}{3}
+\setcounter{algpx@indentEndCoordIndex-0@totc}{3}
+\setcounter{algpx@indentEndPage-4@totc}{0}
+\setcounter{algpx@indentEndPage-5@totc}{0}
+\setcounter{algpx@indentEndPage-6@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-4@totc}{6}
+\setcounter{algpx@indentEndPage-7@totc}{0}
+\setcounter{algpx@indentEndPage-8@totc}{0}
+\setcounter{algpx@indentEndPage-9@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-8@totc}{9}
+\setcounter{algpx@indentEndPage-10@totc}{0}
+\setcounter{algpx@indentEndPage-11@totc}{0}
+\setcounter{algpx@indentEndPage-12@totc}{0}
+\setcounter{algpx@indentEndPage-13@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-12@totc}{13}
+\setcounter{algpx@indentEndCoordIndex-10@totc}{13}
+\setcounter{algpx@indentEndPage-14@totc}{0}
+\setcounter{algpx@indentEndPage-15@totc}{0}
+\setcounter{algpx@indentEndPage-16@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-15@totc}{16}
+\setcounter{algpx@indentEndPage-17@totc}{0}
+\setcounter{algpx@indentEndPage-18@totc}{1}
+\setcounter{algpx@indentEndPage-19@totc}{1}
+\setcounter{algpx@indentEndCoordIndex-18@totc}{19}
+\setcounter{lstlisting}{0}
+}

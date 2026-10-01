@@ -1,0 +1,667 @@
+\chapter{DP Optimizations}\label{ch:dpopt}
+
+A correct DP that is too slow can usually be accelerated without changing its states, because the transitions that make it slow
+(``the minimum over a range of earlier states'', ``the best split point'', ``the best earlier line'') have structure that a data
+structure or a monotonicity argument can exploit. This chapter goes through the standard accelerations, roughly in increasing order of
+difficulty, each with the shape of transition it recognises, the reason it is correct, and a problem solved with it.
+Table~\ref{tab:dpopt} is the index; the rest of the chapter explains every row.
+
+\begin{chapterintro}{\gold\ \plat\ \ioi}{Chapters~\ref{ch:dp} and~\ref{ch:dppatterns}, and the monotonic deque of
+Section~\ref{sec:sliding}.}
+  \item replace range transitions by prefix sums and monotone queues, including an exact $\Oh{nW}$ bounded knapsack;
+  \item use the monotonicity of optimal split points: divide and conquer, monotone minima and SMAWK, and Knuth's optimization;
+  \item turn ``the best earlier state'' into ``the lowest line'' with the convex hull trick, in its three forms;
+  \item keep convex value functions by their breakpoints (slope trick), and remove a ``use exactly $k$'' dimension (Aliens trick);
+  \item convolve convex sequences in linear time, and know when bitsets or swapping dimensions are the right tool.
+\end{chapterintro}
+
+\begin{table}[htbp]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{6.2cm}>{\raggedright\arraybackslash}p{3.4cm}X@{}}
+\toprule
+transition & technique & speed-up \\
+\midrule
+$dp_i = \sum_{j \in \text{window}} dp_j$, or the minimum over a sliding window & prefix sums, monotone queue & $\Oh{nk} \to \Oh{n}$ \\
+$dp[g][i] = \min_j dp[g-1][j] + \mathit{cost}(j, i)$, best $j$ monotone in $i$ & divide and conquer & $\Oh{n^2} \to \Oh{n \log n}$ per layer \\
+row minima of a totally monotone matrix & SMAWK & $\Oh{n \log n} \to \Oh{n}$ \\
+$dp[l][r] = \min_m dp[l][m] + dp[m+1][r] + \mathit{cost}(l, r)$ & Knuth & $\Oh{n^3} \to \Oh{n^2}$ \\
+$dp_i = \min_j (k_j x_i + m_j)$ & convex hull trick & $\Oh{n^2} \to \Oh{n}$ or $\Oh{n \log n}$ \\
+a convex piecewise-linear value function & slope trick & $\Oh{nV} \to \Oh{n \log n}$ \\
+``exactly $k$'' with an answer concave in $k$ & Aliens trick & removes the factor $k$ \\
+$c_k = \min_{i + j = k} a_i + b_j$, $a$ and $b$ convex & merging slopes & $\Oh{nm} \to \Oh{n + m}$ \\
+boolean rows shifted and OR-ed & bitset & divides by 64 \\
+\bottomrule
+\end{tabularx}
+\caption{Which optimization fits which shape of transition.}
+\label{tab:dpopt}
+\end{table}
+
+% ======================================================================================================================
+\section[Windows and monotone queues]{Windows and monotone queues \hfill \gold}\label{sec:dpopt-window}
+
+The simplest accelerations replace a loop over a range of earlier states. If $dp_i = \sum_{j=i-k}^{i-1} dp_j$, keep the prefix sums
+of $dp$ and each state costs $\Oh{1}$. If $dp_i = c_i + \min_{i - k \le j < i} dp_j$, keep the monotonic deque of
+Section~\ref{sec:sliding}: indices with increasing values, the front being the minimum of the window. Both turn $\Oh{nk}$ into
+$\Oh{n}$.
+
+\paragraph{The exact bounded knapsack.} Section~\ref{sec:knapsack} handled an item with $k$ copies by binary splitting, in
+$\Oh{W \log k}$. A monotone queue does it in $\Oh{W}$. Fix the remainder $r$ of the capacity modulo the item's weight $w$: the
+capacities $c = r, r + w, r + 2w, \dots$ form a chain, and with $t$ copies the new value at $c = r + tw$ is
+\[
+  \mathit{new}[r + tw] = \max_{t - k \le s \le t} \bigl(\mathit{dp}[r + sw] + (t - s)v\bigr)
+  = tv + \max_{t - k \le s \le t} \bigl(\mathit{dp}[r + sw] - sv\bigr),
+\]
+the maximum of a sliding window of length $k + 1$ along the chain (Figure~\ref{fig:bknapmq}). Every capacity enters and leaves the
+queue once per item, so each item costs $\Oh{W}$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[blbl, anchor=east] at (-0.2, 0) {position $t$ on the chain};
+  \arrs{C}{0}{0}{0/n, {}/dim, {}/dim, 1/cool, {}/dim, {}/dim, 2/cool, {}/dim, {}/dim, 3/hot, {}/dim, {}/dim, 4/n}
+  \foreach \ua/\ub in {1/4, 4/7, 7/10, 10/13} \draw[->, line width=0.8pt, draw=fgline] (C-\ua.north) to[bend left=35] (C-\ub.north);
+  \draw[mbrace] (C-4.south west) -- node[below=6pt, lbl] {window of $k + 1 = 3$ positions of the chain, $s = t - 2, \dots, t$}
+    (C-10.south east);
+  \node[notel, anchor=north west, text width=12cm] at (0, -1.25) {The cells are capacities $0, 1, 2, \dots$; for an item of
+    weight $w = 3$ only capacities with the same remainder modulo $w$ interact, and the numbered cells are the chain $c = r +
+    tw$. Along it, the new value at $t = 3$ is the best of the three window cells $s = 1, 2, 3$, each corrected by $-sv$; the
+    deque gives that maximum in amortised $\Oh{1}$.};
+\end{tikzpicture}
+\caption{The bounded knapsack along one remainder class, with $k = 2$ copies.}
+\label{fig:bknapmq}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n, cap;
+    cin >> n >> cap;
+    vi dp(cap + 1, 0), nd(cap + 1), qs(cap + 1), qv(cap + 1);
+    rep(i, n) {
+        ll w, v, k;
+        cin >> w >> v >> k;
+        // capacities with the same remainder mod w form a chain c = r + t*w:
+        // nd[c] = t*v + max over t - k <= s <= t of (dp[r + s*w] - s*v),
+        // a sliding-window maximum (a deque kept in the arrays qs, qv)
+        rep(r, min<ll>(w, cap + 1)) {
+            int head = 0, tail = 0;  // the window, values decreasing
+            for (ll t = 0, c = r; c <= cap; t++, c += w) {
+                ll val = dp[c] - t * v;
+                while (tail > head && qv[tail - 1] <= val) tail--;
+                qs[tail] = t, qv[tail++] = val;
+                if (qs[head] < t - k) head++;  // at most k copies of item i
+                nd[c] = qv[head] + t * v;
+            }
+        }
+        swap(dp, nd);
+    }
+    print(dp[cap]);
+}
+\end{code}
+
+The deque lives in two arrays reused for every chain, because creating a \cc{std::deque} per chain would cost more than the DP itself
+when the weights are large. With 100 kinds of 1000 copies each and $W = 10^5$, binary splitting takes 0.09\,s and the queue 0.06\,s;
+the gap grows with $k$, and the queue's bound does not depend on $k$ at all.
+
+% ======================================================================================================================
+\section[Divide and conquer optimization]{Divide and conquer optimization \hfill \plat}\label{sec:dnc}
+
+A \emph{layered} DP splits the first $i$ elements into $g$ groups:
+\[ dp_g(i) = \min_{j < i} \bigl(dp_{g-1}(j) + \mathit{cost}(j, i)\bigr), \]
+where $\mathit{cost}(j, i)$ is the cost of the group $a_j, \dots, a_{i-1}$. Computed directly, each layer costs $\Oh{n^2}$. Let
+$\mathit{opt}(i)$ be the best $j$ (the leftmost one, if several tie). In many problems $\mathit{opt}(i) \le \mathit{opt}(i + 1)$: the last
+group never starts earlier when one more element arrives. Then compute the middle row $i$ first by scanning all candidates; its
+optimum bounds both halves, rows left of the middle only scan $j \le \mathit{opt}(i)$ and rows right of it only $j \ge
+\mathit{opt}(i)$ (Figure~\ref{fig:dnc}). Every level of the recursion scans about $n$ candidates in total, so a layer costs $\Oh{n \log n}$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{mc/.style={draw=fgline!80, line width=0.4pt, minimum size=5.6mm, inner sep=0pt, anchor=center},
+    dq0/.style={fill=fgverm!45}, dq1/.style={fill=fgorange!40}, dq2/.style={fill=fgsky!45}, dq3/.style={fill=fggreen!30}}
+  \foreach \ii in {1, ..., 8} {
+    \node[lbl, anchor=east] at (-0.42, -0.56*\ii) {$i = \ii$};
+    \foreach \jj in {0, ..., 7} \node[mc, fill=fgpaper] (X\ii\jj) at (0.56*\jj, -0.56*\ii) {};
+  }
+  \foreach \jj in {0, ..., 7} \node[lbl] at (0.56*\jj, -0.05) {\jj};
+  \node[lbl, anchor=east] at (-0.42, -0.05) {$j$:};
+  % scanned cells, coloured by recursion depth; the argmin of each row is marked
+  \foreach \ii/\jlist/\dep in {4/{0,1,2,3}/0, 2/{0,1}/1, 7/{2,3,4,5,6}/1, 1/{0}/2, 3/{1,2}/2, 6/{2,3,4,5}/2, 8/{5,6,7}/2,
+      5/{2,3,4}/3}
+    \foreach \jj in \jlist \node[mc, dq\dep] at (X\ii\jj) {};
+  \foreach \ii/\jj in {1/0, 2/1, 3/2, 4/2, 5/3, 6/4, 7/5, 8/5} \fill[fgink] (X\ii\jj) circle (1.5pt);
+  \legendat{(5.0, -0.6)}{dq0/row 4 first: all candidates, dq1/next: rows 2 and 7, dq2/then rows 1 and 3; 6 and 8,
+    dq3/last: row 5}
+  \node[notel, anchor=north west, text width=5.8cm] at (4.75, -2.5) {Two groups over $3, 1, 4, 1, 5, 9, 2, 6$: row $i$ is the
+    first $i$ elements, column $j$ the start of the last group, and the dot the optimum. Row 4 finds $\mathit{opt} = 2$, so rows 1
+    to 3 scan only $j \le 2$ and rows 5 to 8 only $j \ge 2$. The recursion evaluates 24 of the 36 candidates; for large $n$ the
+    saving is a factor $n / \log n$.};
+\end{tikzpicture}
+\caption{Divide and conquer optimization: each row's optimum bounds the rows below and above it in the recursion.}
+\label{fig:dnc}
+\end{figure}
+
+\begin{problem}{Subarray Squares (CSES)}
+Split an array of $n \le 3000$ positive numbers into $k$ contiguous parts so that the sum of the squares of the parts' sums is as
+small as possible.
+\solution $k$ layers of the DP above with $\mathit{cost}(j, i) = (\mathit{pre}_i - \mathit{pre}_j)^2$, each by divide and conquer:
+$\Oh{kn \log n}$, 0.12\,s for $n = k = 3000$.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, k;
+    cin >> n >> k;
+    vi pre(n + 1, 0);
+    rep(i, n) {
+        ll x;
+        cin >> x;
+        pre[i + 1] = pre[i] + x;
+    }
+    auto cost = [&](int j, int i) {  // the group a[j, i)
+        ll s = pre[i] - pre[j];
+        return s * s;
+    };
+    // prev[i]: the best split of the first i elements into g - 1 groups;
+    // cur[i]: into g groups
+    vi prev(n + 1, INF), cur(n + 1);
+    prev[0] = 0;
+    // fill cur[lo, hi) knowing that their best last split lies in [olo, ohi]
+    auto go = [&](auto&& self, int lo, int hi, int olo, int ohi) -> void {
+        if (lo >= hi) return;
+        int mid = (lo + hi) / 2, best = olo;
+        cur[mid] = INF;
+        rep(j, olo, min(mid - 1, ohi) + 1) {  // the last group is a[j, mid)
+            if (prev[j] == INF) continue;
+            ll c = prev[j] + cost(j, mid);
+            if (c < cur[mid]) cur[mid] = c, best = j;
+        }
+        self(self, lo, mid, olo, best);
+        self(self, mid + 1, hi, best, ohi);
+    };
+    rep(g, 1, k + 1) {
+        go(go, 0, n + 1, 0, n);
+        swap(prev, cur);
+    }
+    print(prev[n]);
+}
+\end{code}
+
+\usetemplate{Divide \& conquer optimization}{Ctrl+Alt+Y, Q}{cpdnc}
+
+\begin{fact}[When is the optimum monotone?]
+A sufficient condition is the \emph{quadrangle inequality}: $\mathit{cost}(a, c) + \mathit{cost}(b, d) \le \mathit{cost}(a, d) +
+\mathit{cost}(b, c)$ for all $a \le b \le c \le d$ (``crossing is cheaper than nesting''). It holds for $(\text{sum of the
+group})^2$ with non-negative values, for the number of pairs inside a group, for the variance of a group and for the distance of the
+group's elements to their median. Its consequence is that the matrix $M[i][j] = dp_{g-1}(j) + \mathit{cost}(j, i)$ is \emph{totally
+monotone}, which is exactly what the next section exploits further.
+\end{fact}
+
+\begin{tip}
+In a contest, checking monotonicity with a brute force on random small inputs (compute every $\mathit{opt}(i)$ in $\Oh{n^2}$ and assert
+that it never decreases) is faster and safer than proving the quadrangle inequality.
+\end{tip}
+
+% ======================================================================================================================
+\section[Monotone minima and SMAWK]{Monotone minima and SMAWK \hfill \ioi}\label{sec:smawk}
+
+The divide and conquer of the previous section is an instance of a general problem. A matrix $M$ (usually implicit: its entries are
+computed on demand) is \emph{monotone} if the column of the leftmost minimum of each row never decreases from one row to the next.
+Finding all row minima of an $n \times m$ monotone matrix takes $\Oh{(n + m) \log n}$ evaluations with the same recursion:
+middle row first, then the halves with restricted columns. The template exposes exactly that, with the matrix given as a function.
+
+\usetemplate{Monotone minima}{Ctrl+Alt+U, M}{cpmonominima}
+
+If the matrix is \emph{totally} monotone (every $2 \times 2$ submatrix is monotone, as for a Monge matrix), the \defn{SMAWK} algorithm
+finds all row minima with only $\Oh{n + m}$ evaluations. It alternates two steps. \emph{Reduce}: when there are more columns than
+rows, compare entries along a stack of candidate columns and discard columns that can contain no row minimum, until at most $n$
+remain. \emph{Interpolate}: solve the problem for the odd-numbered rows recursively, then fill in each even row by scanning only the
+columns between the minima of its two neighbouring rows. Both steps are linear, and the recursion halves the rows. SMAWK matters when
+$\log n$ is the difference between passing and failing, for example in some layered DPs with millions of states, or in the
+$(\min, +)$ convolution of Section~\ref{sec:minplus}; in most contests the $\Oh{(n + m) \log n}$ recursion is enough and much simpler to
+get right.
+
+% ======================================================================================================================
+\section[Knuth's optimization]{Knuth's optimization \hfill \plat}\label{sec:knuth}
+
+For interval DPs of the form
+\[ dp[l][r] = \min_{l \le m < r} \bigl(dp[l][m] + dp[m+1][r]\bigr) + \mathit{cost}(l, r), \]
+let $\mathit{opt}(l, r)$ be the best split point. When $\mathit{cost}$ satisfies the quadrangle inequality and is monotone under
+inclusion, the optimum is sandwiched between its neighbours (Figure~\ref{fig:knuth}):
+\[ \mathit{opt}(l, r - 1) \le \mathit{opt}(l, r) \le \mathit{opt}(l + 1, r). \]
+Restricting the loop over $m$ to that range makes the whole DP $\Oh{n^2}$: for a fixed length, the ranges of consecutive $l$ overlap
+only at their ends, so their total length telescopes to $\mathit{opt}(n - \mathit{len}, n - 1) - \mathit{opt}(0, \mathit{len} - 2) + n
+= \Oh{n}$, and there are $n$ lengths.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{kc/.style={draw=fgline, line width=0.5pt, minimum size=7.5mm, inner sep=0pt, font=\ttfamily\small, anchor=center}}
+  \foreach \cc [count=\rr from 0] in {2, 3, 1, 4, 2, 3} \node[font=\sffamily\small\bfseries, text=fgblue] at (0.75*\rr, 0.7) {\cc};
+  \node[lbl, anchor=east] at (-0.45, 0.7) {$a$};
+  \foreach \rr/\row in {0/{0,0,0,1,2,2}, 1/{1,1,2,2,3}, 2/{2,2,3,3}, 3/{3,3,3}, 4/{4,4}, 5/{5}}
+    \foreach \val [count=\cc from 0] in \row {
+      \pgfmathtruncatemacro{\col}{\cc + \rr}
+      \node[kc] (K\rr\col) at (0.75*\col, -0.75*\rr) {\val};
+    }
+  \foreach \rr in {0, ..., 5} \node[lbl, anchor=east] at (-0.45, -0.75*\rr) {$l = \rr$};
+  \node[kc, hot] at (K05) {2};
+  \node[kc, cool] at (K04) {2};
+  \node[kc, cool] at (K15) {3};
+  \node[notel, anchor=west, text width=6.0cm] at (4.9, -1.6) {$\mathit{opt}(l, r)$ for Knuth Division on $2, 3, 1, 4, 2, 3$
+    (row $l$, column $r$). The whole array only tries the cuts $2 \le m \le 3$, the range given by its left neighbour
+    $\mathit{opt}(0, 4) = 2$ and the cell below, $\mathit{opt}(1, 5) = 3$. The values never decrease along a row or down a
+    column.};
+\end{tikzpicture}
+\caption{The table of optimal split points of an interval DP is monotone in both directions.}
+\label{fig:knuth}
+\end{figure}
+
+\begin{problem}{Knuth Division (CSES)}
+An array of $n \le 5000$ numbers is cut into single elements; each step cuts one piece into two, at a cost equal to the sum of the
+piece. Minimise the total cost.
+\solution The first cut of $a_l, \dots, a_r$ splits it after some $m$, and both parts are then solved independently:
+$\mathit{cost}(l, r)$ is the sum of the segment, which satisfies Knuth's conditions. The table of $2.5 \cdot 10^7$ cells is stored as a
+triangle, rows of decreasing length, and the optimum table in 32 bits, which keeps the memory near 150\,MB; the program runs in
+0.29\,s.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vi pre(n + 1, 0);
+    rep(i, n) {
+        ll x;
+        cin >> x;
+        pre[i + 1] = pre[i] + x;
+    }
+    // row l stores the segments [l, r] at index r - l (a triangle):
+    // D[l][r - l] is the cheapest way to cut a[l..r] into single elements,
+    // O[l][r - l] the best first cut (it splits off [l, O] and [O + 1, r])
+    vector<vi> D(n);
+    vector<vector<int32_t>> O(n);
+    rep(l, n) D[l].assign(n - l, 0), O[l].assign(n - l, l);
+    rep(len, 2, n + 1) rep(l, n - len + 1) {
+        int r = l + len - 1;
+        // Knuth: opt(l, r - 1) <= opt(l, r) <= opt(l + 1, r)
+        int lo = O[l][r - 1 - l], hi = min<int>(O[l + 1][r - l - 1], r - 1);
+        ll best = INF;
+        rep(m, lo, hi + 1) {
+            ll c = D[l][m - l] + D[m + 1][r - m - 1];
+            if (c < best) best = c, O[l][r - l] = m;
+        }
+        D[l][r - l] = best + pre[r + 1] - pre[l];
+    }
+    print(D[0][n - 1]);
+}
+\end{code}
+
+\usetemplate{Knuth optimization}{Ctrl+Alt+Y, Shift+Q}{cpknuth}
+
+\begin{recognize}
+Optimal merging or splitting of a sequence where the cost of an operation is the total of the piece (merging piles of stones, cutting
+a stick or an array, Huffman-like costs with a fixed order), and optimal binary search trees. $n$ up to a few thousand with an
+$\Oh{n^3}$ interval DP is the signal.
+\end{recognize}
+
+% ======================================================================================================================
+\section[Convex hull trick]{The convex hull trick \hfill \plat}\label{sec:cht}
+
+When the transition has the form $dp_i = \min_{j < i} (k_j x_i + m_j)$ (usually after expanding a product such as $s_i f_j$ or a square
+$(\mathit{pre}_i - \mathit{pre}_j)^2$), every earlier state $j$ is a \emph{line} $y = k_j x + m_j$, and state $i$ asks which line is
+lowest at $x = x_i$. The minimum of a set of lines is a concave piecewise-linear function, the \emph{lower envelope}; lines that never
+appear on it can be discarded forever (Figure~\ref{fig:cht}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[cpplot, width=12.5cm, height=6.0cm, xmin=0, xmax=100, ymin=0, ymax=9000, xlabel={$t$ (strength of the monster)},
+  ylabel={time}, ytick={0, 3000, 6000, 9000}, scaled y ticks=false, legend pos=north west]
+  \addplot[fgline, line width=0.8pt, domain=0:100, samples=2] {90*x + 2000};
+  \addplot[fgline, line width=0.8pt, domain=0:100, samples=2] {60*x + 3000};
+  \addplot[fgline, line width=0.8pt, domain=0:100, samples=2] {20*x + 4000};
+  \addplot[fgline, line width=0.8pt, domain=0:100, samples=2] {10*x + 4800};
+  \addplot[fgline, line width=0.8pt, domain=0:100, samples=2] {100*x};
+  \addplot[fgline, line width=0.8pt, domain=0:100, samples=2] {20*x + 3000};
+  \addplot[fgorange!90!black, line width=2.2pt, domain=0:37.5, samples=2] {100*x};
+  \addplot[fgorange!90!black, line width=2.2pt, domain=37.5:100, samples=2] {20*x + 3000};
+  \addplot[only marks, mark=*, mark size=2.2pt, fgblue] coordinates {(20, 2000) (30, 3000) (50, 4000) (90, 4800)};
+  \node[font=\sffamily\scriptsize, text=fgorange!90!black, anchor=north west] at (axis cs:55, 3500) {lower envelope};
+  \node[font=\sffamily\scriptsize, text=fgblue, anchor=north] at (axis cs:90, 4550) {$dp = 4800$};
+\end{axis}
+\end{tikzpicture}
+\caption{Monster Game~I on the sample with $x = 100$: one line per earlier kill, $y = f_j t + dp_j$. Each query takes the lowest line
+at $t = s_i$ (blue points, using only the lines that existed at that time). Of the six lines, only $100t$ and $20t + 3000$ end up on the
+final lower envelope (orange).}
+\label{fig:cht}
+\end{figure}
+
+\paragraph{Monotone slopes: a deque.} If the lines arrive with decreasing slopes, each new line enters the envelope at the right end, and
+the lines it makes useless are at that end too: a line $b$ between $a$ and $c$ is useless when $c$ overtakes $b$ no later than $b$
+overtakes $a$. So the envelope is a stack, each line pushed and popped once. If the queries also come in increasing order, a pointer
+moving right answers them in amortised $\Oh{1}$; otherwise binary search on the envelope answers each in $\Oh{\log n}$. The template
+compares the intersection points as exact fractions, so it never overflows or loses precision.
+
+\begin{problem}{Monster Game I (CSES)}
+A game has $n \le 2 \cdot 10^5$ levels. On each level you may kill or escape the monster, except on the last level, where it must be
+killed. Killing a monster of strength $s$ takes $s \cdot f$ time, where $f$ is your current skill factor (initially $x$), and killing
+monster $i$ sets $f$ to $f_i$. The strengths never decrease and the factors $f_i$ never increase. Minimise the total time.
+\solution $dp_i = \min_j (dp_j + s_i f_j)$ over the previous kill $j$ (or the start, with $f = x$ and time 0): line $j$ has slope $f_j$
+and intercept $dp_j$, and is queried at $s_i$. Slopes arrive non-increasing and queries non-decreasing, so the monotone hull with its
+pointer runs in $\Oh{n}$; 0.08\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // MonoCHT (cpmonocht) is pasted above solve()
+    int n;
+    ll x;
+    cin >> n >> x;
+    vi s(n), f(n);
+    for (ll& v : s) cin >> v;
+    for (ll& v : f) cin >> v;
+    // dp[i]: the least time to kill monster i = min over the previous kill j
+    // of dp[j] + s[i] * f[j]; the start is a kill with skill x at time 0.
+    // Each kill j is the line y = f[j] * t + dp[j], queried at t = s[i].
+    MonoCHT h;
+    h.add(x, 0);
+    ll dp = 0;
+    rep(i, n) {
+        dp = h.query_inc(s[i]);  // s is non-decreasing
+        h.add(f[i], dp);  // the slopes f are non-increasing
+    }
+    print(dp);  // the last monster must be killed
+}
+\end{code}
+
+\usetemplate{Monotone convex hull trick}{Ctrl+Alt+Y, Z}{cpmonocht}
+
+\paragraph{Any order: LineContainer and Li Chao trees.} Without the monotonicity, the envelope must accept lines anywhere. A
+\emph{LineContainer} keeps the lines of the envelope in a balanced tree ordered by slope, each storing the $x$ where the next line takes
+over; inserting a line removes its useless neighbours, and a query is a binary search over those breakpoints, both $\Oh{\log n}$. A
+\emph{Li Chao tree} is a segment tree over the $x$-domain in which every node keeps the line that is best at its midpoint; inserting a
+line walks down one root path, swapping lines where the newcomer wins at the midpoint, and a query takes the minimum along the path to
+$x$. It is $\Oh{\log C}$ per operation for a domain of size $C$, simpler to get right than the LineContainer, and it also accepts
+line \emph{segments} (in $\Oh{\log^2 C}$).
+
+\begin{problem}{Monster Game II (CSES)}
+The same game without the monotonicity of the strengths and the factors.
+\solution The same lines, inserted into a LineContainer; it keeps an upper envelope, so every line is stored negated: 0.09\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // LineContainer (cplinecontainer) is pasted above solve()
+    int n;
+    ll x;
+    cin >> n >> x;
+    vi s(n), f(n);
+    for (ll& v : s) cin >> v;
+    for (ll& v : f) cin >> v;
+    // the lines of Monster Game I, now in any order; the container keeps an
+    // upper envelope, so each line is stored negated to get a minimum
+    LineContainer h;
+    h.add(-x, 0);
+    ll dp = 0;
+    rep(i, n) {
+        dp = -h.query(s[i]);
+        h.add(-f[i], -dp);
+    }
+    print(dp);
+}
+\end{code}
+
+\usetemplate{LineContainer / Li Chao tree}{Ctrl+Alt+Y, L / Shift+L}{cplinecontainer, cplichao}
+
+\begin{recognize}
+After expanding the cost, the transition reads $dp_i = \min_j (A_j \cdot B_i + C_j) + D_i$: one product of a term of $j$ and a term of
+$i$, plus terms of only one of them. Squares of prefix sums, ``rate times amount'' and ``distance times weight'' are the usual sources.
+Which variant to use: monotone slopes and queries, the deque with a pointer; monotone slopes only, the deque with binary search;
+neither, the LineContainer, or a Li Chao tree when the queries are integers in a known range or the lines are segments.
+\end{recognize}
+
+% ======================================================================================================================
+\section[Slope trick]{Slope trick \hfill \ioi}\label{sec:slopetrick}
+
+Some DPs keep a whole function of a value: $f_i(v)$, the least cost of the first $i$ elements if the $i$-th one ends at value $v$. When
+every operation keeps $f_i$ \emph{convex and piecewise linear with integer slopes}, store it by its breakpoints: the multiset of points
+where the slope increases by 1, plus the minimum value. ``Add $|v - a|$'' inserts the breakpoint $a$ twice (the slope rises by 2
+there), ``take the prefix minimum'' ($\min_{u \le v} f(u)$) deletes every breakpoint to the right of the minimum, and shifts are
+lazy offsets. Each becomes a few heap operations (Figure~\ref{fig:slopetrick}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \foreach \px/\vals/\tx [count=\ci] in {0/{3,2,1,0,1,2}/{$f_1(v) = |v - 3|$},
+      5.4/{4,2,2,2,3,4}/{$f_2$: prefix min of $f_1$, plus $|v - 1|$},
+      10.8/{6,3,2,3,4,5}/{$f_3$: prefix min of $f_2$, plus $|v - 2|$}} {
+    \begin{scope}[xshift=\px cm]
+      \draw[->, line width=0.5pt, fgink!70] (0, 0) -- (4.2, 0) node[right, lbl] {$v$};
+      \draw[->, line width=0.5pt, fgink!70] (0, 0) -- (0, 2.4);
+      \foreach \vv in {0, ..., 5} \draw[line width=0.4pt, fgink!60] (0.7*\vv, 0.06) -- (0.7*\vv, -0.06) node[below, lbl] {\vv};
+      \foreach \yy [count=\kk from 0] in \vals \coordinate (P\ci\kk) at (0.7*\kk, 0.35*\yy);
+      \draw[line width=1.5pt, draw=fgblue] (P\ci0) -- (P\ci1) -- (P\ci2) -- (P\ci3) -- (P\ci4) -- (P\ci5);
+      \foreach \kk in {0, ..., 5} \fill[fgblue] (P\ci\kk) circle (1.4pt);
+      \node[lbl, anchor=south] at (2.1, 2.4) {\tx};
+    \end{scope}
+  }
+  \fill[fgverm] (P13) circle (2.4pt);
+  \fill[fgverm] (P21) circle (2.4pt); \fill[fgverm] (P23) circle (2.4pt);
+  \fill[fgverm] (P32) circle (2.4pt);
+\end{tikzpicture}
+\caption{Slope trick on $a = 3, 1, 2$ (make it non-decreasing at the least total change). Each panel is the cost as a function of
+the value $v$ of the last element; red dots mark the breakpoints that matter. The answer is the minimum of $f_3$, which is 2 (for
+example $1, 1, 2$).}
+\label{fig:slopetrick}
+\end{figure}
+
+\begin{problem}{Increasing Array II (CSES)}
+Change elements of an array ($n \le 2 \cdot 10^5$) by $\pm 1$ per move until it is non-decreasing. Minimise the number of moves.
+\solution Only the decreasing part of $f$ matters for the prefix minimum, so keep a max-heap of its breakpoints. For each $a$, push
+$a$ (adding $|v - a|$); if the largest breakpoint is now above $a$, the cheapest final value for this prefix lies above $a$, so pay
+the difference, pop it and push $a$ once more. $\Oh{n \log n}$, 0.07\,s. For a \emph{strictly} increasing array, apply the same to
+$a_i - i$.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    // f(v): the least cost so far if the last element ends at value v. f is
+    // convex and piecewise linear; the max-heap holds the points where its
+    // slope rises by 1, so its top is where f stops decreasing
+    priority_queue<ll> pq;
+    ll cost = 0;
+    rep(i, n) {
+        ll a;
+        cin >> a;
+        pq.push(a);  // add |v - a|
+        if (pq.top() > a) {  // the cheapest end value lies above a: lower it
+            cost += pq.top() - a;
+            pq.pop();
+            pq.push(a);
+        }
+    }
+    print(cost);
+}
+\end{code}
+
+\usetemplate{Slope trick}{Ctrl+Alt+Y, Shift+S}{cpslope}
+
+\begin{recognize}
+A DP over a sequence whose state is a \emph{value} with a huge range, and whose cost is a sum of absolute values or other convex
+functions: make an array monotone at minimum total change, move tokens so that no two share a position, keep consecutive values within
+a distance. If a brute-force DP over small values shows a convex, piecewise-linear row with integer slopes, the slope trick applies.
+\end{recognize}
+
+% ======================================================================================================================
+\section[Aliens trick]{Aliens trick: Lagrangian relaxation \hfill \ioi}\label{sec:aliens}
+
+``Choose \emph{exactly} $k$ things to maximise the total'' often has a natural DP with an extra dimension for the number chosen, which
+multiplies the cost by $k$. If the best total $g(k)$ is \emph{concave} in $k$ (each extra item gains no more than the previous one),
+the dimension can be removed. Charge a penalty $\lambda$ for every chosen thing and solve the unconstrained problem ``maximise $g(c) -
+\lambda c$ over all counts $c$'', which is the original DP without the count. The optimal $c$ is where a line of slope $\lambda$
+touches the graph of $g$ from above (Figure~\ref{fig:aliens}), so it decreases as $\lambda$ grows; binary search $\lambda$ until the
+optimal count is $k$, and the answer is $(\text{the penalised optimum}) + \lambda k$. The cost is the DP's cost times the number of
+search steps, about $\log$ of the slope range.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[cpplot, width=10.5cm, height=5.6cm, xmin=-0.3, xmax=9.3, ymin=0, ymax=22, xlabel={$k$, the number of subarrays},
+  ylabel={$g(k)$}, xtick={0, ..., 9}]
+  \addplot[fgblue, line width=1.3pt, mark=*, mark size=1.8pt] coordinates {(0,0) (1,7) (2,12) (3,15) (4,17) (5,18) (6,17)
+    (7,15) (8,12) (9,6)};
+  \addplot[fgorange!90!black, line width=1.1pt, domain=-0.3:9.3, samples=2] {2*x + 9};
+  \addplot[only marks, mark=*, mark size=2.6pt, fgverm] coordinates {(3,15) (4,17)};
+  \node[font=\sffamily\scriptsize, text=fgorange!90!black, anchor=east] at (axis cs:4.4, 20.6) {slope $\lambda = 2$};
+\end{axis}
+\end{tikzpicture}
+\caption{The best total $g(k)$ of exactly $k$ disjoint subarrays of $5, -2, 4, -6, 3, -1, 2, -3, 4$ is concave. With a penalty of 2 per
+subarray the penalised optimum is $g(k) - 2k = 9$, attained at $k = 3$ \emph{and} $k = 4$ (red): a tie, because the slope from 3 to 4
+is exactly 2.}
+\label{fig:aliens}
+\end{figure}
+
+\begin{problem}{Exactly $k$ subarrays}
+Given $n \le 2 \cdot 10^5$ integers in $[-10^9, 10^9]$ and $k \le n$, choose exactly $k$ non-empty, pairwise disjoint subarrays with the
+largest total sum.
+\solution The total is concave in $k$ (it is a min-cost flow in disguise). For a penalty $\lambda$, a two-state DP (the current
+element is or is not the end of a chosen subarray) finds the best penalised score in $\Oh{n}$, breaking ties towards \emph{fewer}
+subarrays. Binary search the smallest $\lambda$ whose optimum uses at most $k$ subarrays; at that $\lambda$, $k$ is among the optimal
+counts, and the answer is the penalised score plus $\lambda k$. About 50 steps of $\Oh{n}$: 0.09\,s.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, k;
+    cin >> n >> k;
+    vi a(n);
+    for (ll& x : a) cin >> x;
+    // the best (score, -count) when any number of subarrays may be taken and
+    // each one costs lam; among equal scores, fewer subarrays win
+    auto run = [&](ll lam) {
+        // out: the last element is in no subarray; in: it ends a subarray
+        pll out{0, 0}, in{-INF, 0};
+        for (ll x : a) {
+            pll done = max(out, in);  // the best with everything so far closed
+            pll ext{in.first + x, in.second};  // extend the open subarray
+            pll start{done.first + x - lam, done.second - 1};  // or open one
+            in = max(ext, start);
+            out = done;
+        }
+        return max(out, in);
+    };
+    // the fewest-subarray optimum shrinks as lam grows: find the smallest lam
+    // where it uses at most k subarrays, then add the k penalties back. Every
+    // slope of the answer in k lies in [-1e9, 2e14], so this range is enough
+    // and keeps the scores inside run far from overflow
+    ll lo = -3e9, hi = 3e14;
+    while (lo < hi) {
+        ll mid = lo + (hi - lo) / 2;
+        if (-run(mid).second <= k) hi = mid;
+        else lo = mid + 1;
+    }
+    print(run(lo).first + lo * k);
+}
+\end{code}
+
+\begin{pitfall}[Ties, and the range of the penalty]
+Several counts can be optimal for the same $\lambda$, as in Figure~\ref{fig:aliens}, so the DP may never report exactly $k$. Break ties
+consistently (here: fewest subarrays), search for the smallest $\lambda$ with count $\le k$, and add back $\lambda k$ with the
+\emph{requested} $k$, not the count the DP returned. Second, bound $\lambda$ by the possible slopes of $g$, not by something huge:
+with $\lambda = -3 \cdot 10^{14}$ the DP above would reward $2 \cdot 10^5$ subarrays with $6 \cdot 10^{19}$, past the range of 64-bit
+integers. The first version of this solution made exactly that mistake; small random tests passed, and only a full-size test showed
+the overflow.
+\end{pitfall}
+
+% ======================================================================================================================
+\section[Convex (min, +) convolution]{Convex $(\min, +)$ convolution \hfill \ioi}\label{sec:minplus}
+
+The $(\min, +)$ convolution $c_k = \min_{i + j = k} (a_i + b_j)$ appears whenever two independent parts share a budget: $a_i$ is the
+best cost of spending $i$ units on the first part, $b_j$ on the second. In general it costs $\Oh{nm}$, but two special cases are fast.
+\begin{itemize}
+  \item \textbf{Both convex}: the result is convex, and its sequence of slopes is the two slope sequences merged in sorted order, like
+        merging two sorted lists (the Minkowski sum of two convex polygonal lines, Figure~\ref{fig:minplus}): $\Oh{n + m}$. The
+        reason is that, with convex costs, the cheapest next unit is always the cheaper of the two parts' next units.
+  \item \textbf{One convex, one arbitrary}: the matrix $M[k][j] = b_j + a_{k - j}$ is totally monotone when $a$ is convex, so its row
+        minima come from monotone minima in $\Oh{(n + m) \log}$, or from SMAWK in $\Oh{n + m}$.
+\end{itemize}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.85cm, y=0.55cm]
+  \draw[line width=0.4pt, fgline] (0, 0) -- (3.3, 0);
+  \draw[line width=1.5pt, draw=fgblue, mark=*, mark size=1.4pt, mark options={fill=fgblue}]
+    plot coordinates {(0,0) (1,-3) (2,-4) (3,-2)};
+  \node[lbl, anchor=south west] at (0, 0.3) {$a$: slopes $-3, -1, 2$};
+  \begin{scope}[xshift=4.0cm]
+    \draw[line width=0.4pt, fgline] (0, 0) -- (3.3, 0);
+    \draw[line width=1.5pt, draw=fgorange!90!black, mark=*, mark size=1.4pt, mark options={fill=fgorange!90!black}]
+      plot coordinates {(0,0) (1,-2) (2,-2) (3,-1)};
+    \node[lbl, anchor=south west] at (0, 0.3) {$b$: slopes $-2, 0, 1$};
+  \end{scope}
+  \begin{scope}[xshift=8.4cm]
+    \draw[line width=0.4pt, fgline] (0, 0) -- (6.3, 0);
+    \draw[line width=1.5pt, draw=fggreen!60!black, mark=*, mark size=1.4pt, mark options={fill=fggreen!60!black}]
+      plot coordinates {(0,0) (1,-3) (2,-5) (3,-6) (4,-6) (5,-5) (6,-3)};
+    \node[lbl, anchor=south west] at (0, 0.3) {$c$: slopes $-3, -2, -1, 0, 1, 2$};
+  \end{scope}
+\end{tikzpicture}
+\caption{Merging the slopes of two convex sequences gives their $(\min, +)$ convolution. Here the result is $c = (0, -3, -5, -6, -6,
+-5, -3)$, exactly what the brute force $\min_{i + j = k}(a_i + b_j)$ computes.}
+\label{fig:minplus}
+\end{figure}
+
+\usetemplate{$(\min, +)$ convolution (convex)}{Ctrl+Alt+U, Shift+C}{cpminplus}
+
+A typical use is a knapsack with \emph{small weights} but many items: group the items by weight $w$; within a group, taking the $c$
+most valuable items is best, and the values of the first $c$ items form a concave sequence. Merging a group into the table is then,
+for every remainder modulo $w$, a $(\max, +)$ convolution of the table (arbitrary) with that concave sequence: monotone minima per
+remainder class instead of a loop over all counts.
+
+% ======================================================================================================================
+\section[Bitsets and swapped dimensions]{Bitsets and swapped dimensions \hfill \gold}\label{sec:dpopt-bitset}
+
+\paragraph{Bitsets.} A boolean DP whose transition shifts a whole row, like subset sum ($\mathit{can}[s] \mathrel{|}= \mathit{can}[s
+- a_i]$), runs 64 times faster on a \cc{bitset}: \cc{b |= b << a} (Section~\ref{sec:bitset} measures a $14\times$ speed-up on Money
+Sums). When the items sum to $S$, there are at most $\Oh{\sqrt S}$ distinct values among them, since $1 + 2 + \dots + t \le S$
+forces $t \le \sqrt{2S}$. Group equal values and split each group into bundles of $1, 2, 4, \dots$ copies (Section~\ref{sec:knapsack}):
+the bitset subset sum then costs $\Oh{S \sqrt S \log / 64}$ in the worst case, and much less in practice, the standard solution to
+``can these be split into two equal halves'' with $S$ up to $10^6$.
+
+\usetemplate{Subset sums with bitset}{Ctrl+Alt+T, Shift+1}{cpbitsetsum}
+
+\paragraph{Swapping the value and a dimension.} When a state would include a huge quantity (a weight up to $10^9$) but another
+quantity is small (at most 100 items, values summing to $10^5$), make the small quantity the index and the huge one the value that is
+minimised: $dp[\mathit{value}]$ is the least weight that reaches it. The LIS tail array (Section~\ref{sec:lis}) is the same idea:
+instead of ``the longest subsequence ending at each value'', ``the smallest last value for each length''. Asking ``which quantity is
+small enough to be an index?'' is often the whole optimization.
+
+\begin{summary}[Chapter summary]
+\begin{itemize}
+  \item Range transitions become $\Oh{1}$ with prefix sums or a monotone queue; along each remainder class, a queue gives the exact
+        $\Oh{nW}$ bounded knapsack.
+  \item When the optimal split point is monotone (quadrangle inequality), divide and conquer computes a layer in $\Oh{n \log n}$,
+        SMAWK in $\Oh{n}$, and Knuth's sandwich $\mathit{opt}(l, r-1) \le \mathit{opt}(l, r) \le \mathit{opt}(l+1, r)$ makes an
+        interval DP $\Oh{n^2}$.
+  \item Products of a $j$-term and an $i$-term make each earlier state a line: a deque for monotone slopes, a LineContainer or a Li
+        Chao tree otherwise.
+  \item Convex piecewise-linear value functions are stored by their breakpoints in heaps (slope trick).
+  \item ``Exactly $k$'' with a concave answer becomes a penalty $\lambda$ found by binary search; break ties consistently and bound
+        $\lambda$ by the slopes.
+  \item Convex sequences convolve by merging slopes; bitsets divide boolean DPs by 64.
+\end{itemize}
+\end{summary}
+
+\begin{practice}
+\begin{pplist}
+  \item Subarray Squares
+  \item Houses and Schools
+  \item Knuth Division
+  \item Monster Game I
+  \item Monster Game II
+  \item Increasing Array II
+  \item Money Sums
+  \item Book Shop
+  \item Elevator Rides
+\end{pplist}
+\end{practice}

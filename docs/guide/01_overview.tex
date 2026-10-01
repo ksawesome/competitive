@@ -1,0 +1,144 @@
+\chapter{Overview}\label{ch:overview}
+
+This guide documents the competitive programming environment set up in the \file{Desktop/\allowbreak competitive} folder.
+It is built around one idea: \textbf{the CPH extension stays in charge of test cases}. You fetch a problem, CPH creates
+the file from your template and stores the samples, you write code, and you press CPH's \emph{Run All} button.
+Everything else in this setup either makes that loop faster or explains what CPH cannot.
+
+\section{The big picture}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  box/.style={draw=cpblue, fill=cpblue!6, rounded corners=3pt, thick, minimum width=3.2cm, minimum height=1.25cm,
+    align=center, font=\sffamily\small},
+  tool/.style={draw=cporange, fill=cporange!8, rounded corners=3pt, thick, minimum width=3.0cm, minimum height=1.05cm,
+    align=center, font=\sffamily\small},
+  arr/.style={->, thick, cpgray},
+  lab/.style={font=\sffamily\scriptsize, text=cpgray, align=center}]
+  \node[box] (browser) at (0, 0) {Problem page\\\scriptsize Codeforces, USACO, CSES};
+  \node[box] (cc) at (4.5, 0) {Competitive\\Companion};
+  \node[box, fill=cpteal!10, draw=cpteal] (cph) at (9, 0) {\textbf{CPH}\\\scriptsize stores the samples};
+  \node[box] (file) at (9, -2.7) {\file{A\_Name.cpp}\\\scriptsize from \file{template.cpp}};
+  \node[box] (editor) at (4.5, -2.7) {You write code\\\scriptsize templates, \texttt{dbg}};
+  \node[tool] (f5) at (0, -2.7) {\key{F5}\ CPH tests\\\scriptsize crash reason, memory};
+  \node[box, fill=cpgreen!10, draw=cpgreen] (run) at (4.5, -5.4) {CPH \emph{Run All}\\\scriptsize \key{Ctrl+Alt+B}};
+  \node[box] (submit) at (9, -5.4) {Submit\\\scriptsize the file as it is};
+  \node[tool] (stress) at (0, -5.4) {Stress test\\\scriptsize \key{Ctrl+Alt+X}};
+  \draw[arr] (browser) -- node[above, lab] {click} (cc);
+  \draw[arr] (cc) -- node[above, lab] {sends problem} (cph);
+  \draw[arr] (cph) -- node[right, lab] {creates the file,\\fills the header\\and USACO I/O} (file);
+  \draw[arr] (file) -- node[above, lab] {opens} (editor);
+  \draw[arr] (editor) -- node[right, lab] {save} (run);
+  \draw[arr] (run) -- node[above, lab] {all pass} (submit);
+  \draw[arr, dashed] (editor) -- node[above=1pt, lab] {verdict is\\a mystery} (f5);
+  \draw[arr, dashed] (f5) -- node[left, lab] {still stuck} (stress);
+  \draw[arr, dashed] (stress) -- node[below=1pt, lab] {paste the\\failing input} (run);
+\end{tikzpicture}
+\caption{The daily loop. Solid arrows are the normal path; dashed arrows are what you do when a verdict surprises you.}
+\end{figure}
+
+\section{Quick start in 60 seconds}
+
+\begin{enumerate}[label=\textbf{\color{cpteal}\arabic*.}]
+  \item Open the \file{competitive} folder in VS Code. It uses the \emph{competitive} profile automatically.
+  \item On a problem page, click the green Competitive Companion button. CPH creates \file{A\_Problem\_Name.cpp}
+        from the template, fills in the problem name, link and time, and (for USACO) switches on file I/O.
+  \item Write your solution in \cc{solve()}. Type \texttt{cp} to see every library snippet, or press
+        \key{Ctrl+Alt+T} followed by a key (for example \key{U} for a DSU) to paste one at the cursor.
+  \item Use \cc{dbg(x, v)} freely: it prints to CPH's \emph{Standard Error} box and vanishes on the judge.
+  \item Press \key{Ctrl+Alt+B} (or CPH's \emph{Run All} button). If a verdict is confusing, press \key{F5}: the same tests
+        run in the terminal with the crash reason, time and peak memory of each one.
+  \item When all tests pass, submit the file exactly as it is. Nothing needs to be deleted or uncommented.
+\end{enumerate}
+
+\begin{tip}
+The one-page summary of every shortcut is \file{CHEATSHEET.md} in the folder root. This guide is the long version;
+the algorithms behind the templates are taught in the companion handbook, \emph{ALGORITHMS.pdf}.
+\end{tip}
+
+\section{What is where}
+
+\newcommand{\desc}[1]{{\normalfont\sffamily\scriptsize\color{cpgray}--- #1}}
+\begin{figure}[H]
+\centering
+\begin{forest}
+  for tree={font=\ttfamily\small, grow'=0, child anchor=west, parent anchor=south, anchor=west, calign=first,
+    edge path={\noexpand\path [draw, cpgray, \forestoption{edge}] (!u.south west) +(7.5pt,0) |- (.child anchor)\forestoption{edge label};},
+    fit=band, s sep=1pt, before computing xy={l=15pt}}
+  [{competitive/}
+    [{template/template.cpp\quad\desc{the file CPH copies for every new problem}}]
+    [{template/template.cpp.bak\quad\desc{your original template}}]
+    [{include/debug.h\quad\desc{the dbg() printer (local builds only)}}]
+    [{include/bits/\quad\desc{precompiled bits/stdc++.h (generated)}}]
+    [{library/\quad\desc{129 templates in 10 category folders}}]
+    [{tools/cp.py\quad\desc{test runner, stress tester, quickstart, setup, docs}}]
+    [{stress/gen.cpp, brute.cpp\quad\desc{inputs for the stress tester}}]
+    [{.vscode/tasks.json, settings.json\quad\desc{tasks behind F5 etc., IntelliSense}}]
+    [{.cph/\quad\desc{CPH's test cases, one .prob file per problem (hidden)}}]
+    [{docs/\quad\desc{this guide and the algorithms handbook (LaTeX + PDF)}}]
+    [{archive/YYYY-MM/\quad\desc{old solutions, created by the archive shortcut}}]
+    [{CHEATSHEET.md\quad\desc{one-page shortcut table}}]
+  ]
+\end{forest}
+\caption{The folder layout. Build output (\texttt{.build/}, \texttt{*.exe}, \texttt{*.bin}) and \texttt{.cph/} are hidden from VS Code's explorer.}
+\end{figure}
+
+\section{What was changed outside the folder}
+
+Keyboard shortcuts and snippets can only live in VS Code's user settings, so a few files outside the folder were
+changed. All of them belong to the \emph{competitive} VS Code profile only; your default profile is untouched.
+
+\begin{center}
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{5.2cm}L}
+\toprule
+\thd{File (in the profile folder)} & \thd{What changed} \\
+\midrule
+\file{keybindings.json} & One generated block, between \texttt{>>> cp-library shortcuts} and \texttt{<<<} markers, with the
+  Ctrl+Alt+T / Ctrl+Alt+Y / Ctrl+Alt+U shortcuts, Ctrl+Alt+X and Ctrl+F5. Your own bindings above it are untouched.
+  Backup: \file{keybindings.json.bak-cp-setup}. \\
+\file{snippets/\allowbreak cp-library.code-snippets} & New file: the 175 snippets. \\
+\file{settings.json} & Four CPH settings: compiler flags, template path, template variables on, stderr ignored for
+  verdicts. Backup: \file{settings.json.bak-cp-setup}. \\
+\midrule
+TinyTeX & LaTeX packages were added (fonts, listings, forest, \ldots) to compile these PDFs. Additive only. \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+The profile folder is \file{\%APPDATA\%/Code/User/profiles/5d3986b6}. Re-running \emph{CP: Setup} rewrites only the
+generated block and the four CPH settings, so it is always safe to run again.
+
+\section{The four shortcuts that were broken before}
+
+Your profile already had \key{F5}, \key{Ctrl+Shift+N}, \key{Ctrl+Shift+U} and \key{Ctrl+Shift+Alt+C} bound to tasks
+named \texttt{cf-run}, \texttt{CP: Quickstart}, \texttt{CP: Quickstart USACO} and \texttt{CP: Archive Old Files},
+but no such tasks existed anywhere, so the keys did nothing. They are now defined in \file{.vscode/tasks.json} and
+work as described in Chapter~\ref{ch:testing} and Section~\ref{sec:quickstart}.
+
+\section{How this setup is tied to CPH}\label{sec:cph-tie}
+
+CPH is the centre of the workflow, so every piece was checked against CPH's own source code:
+
+\begin{itemize}
+  \item \textbf{CPH compiles with your flags.} CPH runs \texttt{g++ file.cpp -o file.bin \emph{Args} -D DEBUG -D CPH}.
+        The \emph{Args} setting is written by \emph{CP: Setup} from one list in \file{tools/cp.py}, so the precompiled
+        header, the 256\,MB stack, static linking and \cc{-DLOCAL} all apply to CPH runs.
+        (The extra \texttt{-D DEBUG -D CPH} were verified not to disturb the precompiled header.)
+  \item \textbf{CPH fills the template.} With template variables enabled, CPH replaces \texttt{\$name\$},
+        \texttt{\$group\$}, \texttt{\$url\$}, \texttt{\$date\$}, \texttt{\$time\$}, \texttt{\$input\$} and
+        \texttt{\$output\$} when it creates a file. That is how the header and the USACO file I/O are filled in.
+  \item \textbf{CPH shows \cc{dbg} output.} CPH treats any stderr output as a failed test unless
+        \texttt{ignoreSTDERROR} is on. It is now on, so \cc{dbg} output appears in the \emph{Standard Error}
+        box while verdicts depend only on stdout and the exit code.
+  \item \textbf{F5 reads CPH's tests.} The terminal runner reads the same \file{.cph/*.prob} file CPH uses.
+  \item \textbf{The stress tester checks your brute force against CPH's samples} before it trusts it, and puts a
+        failing input on the clipboard ready to paste into CPH as a new test case.
+\end{itemize}
+
+\begin{fact}[Honest limits]
+Nothing is lost when you use only the CPH button. What CPH cannot do by design: tell you \emph{why} a program
+crashed (it just fails the test), show memory use, or accept test cases from outside tools while its panel is open.
+F5 covers the first two; the clipboard hand-off covers the third. The checked STL (\texttt{-D\_GLIBCXX\_DEBUG}) makes
+local running times slower than the judge's, so treat CPH's times as upper bounds.
+\end{fact}

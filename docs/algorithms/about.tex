@@ -1,0 +1,36 @@
+% Half-title page and the "About this book" page (front matter).
+\thispagestyle{empty}
+\vspace*{7cm}
+\begin{center}
+  {\sffamily\bfseries\Huge\color{cpblue} The Competitive\\[4pt] Programming Handbook}\\[1.2cm]
+  {\color{cpteal}\rule{4cm}{1.2pt}}\\[1.2cm]
+  {\sffamily\large\color{fggray} Second edition}
+\end{center}
+\clearpage
+
+\thispagestyle{empty}
+\vspace*{\fill}
+{\small
+\noindent{\sffamily\bfseries\large\color{cpblue}About this book}\par\medskip
+
+\noindent\textbf{The Competitive Programming Handbook}, second edition, by \textbf{Kshitish Madbhavi}.\par\medskip
+
+\noindent This handbook is the companion to the template library in \file{Desktop/competitive}. Every technique that has a
+template shows its keyboard shortcut and snippet prefix next to the explanation, so you can read an idea and have its code at
+your cursor a second later. The tools around it (CPH integration, the test runner, stress testing, the compiler setup) are
+described in the companion \emph{User Guide}, \file{docs/GUIDE.pdf}.\par\medskip
+
+\noindent\textbf{Rebuilding.} The book is generated from LaTeX sources in \file{docs/algorithms/}. Run the VS Code task
+\emph{CP: Build Docs} or \texttt{python tools/cp.py docs}; \texttt{python tools/cp.py docs --chapter 13} rebuilds a single
+chapter for a quick look.\par\medskip
+
+\noindent\textbf{Code.} Every program is C++17 and assumes the template (\cc{#define int long long}, \cc{rep}, \cc{all},
+\cc{print}, \ldots). Library templates were checked against brute-force solutions on thousands of random inputs; the worked
+problems were compiled with the exact template and compiler flags and stress tested.\par\medskip
+
+\noindent\textbf{Typography.} Set with pdf\LaTeX{} in TeX Gyre Pagella, TeX Gyre Heros and Source Code Pro. Figures are drawn
+with TikZ and pgfplots in the Okabe--Ito palette, which stays distinguishable for colour-blind readers; every highlight also
+differs in line weight, so the figures survive grayscale printing.\par\medskip
+
+\noindent\textbf{Build:} \today.\par}
+\clearpage

@@ -1,0 +1,701 @@
+\chapter{Binary Search and Unimodal Optimisation}\label{ch:binsearch}
+
+Binary search finds a boundary in a monotone world in logarithmically many steps. Everyone knows it as the way to look up a
+value in a sorted array, but its real power in contests lies elsewhere: in \emph{binary search on the answer}, which turns
+``find the best value'' into the far easier question ``is this value achievable?'', and in its relatives for real numbers,
+unimodal functions, ratios and batches of queries. This chapter develops binary search from a single loop invariant, so
+that the off-by-one errors that plague it disappear, and then applies it in all of these forms.
+
+\begin{chapterintro}{\bronze\ \silver\ \gold\ \ioi}{Chapters~\ref{ch:complexity} and~\ref{ch:sorting}.}
+  \item write binary search from an invariant, and use \texttt{lower\_bound} and \texttt{upper\_bound} correctly;
+  \item recognise monotone predicates and binary search on the answer;
+  \item find the $k$-th smallest element of a set that is never built;
+  \item binary search over real numbers, and maximise ratios with fractional programming;
+  \item optimise unimodal and convex functions with ternary search;
+  \item answer many binary-search queries at once with parallel binary search.
+\end{chapterintro}
+
+% ======================================================================================================================
+\section[Searching a sorted array]{Searching a sorted array \hfill \bronze}\label{sec:bsearch-array}
+
+To find where a value $x$ belongs in a sorted array, compare it with the middle element and discard the half that cannot
+contain the answer. Each comparison halves the range, so after $\lceil \log_2(n + 1)\rceil$ comparisons nothing is left:
+20 comparisons suffice for $10^6$ elements and 60 for $10^{18}$.
+
+The cleanest way to write it, and to never get it wrong, is to decide exactly what the answer is and to maintain an
+\emph{invariant}. We look for the first index $i$ with $a_i \ge x$ (or $n$ if there is none), and keep a half-open range
+$[lo, hi)$ with the invariant
+\[
+  a_i < x \text{ for all } i < lo, \qquad a_i \ge x \text{ for all } i \ge hi .
+\]
+Initially $lo = 0$ and $hi = n$, and the invariant holds vacuously. Look at $mid = \lfloor (lo + hi)/2 \rfloor$, which lies in
+$[lo, hi)$: if $a_{mid} < x$, the invariant still holds with $lo = mid + 1$; otherwise it holds with $hi = mid$. Either way the
+range shrinks, and when $lo = hi$ the invariant says that $lo$ is exactly the first index with $a_i \ge x$
+(Figure~\ref{fig:bsearch-steps}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \foreach \row/\lo/\hi/\mid/\txt in {0/0/10/5/{$a_5 = 23 \ge 23$: \ $hi \gets 5$},
+      1/0/5/2/{$a_2 = 8 < 23$: \ $lo \gets 3$}, 2/3/5/4/{$a_4 = 16 < 23$: \ $lo \gets 5$}} {
+    \pgfmathsetmacro{\yy}{-1.25*\row}
+    \foreach \v [count=\i from 0] in {2, 5, 8, 12, 16, 23, 38, 56, 72, 91} {
+      \pgfmathtruncatemacro{\inside}{(\i >= \lo && \i < \hi) ? 1 : 0}
+      \ifnum\i=\mid \node[cellc, hot] at (\i*0.7, \yy) {\v};
+      \else\ifnum\inside=1 \node[cellc] at (\i*0.7, \yy) {\v};
+      \else \node[cellc, dim] at (\i*0.7, \yy) {\v}; \fi\fi
+    }
+    \node[blbl, anchor=east] at (-0.55, \yy) {step \the\numexpr\row+1\relax};
+    \node[notel, anchor=west] at (7.2, \yy) {\txt};
+    \draw[line width=1.2pt, draw=fgblue] ({\lo*0.7 - 0.35}, \yy + 0.45) -- ({\lo*0.7 - 0.35}, \yy - 0.45);
+    \draw[line width=1.2pt, draw=fgblue] ({\hi*0.7 - 0.35}, \yy + 0.45) -- ({\hi*0.7 - 0.35}, \yy - 0.45);
+  }
+  \foreach \i in {0,...,9} \node[lbl] at (\i*0.7, -3.15) {\i};
+  \node[lbl, anchor=east] at (-0.55, -3.15) {index};
+  \node[notel, anchor=west] at (7.2, -3.15) {$lo = hi = 5$: the first $a_i \ge 23$};
+\end{tikzpicture}
+\caption{Binary search for the first element $\ge 23$. The blue bars delimit the range $[lo, hi)$ that may still contain the
+boundary; grey cells are already decided, and red marks the middle element compared in each step.}
+\label{fig:bsearch-steps}
+\end{figure}
+
+\subsection{The standard library}
+
+The library functions implement exactly this search, and it is worth knowing precisely what each returns
+(Figure~\ref{fig:lowerupper}):
+\begin{itemize}
+  \item \cc{lower_bound(all(a), x)}: the first position with value $\ge x$, the insertion point of $x$ before any equal
+        values;
+  \item \cc{upper_bound(all(a), x)}: the first position with value $> x$, the insertion point after equal values;
+  \item \cc{equal_range(all(a), x)}: both at once; the difference of the two positions is the number of copies of $x$;
+  \item the last value $\le x$ (the \emph{predecessor}) is just before \cc{upper_bound}, if that is not the beginning, and
+        the first value $\ge x$ (the \emph{successor}) is at \cc{lower_bound}, if that is not the end.
+\end{itemize}
+All of them return iterators; subtract \cc{a.begin()} to get an index. A reversed array is searched with
+\cc{greater<>()} as the comparator, and \cc{binary_search} only answers yes or no, which is rarely enough.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \arrs{A}{0}{0}{1/n, 3/cool, 3/cool, 3/cool, 5/n, 8/n, 8/n, 9/n}
+  \idx{A}{8}
+  \draw[->, line width=1.1pt, draw=fgblue] ($(A-2.north)+(0,1.25)$) node[above, font=\sffamily\scriptsize\bfseries,
+    text=fgblue, inner sep=1.5pt] {lower\_bound(3) = 1} -- ($(A-2.north)+(0,0.04)$);
+  \draw[->, line width=1.1pt, draw=fgverm] ($(A-5.north)+(0,0.55)$) node[above, font=\sffamily\scriptsize\bfseries,
+    text=fgverm, inner sep=1.5pt] {upper\_bound(3) = 4} -- ($(A-5.north)+(0,0.04)$);
+  \node[lbl] at ($(A-3.south)+(0,-0.7)$) {count of 3 = $4 - 1 = 3$};
+  \node[notel, anchor=west, text width=5.8cm] at (6.1, 0) {For $x = 4$, which does not occur, both functions return
+    4: the position where 4 would be inserted. The predecessor of 4 is the element before it (3), and its successor is the
+    element at that position (5).};
+\end{tikzpicture}
+\caption{\texttt{lower\_bound} and \texttt{upper\_bound} on a sorted array with repeated values. The copies of $x$ occupy
+exactly the positions from \texttt{lower\_bound} up to (not including) \texttt{upper\_bound}.}
+\label{fig:lowerupper}
+\end{figure}
+
+\begin{problem}{Counting values in ranges}
+Given $n$ numbers and $q$ queries $[l, r]$, report how many of the numbers lie in each range. Limits: $n, q \le 2\cdot10^5$.
+\solution Sort once. The values in $[l, r]$ occupy the positions from the first value $\ge l$ up to (not including) the first
+value $> r$, so each query is two binary searches: $\Oh{(n + q)\log n}$ in total.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, q;
+    cin >> n >> q;
+    vi a(n);
+    cin >> a;
+    sort(all(a));
+    while (q--) {
+        ll l, r;
+        cin >> l >> r;
+        // [first value >= l, first value > r) holds the values in [l, r]
+        auto from = lower_bound(all(a), l), to = upper_bound(all(a), r);
+        print(to - from);
+    }
+}
+\end{code}
+
+\begin{pitfall}[Searching a \texttt{set} with the free function]
+\cc{lower_bound(all(s), x)} compiles for a \cc{set} or \cc{map}, but set iterators cannot jump to the middle, so the free
+function walks through the elements one by one and takes \emph{linear} time. Always use the member function
+\cc{s.lower_bound(x)}, which descends the tree in $\Oh{\log n}$. This single mistake turns many correct solutions into time
+limit verdicts.
+\end{pitfall}
+
+% ======================================================================================================================
+\section[Binary search on a monotone predicate]{Binary search on a monotone predicate \hfill \silver}\label{sec:predicate}
+
+Nothing in the argument above used the array itself, only the fact that the condition $a_i \ge x$ is false for a prefix of
+the indices and true for the rest. So binary search works for any \defn{monotone predicate}: a yes/no function
+$\mathit{ok}(v)$ on integers such that once it is true, it stays true for all larger $v$ (Figure~\ref{fig:monotone}). The
+search finds the boundary, the first $v$ with $\mathit{ok}(v)$ true, with $\Oh{\log(\text{range})}$ evaluations of
+$\mathit{ok}$, and the predicate can be anything you can compute: a greedy simulation, a flow, a DP.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \foreach \x in {0,...,11} {
+    \pgfmathtruncatemacro{\lab}{\x + 10}
+    \ifnum\x>4 \node[cellc, good] at (\x*0.72, 0) {T}; \else \node[cellc, dim] at (\x*0.72, 0) {F}; \fi
+    \node[lbl] at (\x*0.72, -0.55) {\lab};
+  }
+  \node[blbl, anchor=east] at (-0.55, 0) {$\mathit{ok}(v)$};
+  \node[lbl, anchor=east] at (-0.55, -0.55) {$v$};
+  \draw[->, line width=1.1pt, draw=fgverm] (5*0.72, 1.05) node[above, font=\sffamily\scriptsize\bfseries, text=fgverm]
+    {first true: the answer} -- (5*0.72, 0.4);
+  \begin{scope}[yshift=-1.9cm]
+    \foreach \x in {0,...,11} {
+      \ifnum\x<8 \node[cellc, good] at (\x*0.72, 0) {T}; \else \node[cellc, dim] at (\x*0.72, 0) {F}; \fi
+    }
+    \node[blbl, anchor=east] at (-0.55, 0) {$\mathit{ok}'(v)$};
+    \draw[->, line width=1.1pt, draw=fgblue] (7*0.72, -1.05) node[below, font=\sffamily\scriptsize\bfseries, text=fgblue]
+      {last true = (first false) $- 1$} -- (7*0.72, -0.4);
+  \end{scope}
+\end{tikzpicture}
+\caption{Monotone predicates. Top: false up to some point, true afterwards; binary search finds the first true value.
+Bottom: the ``maximise'' form, true up to some point; its last true value is one less than its first false value.}
+\label{fig:monotone}
+\end{figure}
+
+\begin{pseudo}{First true of a monotone predicate}
+\begin{algorithmic}[1]
+\Require $\mathit{ok}$ monotone on $[lo, hi]$, and $\mathit{ok}(hi)$ true (or $hi$ means ``no answer'')
+\While{$lo < hi$} \Comment{invariant: the answer lies in $[lo, hi]$}
+  \State $mid \gets lo + \lfloor (hi - lo) / 2 \rfloor$ \Comment{$lo \le mid < hi$}
+  \If{$\mathit{ok}(mid)$} \State $hi \gets mid$ \Comment{$mid$ may be the answer}
+  \Else \State $lo \gets mid + 1$ \Comment{everything up to $mid$ is false}
+  \EndIf
+\EndWhile
+\State \Return $lo$
+\end{algorithmic}
+\end{pseudo}
+
+Three details make this loop robust. First, $mid$ is computed as $lo + (hi - lo)/2$, never as $(lo + hi)/2$, which overflows
+when both are close to $2^{63}$. Second, because $mid < hi$, both branches strictly shrink the range, so the loop terminates;
+the tempting variant \cc{lo = mid} (without $+1$) can leave $lo$ unchanged when $hi = lo + 1$ and loop forever. Third, the
+initial $hi$ must be a value where $\mathit{ok}$ is certainly true, or a sentinel one past the range that you check for after
+the loop; then the answer is always inside $[lo, hi]$.
+
+For the ``maximise'' form (the last $v$ with $\mathit{ok}(v)$ true, as in Figure~\ref{fig:monotone}, bottom), either search
+for the first false value and subtract one, or mirror the loop: round $mid$ \emph{up}, $mid = lo + \lceil (hi - lo)/2\rceil$,
+and set $lo \gets mid$ on true and $hi \gets mid - 1$ on false. The next section uses the second form.
+
+\usetemplate{Binary search on the answer}{Ctrl+Alt+T, A}{cpbsearch}
+
+\begin{trick}[Binary search by jumps]
+An equivalent formulation, often shorter and immune to off-by-one errors, builds the answer bit by bit: start at a position
+where $\mathit{ok}$ is false and take jumps of decreasing powers of two, moving whenever the target of the jump is still
+false.
+\begin{code}
+ll x = lo - 1;  // ok(lo - 1) is false (or lo - 1 is outside the domain)
+for (ll step = 1LL << 62; step > 0; step >>= 1)
+    if (x + step < hi && !ok(x + step)) x += step;
+// x is the last false value, so x + 1 is the first true one
+\end{code}
+The same pattern descends a Fenwick tree to find a prefix sum in $\Oh{\log n}$ (Chapter~\ref{ch:segtree}) and climbs a tree
+with binary lifting (Chapter~\ref{ch:trees}).
+\end{trick}
+
+\begin{trick}[Galloping when the range is unknown]
+If the answer can be arbitrarily large and $\mathit{ok}$ gets expensive for large values, find an upper bound first by
+doubling: try $1, 2, 4, 8, \ldots$ until $\mathit{ok}$ becomes true, then binary search between the last two tries. This
+\emph{exponential search} costs $\Oh{\log v}$ evaluations, where $v$ is the answer itself rather than the largest possible
+answer, and it never evaluates $\mathit{ok}$ far beyond $v$, which also avoids overflow inside $\mathit{ok}$.
+\end{trick}
+
+\subsection{Beyond monotonicity: keep a half that surely contains an answer}
+
+Binary search needs less than a monotone predicate. All it needs is that, after each question, \emph{one half is guaranteed
+to contain some answer}. Bisection for roots is the classic example: if a continuous function has $f(lo) < 0 < f(hi)$, then
+whichever half has a sign change at its ends contains a root, even though $f$ need not be monotone. The discrete analogue is
+just as useful.
+
+\begin{problem}{Searching Local Minimum (Codeforces 1479A)}
+An unknown permutation $a_1, \ldots, a_n$ ($n \le 10^5$) can be read one element per query. Find a \emph{local minimum},
+an index $i$ with $a_{i-1} > a_i < a_{i+1}$ (where $a_0 = a_{n+1} = \infty$), using at most 100 queries.
+\solution Keep a range $[lo, hi]$ with $a_{lo - 1} > a_{lo}$ and $a_{hi} < a_{hi + 1}$: walking downhill from $lo$ into the
+range can never leave it, so it contains a local minimum. Initially $[1, n]$ qualifies. Read $a_{mid}$ and $a_{mid+1}$: if
+$a_{mid} < a_{mid+1}$, the range $[lo, mid]$ still qualifies; otherwise $[mid + 1, hi]$ does. When $lo = hi$, both
+conditions together say that $lo$ is a local minimum (Figure~\ref{fig:localmin}). This takes $2\lceil\log_2 n\rceil \le 34$
+queries.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.8cm, y=0.32cm]
+  \foreach \i/\v in {1/5, 2/3, 3/4, 4/7, 5/6, 6/2, 7/1, 8/8} {
+    \ifnum\i=7 \def\bst{good}\else\ifnum\i=2 \def\bst{warn}\else\def\bst{cool}\fi\fi
+    \draw[\bst] (\i - 0.3, 0) rectangle (\i + 0.3, \v);
+    \node[font=\sffamily\scriptsize] at (\i, \v + 0.6) {\v};
+    \node[lbl] at (\i, -0.7) {\i};
+  }
+  \foreach \i in {0, 9} {
+    \draw[line width=0.6pt, draw=fgline, dashed] (\i - 0.3, 0) -- (\i - 0.3, 9.5) (\i + 0.3, 0) -- (\i + 0.3, 9.5);
+    \node[font=\sffamily\scriptsize] at (\i, 10.2) {$\infty$};
+    \node[lbl] at (\i, -0.7) {\i};
+  }
+  \draw[line width=0.6pt, draw=fgink!70] (-0.6, 0) -- (9.6, 0);
+  \foreach \s/\a/\b/\h in {1/4/5/8.4, 2/6/7/3.6, 3/7/8/9.6} {
+    \draw[->, line width=0.9pt, draw=fgverm] (\a, \h) to[bend left=35] (\b, \h);
+    \node[circle, fill=fgverm, text=white, font=\sffamily\tiny\bfseries, inner sep=1pt] at ({(\a + \b)/2}, \h + 1.3) {\s};
+  }
+  \node[notel, anchor=west, text width=4.6cm] at (10.2, 5) {Step 1: $7 > 6$, go right to $[5, 8]$.\\ Step 2: $2 > 1$, go
+    right to $[7, 8]$.\\ Step 3: $1 < 8$, keep $[7, 7]$: index 7 (green) is a local minimum. Index 2 (orange) is another
+    one, in the half that was dropped.};
+\end{tikzpicture}
+\caption{Finding a local minimum by binary search. Each step compares $a_{mid}$ with $a_{mid+1}$ and keeps the half on the
+downhill side; that half is guaranteed to contain a local minimum, although not necessarily the global one.}
+\label{fig:localmin}
+\end{figure}
+
+\begin{code}
+map<int, int> memo;
+auto ask = [&](int i) -> int {  // a[i], with a[0] = a[n + 1] = infinity
+    if (i < 1 || i > n) return 1e9;
+    if (!memo.count(i)) {
+        cout << "? " << i << endl;  // endl flushes: the judge waits for it
+        cin >> memo[i];
+    }
+    return memo[i];
+};
+int lo = 1, hi = n;  // a local minimum lies in [lo, hi]
+while (lo < hi) {
+    int mid = (lo + hi) / 2;
+    if (ask(mid) < ask(mid + 1)) hi = mid;
+    else lo = mid + 1;
+}
+cout << "! " << lo << endl;
+\end{code}
+
+\begin{tip}[Interactive problems]
+In an interactive problem the judge answers your queries while your program runs, so every query must be \emph{flushed}
+(\cc{endl} or \cc{cout.flush()}), and the query limit is part of the problem: $\lceil \log_2 n \rceil$ queries allow a plain
+binary search, $2\lceil \log_2 n\rceil$ allow comparing neighbours, and a limit like $n/2$ hints at pairing. Cache answers so
+that no position is asked twice, and test locally with a small program that plays the judge. The template
+\texttt{cpinteractive} (\key{Ctrl+Alt+T, Shift+I}) has the query helpers.
+\end{tip}
+
+% ======================================================================================================================
+\section[Binary search on the answer]{Binary search on the answer \hfill \silver}\label{sec:bsearch-answer}
+
+Many optimisation problems ask for the smallest (or largest) value with some property, where \emph{checking} whether a given
+value works is much easier than \emph{finding} the best value directly. If the property is monotone, binary search on the
+answer reduces the optimisation problem to $\Oh{\log(\text{range})}$ checks. This is the idea behind Array Division
+(Section~\ref{sec:method}) and Factory Machines (Chapter~\ref{ch:worked}); here is the classic ``maximise the minimum''
+version.
+
+\begin{problem}{Aggressive cows}
+There are $n$ stalls at given positions on a line. Place $k \ge 2$ cows in distinct stalls so that the minimum distance
+between two cows is as large as possible.
+\solution Ask instead: \emph{can the cows be placed so that every two are at least $d$ apart?} This is monotone (if a
+placement works for $d$, the same placement works for every smaller $d$), and it is easy to check greedily: sort the stalls,
+put a cow in the first stall, and put each next cow in the first stall at least $d$ beyond the previous cow. Placing each cow
+as early as possible never hurts, by a ``greedy stays ahead'' argument like the one for interval scheduling
+(Section~\ref{sec:greedy}). The answer is the largest $d$ for which the check succeeds (Figure~\ref{fig:cows}), found in
+$\Oh{n \log n + n \log(\text{range})}$.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.95cm]
+  \foreach \yy/\dd/\cows/\res/\col in {0/3/{1,4,8}/{3 cows: \ yes}/fggreen, -1.3/4/{1,8}/{2 cows: \ no}/fgverm} {
+    \draw[line width=0.6pt, draw=fgink!60] (0.5, \yy) -- (9.5, \yy);
+    \foreach \s in {1, 2, 4, 8, 9} {
+      \draw[line width=0.6pt, draw=fgink!70] (\s, \yy - 0.1) -- (\s, \yy + 0.1);
+      \node[lbl, below=1pt] at (\s, \yy - 0.08) {\s};
+    }
+    \foreach \cw in \cows \node[circle, fill=\col, inner sep=0pt, minimum size=3.2mm] at (\cw, \yy + 0.32) {};
+    \node[blbl, anchor=east] at (0.3, \yy) {$d = \dd$};
+    \node[font=\sffamily\scriptsize\bfseries, text=\col, anchor=west] at (9.8, \yy) {\res};
+  }
+\end{tikzpicture}
+\caption{The greedy check for stalls $1, 2, 4, 8, 9$ and $k = 3$ cows. With $d = 3$ the cows go to 1, 4 and 8; with
+$d = 4$ only two fit (1 and 8). The answer is 3, the largest $d$ that passes.}
+\label{fig:cows}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n, k;
+    cin >> n >> k;
+    vi x(n);
+    cin >> x;
+    sort(all(x));
+    // can k cows be placed with every two at least d apart? (greedy)
+    auto ok = [&](ll d) {
+        int cows = 1;
+        ll last = x[0];
+        rep(i, 1, n) if (x[i] - last >= d) cows++, last = x[i];
+        return cows >= k;
+    };
+    ll lo = 0, hi = x[n - 1] - x[0];  // ok(lo) holds; find the last d with ok
+    while (lo < hi) {
+        ll mid = lo + (hi - lo + 1) / 2;  // round up, or lo = mid never moves
+        if (ok(mid)) lo = mid;
+        else hi = mid - 1;
+    }
+    print(lo);
+}
+\end{code}
+
+\begin{recognize}
+``Minimise the maximum'', ``maximise the minimum'', ``the smallest time, size or capacity such that\ldots'', or any answer
+where checking a candidate is easier than constructing the best one. The check is often a greedy simulation, and the
+monotonicity argument is usually one sentence: ``a solution for the stricter requirement is also a solution for the looser
+one''.
+\end{recognize}
+
+\subsection{The $k$-th smallest element of an implicit set}
+
+A second family of problems asks for the $k$-th smallest element of a set that is far too large to build: all pairwise sums,
+all products in a table, all subarray sums. Binary search the \emph{value}: the $k$-th smallest is the smallest $x$ such that
+at least $k$ elements are $\le x$. Counting the elements $\le x$ is usually much easier than listing them.
+
+\begin{problem}{Multiplication Table (CSES)}
+Find the median of the $n \times n$ multiplication table (the entries $i \cdot j$ for $1 \le i, j \le n$), where $n \le 10^6$
+is odd.
+\solution The median is the $k$-th smallest entry for $k = (n^2 + 1)/2$. Row $i$ contains the multiples $i, 2i, \ldots, ni$,
+and exactly $\min(n, \lfloor x / i\rfloor)$ of them are at most $x$, so counting the entries $\le x$ takes $\Oh{n}$
+(Figure~\ref{fig:multtable}). Binary search the smallest $x$ whose count reaches $k$: $\Oh{n \log n^2}$ in total, 0.07\,s for
+$n = 10^6$. The answer is always an entry of the table, because the count only increases at entries.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \foreach \i in {1,...,5} \foreach \j in {1,...,5} {
+    \pgfmathtruncatemacro{\pv}{\i*\j}
+    \ifnum\pv<9 \node[cellc, cool, minimum width=7.5mm, minimum height=6.5mm] at (\j*0.75, -\i*0.65) {\pv};
+    \else \node[cellc, minimum width=7.5mm, minimum height=6.5mm] at (\j*0.75, -\i*0.65) {\pv}; \fi
+  }
+  \foreach \i/\c in {1/5, 2/4, 3/2, 4/2, 5/1} \node[font=\sffamily\small\bfseries, text=fgblue] at (4.7, -\i*0.65) {\c};
+  \node[lbl] at (4.7, -0.1) {$\le 8$};
+  \node[notel, anchor=west, text width=6.2cm] at (5.5, -1.95) {For $x = 8$: $5 + 4 + 2 + 2 + 1 = 14 \ge 13$ entries are at
+    most 8; for $x = 7$ only 12. So the median, the 13th smallest entry, is 8.};
+\end{tikzpicture}
+\caption{The $5 \times 5$ multiplication table. The entries $\le 8$ (blue) form a staircase; row $i$ contributes
+$\min(n, \lfloor 8/i \rfloor)$ of them (right).}
+\label{fig:multtable}
+\end{figure}
+
+\begin{code}
+void solve() {
+    ll n;
+    cin >> n;
+    ll k = (n * n + 1) / 2;  // the median is the k-th smallest entry
+    // how many entries i * j (1 <= i, j <= n) are at most x?
+    auto count = [&](ll x) {
+        ll c = 0;
+        for (ll i = 1; i <= n; i++) c += min(n, x / i);
+        return c;
+    };
+    ll lo = 1, hi = n * n;  // the first x with count(x) >= k
+    while (lo < hi) {
+        ll mid = lo + (hi - lo) / 2;
+        if (count(mid) >= k) hi = mid;
+        else lo = mid + 1;
+    }
+    print(lo);
+}
+\end{code}
+
+The same pattern finds the $k$-th smallest pairwise sum (count pairs with sum $\le x$ by two pointers), the $k$-th smallest
+subarray sum of a positive array (two pointers again), and the $k$-th smallest distance between points on a line. When the
+count itself needs a data structure, the whole search is sometimes replaced by a walk down that structure, as in the
+order-statistics tree of Chapter~\ref{ch:advds}.
+
+% ======================================================================================================================
+\section[Real numbers and fractional programming]{Real numbers and fractional programming \hfill \gold}\label{sec:bsearch-real}
+
+When the answer is a real number, the loop cannot run until $lo = hi$. The robust approach is to run a \emph{fixed number of
+iterations}: each halves the interval, so 100 iterations shrink any interval of \cc{double}s far below their precision.
+Comparing \cc{hi - lo} with an epsilon is fragile instead: with values around $10^{9}$ and \cc{eps = 1e-9} the loop never
+ends, because consecutive doubles near $10^9$ are about $10^{-7}$ apart and the interval cannot shrink further.
+
+\usetemplate{Binary search on a real answer}{Ctrl+Alt+T, Shift+F}{cpbsreal}
+
+\subsection{Maximising a ratio}
+
+A particularly important use of real-valued binary search is \defn{fractional programming}: maximising a ratio
+$\sum a_i / \sum b_i$ (with all $b_i > 0$) over some family of choices, such as subsets, paths, cycles or subarrays. Ratios do
+not decompose, so DP and greedy algorithms cannot optimise them directly. But for any $\lambda$,
+\[
+  \frac{\sum a_i}{\sum b_i} \ge \lambda \iff \sum (a_i - \lambda b_i) \ge 0 ,
+\]
+so ``can the ratio reach $\lambda$?'' is the question ``is the maximum of $\sum (a_i - \lambda b_i)$ non-negative?'', an
+ordinary optimisation problem with weights $a_i - \lambda b_i$. The answer is monotone in $\lambda$, so binary search on
+$\lambda$ finds the best ratio.
+
+\begin{problem}{Maximum average subarray}
+Given $n \le 10^5$ numbers and $k$, find the maximum average of a subarray of length at least $k$.
+\solution The average is the ratio $\sum a_i / \sum 1$. For a candidate $\lambda$, subtract $\lambda$ from every element and
+ask whether some subarray of length $\ge k$ has a non-negative sum. With prefix sums $p$ of the shifted values, that is
+whether $p_r - \min_{l \le r - k} p_l \ge 0$ for some $r$, one linear scan. A hundred iterations of binary search then take
+$\Oh{100\, n}$.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, k;
+    cin >> n >> k;
+    vector<double> a(n);
+    cin >> a;
+    // is there a subarray of length >= k with average >= lam? Exactly when
+    // some such subarray has sum of (a[i] - lam) >= 0
+    auto ok = [&](double lam) {
+        vector<double> p(n + 1, 0);
+        rep(i, n) p[i + 1] = p[i] + a[i] - lam;
+        double lowest = 1e18;  // the smallest p[l] with l <= r - k
+        rep(r, k, n + 1) {
+            chmin(lowest, p[r - k]);
+            if (p[r] - lowest >= 0) return true;
+        }
+        return false;
+    };
+    double lo = *min_element(all(a)), hi = *max_element(all(a));
+    rep(it, 100) {
+        double mid = (lo + hi) / 2;
+        if (ok(mid)) lo = mid;
+        else hi = mid;
+    }
+    cout << fixed << setprecision(6) << lo << '\n';
+}
+\end{code}
+
+\paragraph{Dinkelbach's method.} Write $g(\lambda) = \max \sum (a_i - \lambda b_i)$ over all choices. Each choice contributes
+the line $A - \lambda B$ (with $A = \sum a_i$, $B = \sum b_i$), so $g$ is the upper envelope of lines with negative slopes:
+decreasing and convex, with its root exactly at the best ratio $\lambda^\ast$ (Figure~\ref{fig:dinkelbach}). Instead of
+bisecting, \defn{Dinkelbach's method} jumps: solve the inner problem at the current $\lambda$, take the optimal choice's own
+ratio $A/B$ as the next $\lambda$, and repeat until $g(\lambda) = 0$. This is Newton's method on $g$, and it typically
+converges in a handful of iterations, and exactly (with no precision issues) when the inner problem can be solved with
+fractions or integers.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \begin{axis}[cpplot, width=10.5cm, height=6cm, xmin=0, xmax=5.2, ymin=-6, ymax=11, xlabel={$\lambda$},
+      ylabel={$A - \lambda B$}, xtick={0,1,2,2.5,3,4,5}, xticklabels={0,1,2,2.5,3,4,5}, ytick={-5,0,5,10},
+      legend pos=north east, extra y ticks={0}, extra y tick style={grid style={fgink!60, line width=0.6pt}}]
+    \addplot[fgline, line width=0.9pt, domain=0:5.2, samples=2] {6 - 3*x};
+    \addlegendentry{$A{=}6, B{=}3$}
+    \addplot[fgorange!90!black, line width=0.9pt, domain=0:5.2, samples=2] {10 - 4*x};
+    \addlegendentry{$A{=}10, B{=}4$}
+    \addplot[fggreen, line width=0.9pt, domain=0:5.2, samples=2] {4 - x};
+    \addlegendentry{$A{=}4, B{=}1$}
+    \addplot[fgblue, line width=2.4pt, opacity=0.35, domain=0:2, samples=2, forget plot] {10 - 4*x};
+    \addplot[fgblue, line width=2.4pt, opacity=0.35, domain=2:5.2, samples=2, forget plot] {4 - x};
+    \addplot[only marks, mark=*, mark size=2.4pt, fgverm, forget plot] coordinates {(2.5, 0) (4, 0)};
+    \draw[->, line width=0.9pt, draw=fgverm] (axis cs:2.5, 0.2) -- (axis cs:2.5, 1.45);
+    \node[font=\sffamily\scriptsize, text=fgverm, anchor=north] at (axis cs:2.5, -0.35) {$\lambda_1$};
+    \node[font=\sffamily\scriptsize, text=fgverm, anchor=north] at (axis cs:4, -0.35) {$\lambda^\ast = \lambda_2$};
+  \end{axis}
+\end{tikzpicture}
+\caption{Fractional programming with three choices. The best ratio $\lambda^\ast = 4$ is the root of the upper envelope $g$
+(thick blue). Dinkelbach's method starts at $\lambda_0 = 0$, where the best line is $10 - 4\lambda$; its root gives
+$\lambda_1 = 10/4$. At $\lambda_1$ the best line is $4 - \lambda$, whose root $\lambda_2 = 4$ is the answer.}
+\label{fig:dinkelbach}
+\end{figure}
+
+Fractional programming appears in disguise surprisingly often: the minimum mean cycle (weights $w_e - \lambda$, check for a
+negative cycle), the optimal ratio spanning tree (MST with weights $a_e - \lambda b_e$), the densest subgraph (maximum
+closure with weights shifted by $\lambda$), and ``best average'' problems of every kind.
+
+% ======================================================================================================================
+\section[Ternary search]{Ternary search on unimodal functions \hfill \gold}\label{sec:ternary}
+
+A function is \defn{unimodal} if it strictly increases up to its maximum and strictly decreases afterwards (or the reverse,
+for a minimum). To find the peak, evaluate $f$ at two interior points $m_1 < m_2$. If $f(m_1) < f(m_2)$, the peak cannot be to
+the left of $m_1$: there the function is still increasing, and a peak to the left would make $f$ decrease from $m_1$ to
+$m_2$. Otherwise the peak cannot be to the right of $m_2$. Either way a third of the interval is discarded
+(Figure~\ref{fig:ternary}), and after $k$ steps the interval has shrunk by $(2/3)^k$: 100 steps are plenty for doubles.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \begin{axis}[cpplot, width=10cm, height=5.2cm, xmin=0, xmax=10, ymin=0, ymax=11.5, xtick={0,10}, ytick=\empty,
+      xlabel={$x$}, ylabel={$f(x)$}, grid=none, clip=false]
+    \fill[fgline!25] (axis cs:0, 0) rectangle (axis cs:3.33, 11.5);
+    \addplot[fgblue, line width=1.6pt, domain=0.86:10, samples=100, mark=none] {10 - 0.35*(x-6.2)^2};
+    \addplot[only marks, mark=*, mark size=2.6pt, fgverm] coordinates {(3.33, 7.12) (6.67, 9.92)};
+    \draw[dashed, line width=0.7pt, draw=fgverm] (axis cs:3.33, 0) -- (axis cs:3.33, 7.12);
+    \draw[dashed, line width=0.7pt, draw=fgverm] (axis cs:6.67, 0) -- (axis cs:6.67, 9.92);
+    \node[font=\sffamily\scriptsize, text=fgverm, anchor=north] at (axis cs:3.33, -0.2) {$m_1$};
+    \node[font=\sffamily\scriptsize, text=fgverm, anchor=north] at (axis cs:6.67, -0.2) {$m_2$};
+    \node[font=\sffamily\scriptsize, text=fggray] at (axis cs:1.65, 10.5) {discarded};
+    \node[font=\sffamily\scriptsize, text=fgink, anchor=west] at (axis cs:7.1, 10.6) {$f(m_1) < f(m_2)$};
+  \end{axis}
+\end{tikzpicture}
+\caption{One step of ternary search for a maximum. Since $f(m_1) < f(m_2)$, the maximum cannot lie in $[0, m_1]$ (grey),
+which is discarded.}
+\label{fig:ternary}
+\end{figure}
+
+\paragraph{Integers: binary search on the slope.} For a function on integers, ternary search needs care near the end. A
+cleaner method uses the fact that a unimodal function's \emph{difference} $f(x+1) - f(x)$ changes sign once: binary search the
+first $x$ with $f(x) \ge f(x + 1)$ (for a maximum). This is an ordinary monotone predicate and costs $2\log(\text{range})$
+evaluations. The template contains both versions.
+
+\usetemplate{Ternary search (unimodal max)}{Ctrl+Alt+T, Q}{cpternary}
+
+\paragraph{Convexity is the real condition.} In practice the functions you ternary search are usually \emph{convex}:
+maxima of linear functions, sums of absolute values, sums of convex costs. A convex function is unimodal (or constant on its
+minimum), and sums and maxima of convex functions are convex, so convexity is easy to establish from the structure of the
+cost even when the function has no closed form.
+
+\begin{problem}{Weakness and Poorness (Codeforces 578C)}
+Given $n \le 2\cdot10^5$ integers $a_i$ with $|a_i| \le 10^4$, find a real $x$ minimising the \emph{weakness} of the sequence
+$a_1 - x, \ldots, a_n - x$: the largest absolute value of the sum of a segment.
+\solution For a fixed segment, its sum $S - Lx$ is linear in $x$, so its absolute value is convex; the weakness is the
+maximum of these convex functions, hence convex in $x$. Ternary search on $x$; for a given $x$, the largest segment sum and
+the smallest segment sum come from two runs of Kadane's algorithm (Chapter~\ref{ch:worked}), and the weakness is the larger
+of the maximum and minus the minimum.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vector<double> a(n);
+    cin >> a;
+    // the largest |sum| of a segment of a[i] - x: the larger of the best
+    // sum and minus the worst sum (Kadane); a convex function of x
+    auto weakness = [&](double x) {
+        double best = 0, worst = 0, hi = 0, lo = 0;
+        for (double v : a) {
+            hi = max(0.0, hi) + v - x;
+            lo = min(0.0, lo) + v - x;
+            best = max(best, hi);
+            worst = min(worst, lo);
+        }
+        return max(best, -worst);
+    };
+    double l = -1e4, r = 1e4;
+    rep(it, 100) {  // ternary search: each step keeps 2/3 of the range
+        double m1 = l + (r - l) / 3, m2 = r - (r - l) / 3;
+        if (weakness(m1) < weakness(m2)) r = m2;
+        else l = m1;
+    }
+    cout << fixed << setprecision(9) << weakness((l + r) / 2) << '\n';
+}
+\end{code}
+
+\begin{pitfall}[Plateaus break ternary search]
+If $f$ is constant on some interval other than its optimum, $f(m_1) = f(m_2)$ says nothing about where the optimum is, and
+ternary search may discard it. Ternary search is safe for strictly unimodal functions and for convex functions (whose only
+possible plateau is the set of minima). For functions of two variables, nested ternary search works when the function is
+convex in both jointly, but is only a heuristic otherwise.
+\end{pitfall}
+
+\begin{trick}[Golden-section search]
+Ternary search evaluates $f$ twice per step. If the two interior points divide the interval in the golden ratio,
+$m_1 = r - (r - l)/\varphi$ and $m_2 = l + (r - l)/\varphi$ with $\varphi = (1 + \sqrt 5)/2$, then after discarding one
+side, the surviving interior point is exactly one of the two points needed in the next step. So each step costs \emph{one}
+evaluation and shrinks the interval by $1/\varphi \approx 0.618$: about 1.4 times fewer evaluations than ternary search for the
+same precision, which matters when each evaluation is a full $\Oh{n}$ pass.
+\end{trick}
+
+% ======================================================================================================================
+\section[Parallel binary search]{Parallel binary search \hfill \ioi}\label{sec:parallel-bs}
+
+Suppose there are $q$ queries, each of which could be answered by its own binary search over the same sequence of $m$ events:
+``after how many events does query $i$ become true?''. Each check replays events from the beginning, so separate searches cost
+$\Oh{q \cdot m \log m}$ event operations. \defn{Parallel binary search} runs all $q$ searches together, in rounds. In each
+round, every unfinished query has a current range and a middle; sort the queries by their middles, replay the events
+\emph{once} from the start, and check each query at the moment the replay reaches its middle. After $\lceil \log_2 (m + 2)
+\rceil$ rounds every range has shrunk to one value, for a total of $\Oh{(m + q)\log m}$ event operations plus sorting.
+
+\begin{problem}{First moment of connectivity}
+$m$ edges are added one by one to a graph with $n$ vertices. For each of $q$ queries $(a, b)$, find the first time after which
+$a$ and $b$ are connected (0 if $a = b$, $-1$ if never). Limits: $n, m, q \le 2\cdot10^5$.
+\solution Connectivity only grows as edges are added, so each query's answer is a monotone boundary. In each round, sort the
+queries by their middles, rebuild a DSU from scratch and add the edges in order, checking each query when its middle is
+reached (Figure~\ref{fig:pbs}). Eighteen rounds of $m$ unions and $q$ checks answer everything in 0.4\,s.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\small
+\begin{tabular}{@{}l c c c c@{}}
+  \toprule
+  \thd{Query (answer)} & \thd{Round 1} & \thd{Round 2} & \thd{Round 3} & \thd{Round 4} \\
+  \midrule
+  $q_1$ (3) & $[0, 8]$, mid 4: \textcolor{fggreen}{yes} & $[0, 4]$, mid 2: \textcolor{fgverm}{no} &
+    $[3, 4]$, mid 3: \textcolor{fggreen}{yes} & $[3, 3]$ done \\
+  $q_2$ (6) & $[0, 8]$, mid 4: \textcolor{fgverm}{no} & $[5, 8]$, mid 6: \textcolor{fggreen}{yes} &
+    $[5, 6]$, mid 5: \textcolor{fgverm}{no} & $[6, 6]$ done \\
+  $q_3$ (1) & $[0, 8]$, mid 4: \textcolor{fggreen}{yes} & $[0, 4]$, mid 2: \textcolor{fggreen}{yes} &
+    $[0, 2]$, mid 1: \textcolor{fggreen}{yes} & $[0, 1]$, mid 0: \textcolor{fgverm}{no} \\
+  $q_4$ (never) & $[0, 8]$, mid 4: \textcolor{fgverm}{no} & $[5, 8]$, mid 6: \textcolor{fgverm}{no} &
+    $[7, 8]$, mid 7: \textcolor{fgverm}{no} & $[8, 8]$ done \\
+  \midrule
+  \thd{Replays} & edges 1--4 & edges 1--6 & edges 1--7 & none \\
+  \bottomrule
+\end{tabular}
+\caption{Parallel binary search with $m = 7$ events, so every range starts as $[0, 8]$ (8 means ``never''). In each round the
+queries are checked in order of their middles during a single replay of the events; ``yes'' means connected after
+\emph{mid} events. After round 4 every range is a single value; for $q_3$ it is $[1, 1]$.}
+\label{fig:pbs}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n, m, q;
+    cin >> n >> m >> q;
+    vector<pii> e(m), qs(q);
+    for (auto& [u, v] : e) cin >> u >> v;
+    for (auto& [a, b] : qs) cin >> a >> b;
+    vi lo(q, 0), hi(q, m + 1);  // answer in [lo, hi]; m + 1 means never
+    while (true) {
+        vector<pii> byMid;  // (mid, query) for the unfinished queries
+        rep(i, q) if (lo[i] < hi[i]) byMid.push_back({(lo[i] + hi[i]) / 2, i});
+        if (byMid.empty()) break;
+        sort(all(byMid));
+        DSU d(n + 1);  // one replay of the edges serves every query
+        int added = 0;
+        for (auto [mid, i] : byMid) {
+            while (added < mid) {  // add edges 1..mid
+                d.unite(e[added].first, e[added].second);
+                added++;
+            }
+            if (d.same(qs[i].first, qs[i].second)) hi[i] = mid;
+            else lo[i] = mid + 1;
+        }
+    }
+    rep(i, q) print(lo[i] > m ? -1 : lo[i]);
+}
+\end{code}
+
+The technique needs only two things: each query's answer is monotone in the number of events, and the events can be replayed
+from scratch cheaply. It shines when the events are hard to \emph{undo} (DSU unions, which cannot be rolled back without extra
+work) or when the per-query check needs a data structure that all queries can share. The classic example is Meteors
+(POI 2011): each of $k$ meteor showers adds rain to a range of sectors, and each country wants to know after which shower its
+sectors have collected enough; each round replays the showers with a Fenwick tree for range additions, for
+$\Oh{(n + k)\log k \log n}$ in total.
+
+\begin{summary}[Chapter summary]
+\begin{itemize}
+  \item Write binary search from an invariant: the answer stays in $[lo, hi]$, $mid = lo + (hi - lo)/2$, and one branch
+        moves $lo$ past $mid$.
+  \item \texttt{lower\_bound} is the first $\ge x$, \texttt{upper\_bound} the first $> x$; on a \texttt{set} use the member
+        functions.
+  \item Binary search on the answer turns optimisation into checking; the $k$-th smallest of an implicit set is the first
+        value with at least $k$ elements below it.
+  \item For real answers run a fixed number of iterations; fractional programming turns ratios into sums with weights
+        $a_i - \lambda b_i$, and Dinkelbach's method converges in a few steps.
+  \item Ternary search optimises unimodal (in practice, convex) functions; on integers, binary search the slope instead.
+  \item Parallel binary search answers many monotone queries with one replay of the events per round.
+\end{itemize}
+\end{summary}
+
+\begin{practice}
+\ppgroup{Binary search}
+\begin{pplist}
+  \item Concert Tickets
+  \item Sum of Two Values
+  \item Factory Machines
+  \item Array Division
+  \item Multiplication Table
+  \item Increasing Subsequence
+\end{pplist}
+\end{practice}

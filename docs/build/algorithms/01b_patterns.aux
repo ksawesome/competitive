@@ -1,0 +1,144 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\@writefile{toc}{\contentsline {chapter}{\numberline {2}Problem-Solving Patterns}{14}{chapter.2}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{ch:patterns}{{2}{14}{Problem-Solving Patterns}{chapter.2}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.1}Contribution: count each piece once}{14}{section.2.1}\protected@file@percent }
+\newlabel{sec:contribution}{{2.1}{14}{Contribution: count each piece once}{section.2.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2.1}{\ignorespaces The contribution of one element. It rules the shaded window, which stops just before the nearest smaller elements on each side (green). Summing $a_i \cdot (\text  {choices of start}) \cdot (\text  {choices of end})$ over all $i$ counts every subarray exactly once.}}{15}{figure.caption.31}\protected@file@percent }
+\newlabel{fig:contribution}{{2.1}{15}{The contribution of one element. It rules the shaded window, which stops just before the nearest smaller elements on each side (green). Summing $a_i \cdot (\text {choices of start}) \cdot (\text {choices of end})$ over all $i$ counts every subarray exactly once}{figure.caption.31}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.2}Fix one thing}{16}{section.2.2}\protected@file@percent }
+\newlabel{sec:fixone}{{2.2}{16}{Fix one thing}{section.2.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2.2}{\ignorespaces Fixing the middle element makes the two sides independent: $j$ contributes (smaller on the left) $\times $ (larger on the right).}}{16}{figure.caption.32}\protected@file@percent }
+\newlabel{fig:fixmiddle}{{2.2}{16}{Fixing the middle element makes the two sides independent: $j$ contributes (smaller on the left) $\times $ (larger on the right)}{figure.caption.32}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.3}Complementary counting}{17}{section.2.3}\protected@file@percent }
+\newlabel{sec:complement}{{2.3}{17}{Complementary counting}{section.2.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2.3}{\ignorespaces Counting the complement: subarrays that avoid the large elements (orange) live inside the maximal runs of small elements (blue), and a run of length $\ell $ holds $\ell (\ell +1)/2$ of them.}}{17}{figure.caption.33}\protected@file@percent }
+\newlabel{fig:complement}{{2.3}{17}{Counting the complement: subarrays that avoid the large elements (orange) live inside the maximal runs of small elements (blue), and a run of length $\ell $ holds $\ell (\ell +1)/2$ of them}{figure.caption.33}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.4}Reverse time and go offline}{18}{section.2.4}\protected@file@percent }
+\newlabel{sec:reverse}{{2.4}{18}{Reverse time and go offline}{section.2.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2.4}{\ignorespaces Forwards, the network loses edges; backwards, it gains them. Starting from the last state and adding the edges back in reverse order visits the same states, so the component counts can be read off the DSU. Output: \texttt  {1 1 2}.}}{18}{figure.caption.34}\protected@file@percent }
+\newlabel{fig:reverse}{{2.4}{18}{Forwards, the network loses edges; backwards, it gains them. Starting from the last state and adding the edges back in reverse order visits the same states, so the component counts can be read off the DSU. Output: \texttt {1 1 2}}{figure.caption.34}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.5}Events and sweeps}{19}{section.2.5}\protected@file@percent }
+\newlabel{sec:events}{{2.5}{19}{Events and sweeps}{section.2.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2.5}{\ignorespaces Four customers (bars) and the number present over time (the step function below). Each arrival lifts the step by one and each departure lowers it; the maximum, 3, is reached between times 4 and 5.}}{20}{figure.caption.35}\protected@file@percent }
+\newlabel{fig:sweep}{{2.5}{20}{Four customers (bars) and the number present over time (the step function below). Each arrival lifts the step by one and each departure lowers it; the maximum, 3, is reached between times 4 and 5}{figure.caption.35}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.6}Invariants and colourings}{20}{section.2.6}\protected@file@percent }
+\newlabel{sec:invariants}{{2.6}{20}{Invariants and colourings}{section.2.6}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2.6}{\ignorespaces A colouring invariant. The count ``dark squares covered minus light squares covered'' is zero for any set of dominoes, but it would have to be $-2$ here.}}{21}{figure.caption.36}\protected@file@percent }
+\newlabel{fig:chessboard}{{2.6}{21}{A colouring invariant. The count ``dark squares covered minus light squares covered'' is zero for any set of dominoes, but it would have to be $-2$ here}{figure.caption.36}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.7}Monovariants and termination}{21}{section.2.7}\protected@file@percent }
+\newlabel{sec:monovariant}{{2.7}{21}{Monovariants and termination}{section.2.7}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.8}Pigeonhole}{22}{section.2.8}\protected@file@percent }
+\newlabel{sec:pigeonhole}{{2.8}{22}{Pigeonhole}{section.2.8}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2.7}{\ignorespaces $n = 5$: six prefix sums and five possible remainders, so some box must hold two. Box 3 holds $P_1, P_3$ (the subarray $1, 4$); box 4 holds $P_2, P_4, P_5$ (the subarrays $4, 1$ and $4, 1, 5$ and $5$). In total $\binom  22 + \binom  32 = 4$ subarrays have a sum divisible by 5.}}{22}{figure.caption.37}\protected@file@percent }
+\newlabel{fig:pigeonhole}{{2.7}{22}{$n = 5$: six prefix sums and five possible remainders, so some box must hold two. Box 3 holds $P_1, P_3$ (the subarray $1, 4$); box 4 holds $P_2, P_4, P_5$ (the subarrays $4, 1$ and $4, 1, 5$ and $5$). In total $\binom 22 + \binom 32 = 4$ subarrays have a sum divisible by 5}{figure.caption.37}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.9}The extremal principle}{23}{section.2.9}\protected@file@percent }
+\newlabel{sec:extremal}{{2.9}{23}{The extremal principle}{section.2.9}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2.8}{\ignorespaces The extremal principle: the endpoints of a longest path cannot have any other neighbour.}}{23}{figure.caption.38}\protected@file@percent }
+\newlabel{fig:extremal}{{2.8}{23}{The extremal principle: the endpoints of a longest path cannot have any other neighbour}{figure.caption.38}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.10}Symmetry and reflection}{23}{section.2.10}\protected@file@percent }
+\newlabel{sec:symmetry}{{2.10}{23}{Symmetry and reflection}{section.2.10}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2.9}{\ignorespaces The reflection principle. Reflecting the tail of a bad path across $y = x + 1$ moves its endpoint from $(n, n)$ to $(n - 1, n + 1)$, which turns ``count the bad paths'' into a single binomial coefficient.}}{24}{figure.caption.39}\protected@file@percent }
+\newlabel{fig:reflection}{{2.9}{24}{The reflection principle. Reflecting the tail of a bad path across $y = x + 1$ moves its endpoint from $(n, n)$ to $(n - 1, n + 1)$, which turns ``count the bad paths'' into a single binomial coefficient}{figure.caption.39}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.11}When the answer is small}{24}{section.2.11}\protected@file@percent }
+\newlabel{sec:small-answer}{{2.11}{24}{When the answer is small}{section.2.11}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2.10}{\ignorespaces Subarray gcds of $12, 18, 6, 9, 3$, one row per right end. Colours mark equal values; every row is a short chain of divisors, which is what makes the $\ensuremath  {\mathcal  {O}(n \log A)}$ algorithm possible.}}{25}{figure.caption.40}\protected@file@percent }
+\newlabel{fig:gcdchain}{{2.10}{25}{Subarray gcds of $12, 18, 6, 9, 3$, one row per right end. Colours mark equal values; every row is a short chain of divisors, which is what makes the $\Oh {n \log A}$ algorithm possible}{figure.caption.40}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.12}Heavy and light}{25}{section.2.12}\protected@file@percent }
+\newlabel{sec:heavylight}{{2.12}{25}{Heavy and light}{section.2.12}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2.11}{\ignorespaces The square-root split. Few objects can be large (their sizes add up to at most $S$), so they can afford expensive precomputation; the many small ones are cheap to handle directly.}}{26}{figure.caption.41}\protected@file@percent }
+\newlabel{fig:heavylight}{{2.11}{26}{The square-root split. Few objects can be large (their sizes add up to at most $S$), so they can afford expensive precomputation; the many small ones are cheap to handle directly}{figure.caption.41}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.13}Differences instead of values}{26}{section.2.13}\protected@file@percent }
+\newlabel{sec:differences}{{2.13}{26}{Differences instead of values}{section.2.13}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2.12}{\ignorespaces Target $2, 4, 1, 3, 3, 0$ cut into horizontal layers. The number of runs equals the sum of the positive differences $b_i - b_{i-1}$, and no sequence of range increments can do better.}}{27}{figure.caption.42}\protected@file@percent }
+\newlabel{fig:differences}{{2.12}{27}{Target $2, 4, 1, 3, 3, 0$ cut into horizontal layers. The number of runs equals the sum of the positive differences $b_i - b_{i-1}$, and no sequence of range increments can do better}{figure.caption.42}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.14}Reductions to known problems}{27}{section.2.14}\protected@file@percent }
+\newlabel{sec:reductions}{{2.14}{27}{Reductions to known problems}{section.2.14}{}}
+\@setckpt{algorithms/01b_patterns}{
+\setcounter{page}{29}
+\setcounter{equation}{0}
+\setcounter{enumi}{3}
+\setcounter{enumii}{0}
+\setcounter{enumiii}{0}
+\setcounter{enumiv}{0}
+\setcounter{footnote}{0}
+\setcounter{mpfootnote}{0}
+\setcounter{part}{1}
+\setcounter{chapter}{2}
+\setcounter{section}{14}
+\setcounter{subsection}{0}
+\setcounter{subsubsection}{0}
+\setcounter{paragraph}{0}
+\setcounter{subparagraph}{0}
+\setcounter{figure}{12}
+\setcounter{table}{0}
+\setcounter{parentequation}{0}
+\setcounter{lstnumber}{13}
+\setcounter{tcbbreakpart}{1}
+\setcounter{tcblayer}{0}
+\setcounter{tcolorbox@number}{89}
+\setcounter{tcblisting}{9}
+\setcounter{tcbrastercolumn}{1}
+\setcounter{tcbrasterrow}{1}
+\setcounter{tcbrasternum}{1}
+\setcounter{tcbraster}{0}
+\setcounter{cpsegfig}{0}
+\setcounter{LT@tables}{0}
+\setcounter{LT@chunks}{0}
+\setcounter{nlinenum}{0}
+\setcounter{ALG@line}{0}
+\setcounter{ALG@rem}{0}
+\setcounter{ALG@nested}{0}
+\setcounter{ALG@Lnr}{2}
+\setcounter{ALG@blocknr}{15}
+\setcounter{ALG@storecount}{0}
+\setcounter{ALG@tmpcounter}{0}
+\setcounter{algpx@codeBoxCount}{0}
+\setcounter{algpx@nestedCBoxCount}{0}
+\setcounter{algpx@startedBoxesCount}{0}
+\setcounter{algpx@endedBoxesCount}{0}
+\setcounter{algpx@nestedBoxedStringCount}{0}
+\setcounter{algpx@nestedBoxedStringMaxCount}{0}
+\setcounter{algpx@indentCount}{0}
+\setcounter{algpx@lastIndentEnded}{0}
+\setcounter{algpx@pageCount}{0}
+\setcounter{algpx@tmpCount}{0}
+\setcounter{caption@flags}{2}
+\setcounter{continuedfloat}{0}
+\setcounter{float@type}{16}
+\setcounter{section@level}{0}
+\setcounter{Item}{3}
+\setcounter{Hfootnote}{0}
+\setcounter{bookmark@seq@number}{0}
+\setcounter{algpx@indentEndPage-0@totc}{0}
+\setcounter{algpx@indentEndPage-1@totc}{0}
+\setcounter{algpx@indentEndPage-2@totc}{0}
+\setcounter{algpx@indentEndPage-3@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-2@totc}{3}
+\setcounter{algpx@indentEndCoordIndex-0@totc}{3}
+\setcounter{algpx@indentEndPage-4@totc}{0}
+\setcounter{algpx@indentEndPage-5@totc}{0}
+\setcounter{algpx@indentEndPage-6@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-4@totc}{6}
+\setcounter{algpx@indentEndPage-7@totc}{0}
+\setcounter{algpx@indentEndPage-8@totc}{0}
+\setcounter{algpx@indentEndPage-9@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-8@totc}{9}
+\setcounter{algpx@indentEndPage-10@totc}{0}
+\setcounter{algpx@indentEndPage-11@totc}{0}
+\setcounter{algpx@indentEndPage-12@totc}{0}
+\setcounter{algpx@indentEndPage-13@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-12@totc}{13}
+\setcounter{algpx@indentEndCoordIndex-10@totc}{13}
+\setcounter{algpx@indentEndPage-14@totc}{0}
+\setcounter{algpx@indentEndPage-15@totc}{0}
+\setcounter{algpx@indentEndPage-16@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-15@totc}{16}
+\setcounter{algpx@indentEndPage-17@totc}{0}
+\setcounter{algpx@indentEndPage-18@totc}{1}
+\setcounter{algpx@indentEndPage-19@totc}{1}
+\setcounter{algpx@indentEndCoordIndex-18@totc}{19}
+\setcounter{lstlisting}{0}
+}

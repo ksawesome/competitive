@@ -1,0 +1,52 @@
+\chapter*{How to Read This Book}
+\addcontentsline{toc}{chapter}{How to Read This Book}
+\markboth{How to Read This Book}{}
+
+This handbook teaches competitive programming from the first loop to the techniques that decide olympiad
+medals. It follows the USACO Guide syllabus (Bronze, Silver, Gold, Platinum, Advanced) and goes beyond it
+wherever contests do. Every topic is presented the same way:
+
+\begin{itemize}
+  \item \textbf{What it is}, explained from scratch with a picture;
+  \item \textbf{how to recognize} a problem that needs it (the part most books skip);
+  \item the \textbf{key ideas, facts and complexity}, with proofs sketched where they build intuition;
+  \item the \textbf{pitfalls} that cost people contests;
+  \item \textbf{pro tricks}: less-known ideas that experienced competitors rely on;
+  \item and the \textbf{template} in your library that implements it, with its keyboard shortcut.
+\end{itemize}
+
+\section*{Difficulty badges}
+
+Each section carries a badge showing roughly where it sits:
+
+\begin{center}
+\begin{tabular}{ll}
+\bronze & first steps: loops, simulation, brute force, simple math \\
+\silver & sorting, binary search, prefix sums, basic graphs, greedy \\
+\gold & DP, shortest paths, DSU, segment trees, number theory \\
+\plat & advanced data structures, tree decompositions, DP optimizations \\
+\ioi & beyond Platinum: flows, suffix structures, FFT, exotic tricks \\
+\end{tabular}
+\end{center}
+
+If you are starting out, read Parts I and II in order and skim the rest to know what exists. If you are
+experienced, jump to any chapter: they are self-contained, and the \emph{Pro trick} boxes are where most of
+the non-obvious material lives. Part X, \emph{Practice}, solves seventeen classic problems step by step, from
+reading the limits to tested code; try each one yourself before reading its solution.
+
+\section*{Box legend}
+
+\begin{idea}The central insight that makes the technique work.\end{idea}
+\begin{recognize}Signals in a problem statement that point to this technique.\end{recognize}
+\begin{pitfall}A mistake that produces wrong answers, TLE or runtime errors.\end{pitfall}
+\begin{tip}Practical advice for writing or debugging the code.\end{tip}
+\begin{trick}An advanced idea, often the difference between a good and a great solution.\end{trick}
+\begin{fact}A useful number, identity or theorem to remember.\end{fact}
+\usetemplate{Name of the template}{Ctrl+Alt+T, key}{cpprefix}
+
+\section*{Conventions}
+
+Arrays and vertices are 0-indexed; ranges are half-open, $[l, r)$ meaning $l \le i < r$, unless stated otherwise.
+$n$ is the input size, $m$ the number of edges, $q$ the number of queries, $\log$ is base 2. Code is C++17 and
+assumes your template (\cc{#define int long long}, \cc{ll}, \cc{vi}, \cc{all}, \ldots). The companion
+\emph{User Guide} (GUIDE.pdf) explains the template, the library shortcuts and the tools.

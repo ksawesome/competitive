@@ -1,0 +1,750 @@
+\chapter{Shortest Paths}\label{ch:shortest}
+
+Finding the cheapest way from one place to another is the most common graph question in contests, and it appears in many
+disguises: the fewest moves in a puzzle, the cheapest schedule, the latest start time consistent with a set of deadlines.
+There is no single best algorithm. The right one depends on the edge weights (all equal, zero or one, non-negative,
+arbitrary), on whether the graph has cycles, and on whether distances are needed from one source or between all pairs. This
+chapter develops each algorithm from the single operation they share, relaxation, proves why it works, and shows the
+modelling tricks that make it apply: states that remember extra information, reversed graphs, negated weights and systems
+of inequalities.
+
+\begin{chapterintro}{\silver\ \gold\ \plat}{Chapter~\ref{ch:graphs} (BFS and DFS) and Section~\ref{sec:heaps} (heaps).}
+  \item choose the right shortest-path algorithm from the weights and the question;
+  \item run Dijkstra's algorithm, prove it, and extend it to states, counts and path information;
+  \item handle 0--1 weights with a deque, and negative weights with Bellman--Ford;
+  \item find and print negative cycles, and detect unbounded longest paths;
+  \item solve systems of difference constraints as shortest-path problems;
+  \item compute all-pairs distances with Floyd--Warshall, and shortest and longest paths in DAGs.
+\end{chapterintro}
+
+% ======================================================================================================================
+\section[Choosing the algorithm]{Choosing the algorithm \hfill \silver}\label{sec:sp-choose}
+
+Figure~\ref{fig:spflow} is the decision procedure, and Table~\ref{tab:spalgos} the reference. Two questions settle almost
+every case: what the weights look like, and whether the graph is a DAG.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[bus/.style={line width=0.8pt, draw=fgink!70}]
+  \node[fq=3.6cm] (w) at (5.6, 0) {What are the edge weights?};
+  \node[fend=1.9cm] (bfs) at (0, -2.0) {BFS};
+  \node[fend=1.9cm] (zo) at (2.5, -2.0) {0--1 BFS};
+  \node[fq=3.0cm] (nn) at (5.9, -2.0) {One source or all pairs?};
+  \node[fq=3.0cm] (neg) at (11.55, -2.0) {Is the graph a DAG?};
+  \node[fend=2.2cm] (dij) at (4.6, -4.3) {Dijkstra};
+  \node[fend=2.2cm] (fw) at (7.2, -4.3) {Floyd--Warshall ($n \le 500$)};
+  \node[fend=2.2cm] (dag) at (10.2, -4.3) {DP in topological order};
+  \node[fend=2.2cm] (bf) at (12.9, -4.3) {Bellman--Ford};
+  \draw[bus] (w.south) -- (5.6, -0.95) (0, -0.95) -- (11.55, -0.95);
+  \draw[farr] (0, -0.95) -- node[fyes, pos=0.4] {all equal} (bfs.north);
+  \draw[farr] (2.5, -0.95) -- node[fyes, pos=0.4] {0 or 1} (zo.north);
+  \draw[farr] (5.9, -0.95) -- node[fyes, pos=0.4] {$\ge 0$} (nn.north);
+  \draw[farr] (11.55, -0.95) -- node[fno, pos=0.4] {some $< 0$} (neg.north);
+  \draw[bus] (nn.south) -- (5.9, -3.2) (4.6, -3.2) -- (7.2, -3.2);
+  \draw[farr] (4.6, -3.2) -- node[fyes, pos=0.35] {one} (dij.north);
+  \draw[farr] (7.2, -3.2) -- node[fyes, pos=0.35] {all pairs} (fw.north);
+  \draw[bus] (neg.south) -- (11.55, -3.2) (10.2, -3.2) -- (12.9, -3.2);
+  \draw[farr] (10.2, -3.2) -- node[fyes, pos=0.35] {yes} (dag.north);
+  \draw[farr] (12.9, -3.2) -- node[fno, pos=0.35] {no} (bf.north);
+\end{tikzpicture}
+\caption{Which shortest-path algorithm? A DAG allows any weights (and even longest paths) with a simple DP; negative weights
+in a graph with cycles need Bellman--Ford, or Floyd--Warshall for all pairs.}
+\label{fig:spflow}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}P{3.9cm} P{3.3cm} l P{3.8cm}@{}}
+  \toprule
+  \thd{Weights and question} & \thd{Algorithm} & \thd{Time} & \thd{Remarks} \\
+  \midrule
+  all equal & BFS & $\Oh{n + m}$ & Chapter~\ref{ch:graphs} \\
+  0 or 1 & 0--1 BFS & $\Oh{n + m}$ & deque instead of queue \\
+  non-negative, one source & Dijkstra & $\Oh{(n + m)\log n}$ & the workhorse \\
+  any, one source & Bellman--Ford & $\Oh{nm}$ & detects negative cycles \\
+  any, all pairs & Floyd--Warshall & $\Oh{n^3}$ & three lines; $n \le 500$ \\
+  any, DAG & DP in topological order & $\Oh{n + m}$ & longest paths too \\
+  non-negative, all pairs, sparse & $n \times$ Dijkstra & $\Oh{n (n + m)\log n}$ & Johnson if some are negative \\
+  \bottomrule
+\end{tabular}
+\caption{Shortest-path algorithms at a glance.}
+\label{tab:spalgos}
+\end{table}
+
+% ======================================================================================================================
+\section[Relaxation]{Relaxation and shortest-path trees \hfill \silver}\label{sec:relax}
+
+Every algorithm in this chapter maintains tentative distances $d(v)$, upper bounds on the true distances $\delta(v)$, with
+$d(s) = 0$ and $d(v) = \infty$ elsewhere at the start. The only way they ever change is by \defn{relaxation}: for an edge
+$u \to v$ of weight $w$,
+\[
+  \text{if } d(u) + w < d(v) \text{ then } d(v) \gets d(u) + w, \ \ \mathit{par}(v) \gets u .
+\]
+Relaxation keeps every $d(v)$ an upper bound, because $d(u) + w$ is the length of a real walk to $v$. At the end, when no
+edge can be relaxed, every edge satisfies the \emph{triangle inequality} $d(v) \le d(u) + w$, and the distances are exact:
+along any shortest path $s = v_0, v_1, \ldots, v_k$, induction gives $d(v_i) \le \delta(v_i)$. The algorithms differ only in
+the \emph{order} in which they relax edges, and that order is what they need to be both correct and fast.
+
+The parent pointers form a \defn{shortest-path tree}: following $\mathit{par}$ from any vertex back to $s$ spells out a
+shortest path, in reverse. So storing one parent per vertex is all it takes to print paths, and it works because shortest
+paths have \emph{optimal substructure}: every prefix of a shortest path is itself a shortest path.
+
+% ======================================================================================================================
+\section[Dijkstra's algorithm]{Dijkstra's algorithm \hfill \gold}\label{sec:dijkstra}
+
+\defn{Dijkstra's algorithm} handles non-negative weights. It repeatedly takes the vertex with the smallest tentative distance
+that is not yet \emph{final}, declares it final, and relaxes its outgoing edges (Figure~\ref{fig:dijkstra}). A priority queue
+of (distance, vertex) pairs finds that vertex; instead of decreasing keys, the implementation pushes a new pair whenever a
+distance improves and skips popped pairs whose distance is out of date (\emph{lazy deletion}).
+
+\begin{figure}[htbp]
+\centering
+\newcommand{\djpanel}[2]{%
+\begin{tikzpicture}[x=0.86cm, y=0.86cm]
+  \coordinate (S) at (0, 1); \coordinate (A) at (1.3, 2); \coordinate (B) at (1.3, 0);
+  \coordinate (C) at (2.8, 2); \coordinate (D) at (2.8, 0); \coordinate (T) at (4.1, 1);
+  \foreach \ea/\eb in {S/A, S/B, A/B, A/C, B/C, B/D, C/T, D/T} \draw[ed] (\ea) -- (\eb);
+  \foreach \ea/\eb in {#2} \draw[bed] (\ea) -- (\eb);
+  \foreach \ea/\eb/\w in {S/A/2, S/B/7, A/B/3, A/C/4, B/C/1, B/D/4, C/T/5, D/T/1}
+    \node[wl, font=\sffamily\tiny] at ($(\ea)!0.5!(\eb)$) {\w};
+  \foreach \vn/\sy/\dv in {#1} \node[vtxs, \sy] at (\vn) {\dv};
+  \foreach \vn/\pos in {S/left, A/above, B/below, C/above, D/below, T/right}
+    \node[font=\sffamily\tiny\bfseries, text=fggray, \pos=5pt] at (\vn) {\vn};
+\end{tikzpicture}}
+\begin{filmstrip}[3]
+  \begin{stepbox}{1. start: $d(S) = 0$}
+    \djpanel{S/cool/0, A/dim/$\infty$, B/dim/$\infty$, C/dim/$\infty$, D/dim/$\infty$, T/dim/$\infty$}{S/S}
+  \end{stepbox}
+  \begin{stepbox}{2. finalise S (0), relax}
+    \djpanel{S/hot/0, A/cool/2, B/cool/7, C/dim/$\infty$, D/dim/$\infty$, T/dim/$\infty$}{S/A, S/B}
+  \end{stepbox}
+  \begin{stepbox}{3. finalise A (2): B improves to 5}
+    \djpanel{S/good/0, A/hot/2, B/cool/5, C/cool/6, D/dim/$\infty$, T/dim/$\infty$}{S/A, A/B, A/C}
+  \end{stepbox}
+  \begin{stepbox}{4. finalise B (5)}
+    \djpanel{S/good/0, A/good/2, B/hot/5, C/cool/6, D/cool/9, T/dim/$\infty$}{S/A, A/B, A/C, B/D}
+  \end{stepbox}
+  \begin{stepbox}{5. finalise C (6): T gets 11}
+    \djpanel{S/good/0, A/good/2, B/good/5, C/hot/6, D/cool/9, T/cool/11}{S/A, A/B, A/C, B/D, C/T}
+  \end{stepbox}
+  \begin{stepbox}{6. finalise D (9): T improves to 10}
+    \djpanel{S/good/0, A/good/2, B/good/5, C/good/6, D/hot/9, T/cool/10}{S/A, A/B, A/C, B/D, D/T}
+  \end{stepbox}
+\end{filmstrip}
+\caption{Dijkstra's algorithm from S. Green vertices are final, red is the vertex being finalised, blue ones are in the
+queue with a tentative distance, and thick blue edges are the current parent pointers. The last step finalises T with
+distance 10, and the parent pointers form the shortest-path tree.}
+\label{fig:dijkstra}
+\end{figure}
+
+\begin{pseudo}{Dijkstra}
+\begin{algorithmic}[1]
+\State $d(s) \gets 0$, $d(v) \gets \infty$ for $v \ne s$; push $(0, s)$
+\While{the priority queue is not empty}
+  \State pop the pair $(x, u)$ with the smallest $x$
+  \If{$x \ne d(u)$} \textbf{continue} \Comment{an outdated pair}
+  \EndIf
+  \ForAll{edges $u \to v$ of weight $w$}
+    \If{$d(u) + w < d(v)$} \State $d(v) \gets d(u) + w$; push $(d(v), v)$ \EndIf
+  \EndFor
+\EndWhile
+\end{algorithmic}
+\end{pseudo}
+
+\emph{Why it is correct.} Claim: when $u$ is popped with $x = d(u)$, $d(u) = \delta(u)$. Suppose not, and let $u$ be the first
+vertex finalised with $d(u) > \delta(u)$. Take a shortest path from $s$ to $u$, and let $y$ be its first vertex that is not
+final, with predecessor $x'$ on the path (which is final, hence correct). When $x'$ was finalised, the edge $x' \to y$ was
+relaxed, so $d(y) = \delta(y)$. Since weights are non-negative and $y$ lies on the path to $u$, $\delta(y) \le \delta(u) <
+d(u)$, so $d(y) < d(u)$, and the queue would have popped $y$ before $u$: a contradiction. This is exactly where
+non-negativity is used, and why a single negative edge can break the algorithm.
+
+\emph{Complexity.} Every edge pushes at most one pair, so the queue sees at most $m + 1$ pushes and pops: $\Oh{(n + m)\log m}
+= \Oh{(n + m) \log n}$. On dense graphs ($m \approx n^2$) the $\Oh{n^2}$ version without a heap, which scans all vertices for
+the minimum, is faster.
+
+\begin{code}
+vector<ll> dist(n, LLONG_MAX);
+minpq<pll> pq;  // (distance, vertex)
+dist[src] = 0;
+pq.push({0, src});
+while (!pq.empty()) {
+    auto [d, u] = pq.top();
+    pq.pop();
+    if (d != dist[u]) continue;  // an outdated entry ("lazy deletion")
+    for (auto [v, w] : adj[u])
+        if (d + w < dist[v]) dist[v] = d + w, pq.push({dist[v], v});
+}
+\end{code}
+
+\usetemplate{Dijkstra}{Ctrl+Alt+T, J}{cpdijkstra}
+
+The complete program for the basic problem is the worked problem Shortest Routes I (Chapter~\ref{ch:worked}). The two problems
+below show the two most important extensions: richer states, and information gathered along the shortest paths.
+
+\subsection{Dijkstra on states}
+
+\begin{problem}{Flight Discount (CSES)}
+Find the cheapest route from city 1 to city $n$ ($n \le 10^5$, $m \le 2\cdot10^5$ one-way flights) when exactly one flight may
+be taken at half price (rounded down).
+\solution The cost of the rest of the trip depends on the city \emph{and} on whether the coupon is still available. So the
+search runs on the graph of states $(v, \mathit{used})$, which has $2n$ vertices: a flight $u \to v$ of price $w$ becomes the
+edges $(u, 0) \to (v, 0)$ and $(u, 1) \to (v, 1)$ of weight $w$, plus the coupon edge $(u, 0) \to (v, 1)$ of weight
+$\lfloor w/2 \rfloor$. One Dijkstra on this layered graph answers the question.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    vector<vector<pll>> adj(n + 1);
+    rep(i, m) {
+        ll a, b, c;
+        cin >> a >> b >> c;
+        adj[a].push_back({b, c});
+    }
+    // state (v, used): at city v, the coupon already used (1) or not (0)
+    vector<array<ll, 2>> dist(n + 1, {INF, INF});
+    minpq<tuple<ll, int, int>> pq;  // (distance, city, used)
+    dist[1][0] = 0;
+    pq.push({0, 1, 0});
+    while (!pq.empty()) {
+        auto [d, u, used] = pq.top();
+        pq.pop();
+        if (d != dist[u][used]) continue;  // an outdated entry
+        for (auto [v, w] : adj[u]) {
+            if (d + w < dist[v][used]) {  // pay the full price
+                dist[v][used] = d + w;
+                pq.push({dist[v][used], v, used});
+            }
+            if (!used && d + w / 2 < dist[v][1]) {  // use the coupon now
+                dist[v][1] = d + w / 2;
+                pq.push({dist[v][1], v, 1});
+            }
+        }
+    }
+    print(min(dist[n][0], dist[n][1]));
+}
+\end{code}
+
+\begin{trick}[Layered graphs]
+``At most $k$ free edges'', ``at most $k$ stops'', ``the parity of the number of steps'', ``which key you carry'': whenever the
+future depends on a small amount of extra information, make it part of the vertex. The graph grows by that factor ($k + 1$
+layers, 2 parities, $2^{\text{keys}}$ key sets), and the algorithm stays the same. The alternative for Flight Discount, which
+avoids the layered graph, is also worth knowing: run Dijkstra from 1 and, on the reversed graph, from $n$; the answer is the
+minimum over all flights $u \to v$ of $d_1(u) + \lfloor w/2\rfloor + d_n(v)$.
+\end{trick}
+
+\subsection{Counting and comparing shortest paths}
+
+\begin{problem}{Investigation (CSES)}
+For the cheapest routes from city 1 to city $n$, find their price, how many there are (modulo $10^9 + 7$), and the fewest and
+the most flights among them. All prices are positive.
+\solution Dijkstra finalises vertices in order of distance, and with positive weights every predecessor of $v$ on a cheapest
+route is finalised before $v$. So when a vertex $u$ is finalised its counts are complete and can be pushed along its edges:
+a strictly cheaper route to $v$ overwrites $v$'s information, an equally cheap one merges into it.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    vector<vector<pll>> adj(n + 1);
+    rep(i, m) {
+        ll a, b, c;
+        cin >> a >> b >> c;
+        adj[a].push_back({b, c});
+    }
+    vector<ll> dist(n + 1, LLONG_MAX), ways(n + 1, 0);  // ways mod MOD
+    vi fewest(n + 1, 0), most(n + 1, 0);  // flights on the cheapest routes
+    minpq<pll> pq;
+    dist[1] = 0, ways[1] = 1;
+    pq.push({0, 1});
+    while (!pq.empty()) {
+        auto [d, u] = pq.top();
+        pq.pop();
+        if (d != dist[u]) continue;
+        // u is final: its counts are complete, so push them forward
+        for (auto [v, w] : adj[u]) {
+            if (d + w < dist[v]) {  // a strictly cheaper route: start over
+                dist[v] = d + w;
+                ways[v] = ways[u];
+                fewest[v] = fewest[u] + 1, most[v] = most[u] + 1;
+                pq.push({dist[v], v});
+            } else if (d + w == dist[v]) {  // another cheapest route
+                ways[v] = (ways[v] + ways[u]) % MOD;
+                fewest[v] = min(fewest[v], fewest[u] + 1);
+                most[v] = max(most[v], most[u] + 1);
+            }
+        }
+    }
+    print(dist[n], ways[n], fewest[n], most[n]);
+}
+\end{code}
+
+\begin{trick}[More Dijkstra variations]
+\begin{itemize}
+  \item \textbf{Which edges lie on some shortest path?} Run Dijkstra from $s$ and, on the reversed graph, from $t$; the edge
+        $u \to v$ of weight $w$ lies on a shortest path exactly when $d_s(u) + w + d_t(v) = d_s(t)$.
+  \item \textbf{Minimax paths} (minimise the largest edge on the path): replace $d(u) + w$ by $\max(d(u), w)$; the same proof
+        works. Kruskal gives the same answers for all pairs at once (Chapter~\ref{ch:dsu}).
+  \item \textbf{The $k$ shortest walks}: let every vertex be popped up to $k$ times, keeping a counter per vertex; the $k$-th
+        pop of $t$ is the $k$-th shortest walk (CSES Flight Routes).
+  \item \textbf{Multiple sources}: push them all with distance 0, exactly as in multi-source BFS.
+  \item \textbf{Distances to one target}: run Dijkstra from the target on the reversed graph.
+\end{itemize}
+\end{trick}
+
+\begin{pitfall}[The classic Dijkstra bugs]
+Forgetting the \cc{if (d != dist[u]) continue;} line keeps the answer correct but can make the algorithm quadratic.
+Declaring \cc{priority_queue<pll>} without \cc{greater} (or \cc{minpq}) turns it into a max-heap, which silently explores in
+the wrong order. Using \cc{int} distances overflows with $10^5$ edges of weight $10^9$. And with a negative edge, the algorithm
+is simply wrong, even when there is no negative cycle.
+\end{pitfall}
+
+% ======================================================================================================================
+\section[0--1 BFS]{0--1 BFS \hfill \gold}\label{sec:01bfs}
+
+When every weight is 0 or 1, Dijkstra's priority queue can be replaced by a deque. Relaxing along a 0-edge produces a vertex
+with the \emph{same} distance as the current one, so it goes to the front; a 1-edge produces the next distance, so it goes to the
+back. The deque then always holds tentative distances $d$ at the front and $d + 1$ at the back (Figure~\ref{fig:01bfs}), which is
+exactly the order Dijkstra would use, at $\Oh{1}$ per operation: $\Oh{n + m}$ in total.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \arrs{Q}{0}{0}{4/cool, 4/cool, 4/cool, 5/warn, 5/warn}
+  \node[blbl, anchor=east] at (-0.3, 0) {deque};
+  \node[lbl, anchor=south] at ($(Q-1.north)+(0,0.05)$) {front};
+  \node[lbl, anchor=south] at ($(Q-5.north)+(0,0.05)$) {back};
+  \draw[->, line width=1pt, draw=fgblue] ($(Q-1.west)+(-0.9, -0.75)$) node[below, font=\sffamily\scriptsize,
+    text=fgblue] {0-edge: push front, distance $d$} to[out=0, in=-120] ($(Q-1.south west)+(0.15, 0)$);
+  \draw[->, line width=1pt, draw=fgorange!85!black] ($(Q-5.east)+(0.9, -0.75)$) node[below, font=\sffamily\scriptsize,
+    text=fgorange!80!black] {1-edge: push back, distance $d + 1$} to[out=180, in=-60] ($(Q-5.south east)+(-0.15, 0)$);
+\end{tikzpicture}
+\caption{0--1 BFS keeps the deque sorted by distance: vertices at distance $d$ (blue) in front, $d + 1$ (orange) behind.}
+\label{fig:01bfs}
+\end{figure}
+
+\begin{problem}{Fewest walls to break}
+In an $n \times m$ grid of free cells and walls, moving into a free cell costs nothing and moving into a wall cell (breaking it)
+costs 1. Find the minimum cost of a path from the top-left to the bottom-right cell (counting the start cell if it is a wall).
+\solution A 0--1 BFS over cells, where the weight of a move is 1 exactly when the target cell is a wall.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    vector<string> g(n);
+    cin >> g;
+    const int dr[4] = {-1, 1, 0, 0}, dc[4] = {0, 0, -1, 1};
+    // entering a wall cell costs 1 (break it), a free cell costs 0
+    vvi dist(n, vi(m, INF));
+    deque<pii> dq;
+    dist[0][0] = g[0][0] == '#';
+    dq.push_back({0, 0});
+    while (!dq.empty()) {
+        auto [r, c] = dq.front();
+        dq.pop_front();
+        rep(d, 4) {
+            int nr = r + dr[d], nc = c + dc[d];
+            if (nr < 0 || nr >= n || nc < 0 || nc >= m) continue;
+            int w = g[nr][nc] == '#';
+            if (dist[r][c] + w >= dist[nr][nc]) continue;
+            dist[nr][nc] = dist[r][c] + w;
+            if (w == 0) dq.push_front({nr, nc});  // same distance: front
+            else dq.push_back({nr, nc});  // one more: back
+        }
+    }
+    print(dist[n - 1][m - 1]);
+}
+\end{code}
+
+\usetemplate{0-1 BFS}{Ctrl+Alt+T, 0}{cp01bfs}
+
+The same idea extends to small integer weights: with weights in $\{0, 1, \ldots, k\}$, keep $k + 1$ buckets (a circular array
+of queues indexed by distance modulo $k + 1$), known as \emph{Dial's algorithm}, for $\Oh{n k + m}$.
+
+% ======================================================================================================================
+\section[Negative weights: Bellman--Ford]{Negative weights: Bellman--Ford \hfill \plat}\label{sec:bellman}
+
+With negative edges, the order of relaxations can no longer be chosen greedily. \defn{Bellman--Ford} does not choose at all:
+it relaxes \emph{every} edge, in any order, $n - 1$ times. After round $k$, every vertex whose shortest path uses at most $k$
+edges has its correct distance (induction on $k$: the last edge of such a path is relaxed in round $k$, after its start became
+correct). If there is no negative cycle reachable from the source, shortest paths are simple and have at most $n - 1$ edges,
+so $n - 1$ rounds suffice. If an edge can still be relaxed in round $n$, there is a negative cycle: distances would keep falling
+forever.
+
+\begin{problem}{Cycle Finding (CSES)}
+Determine whether a directed graph ($n \le 2500$, $m \le 5000$) contains a negative cycle, and if so, print one.
+\solution Start every distance at 0, as if a virtual source had 0-edges to every vertex; then every negative cycle is
+reachable. Run $n$ rounds and remember a vertex relaxed in the last one. That vertex may hang off the cycle rather than lie on it
+(Figure~\ref{fig:negcycle}), but its parent pointers lead back into the cycle: after $n$ steps back along them we are certainly on
+it, and one more walk around recovers the cycle.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[vtx] (v1) at (0, 0) {1};
+  \node[vtx] (v2) at (2, 0) {2};
+  \node[vtx] (v3) at (3.4, 1.1) {3};
+  \node[vtx] (v4) at (3.4, -1.1) {4};
+  \node[vtx, hot] (v5) at (5.6, -1.1) {5};
+  \draw[ded] (v1) -- node[wl] {2} (v2);
+  \draw[hded] (v2) -- node[wl] {$-3$} (v3);
+  \draw[hded] (v3) -- node[wl] {1} (v4);
+  \draw[hded] (v4) -- node[wl] {$-1$} (v2);
+  \draw[ded] (v4) -- node[wl] {2} (v5);
+  \node[notel, anchor=west, text width=5.4cm] at (6.3, 0) {The cycle $2 \to 3 \to 4 \to 2$ has weight $-3$. A vertex relaxed
+    in round $n$ can be off the cycle, like 5; walking back along parent pointers ($5 \to 4 \to 3 \to 2 \to 4 \to \cdots$)
+    enters the cycle within $n$ steps.};
+\end{tikzpicture}
+\caption{A negative cycle (red) and a vertex that depends on it. Everything reachable from a negative cycle has distance
+$-\infty$.}
+\label{fig:negcycle}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    vector<array<ll, 3>> e(m);
+    for (auto& [a, b, c] : e) cin >> a >> b >> c;
+    // all distances start at 0: a virtual source reaches every vertex
+    vector<ll> dist(n + 1, 0);
+    vi par(n + 1, 0);
+    int last = 0;  // a vertex relaxed in round n, if any
+    rep(round, n) {
+        last = 0;
+        for (auto [a, b, c] : e)
+            if (dist[a] + c < dist[b])
+                dist[b] = dist[a] + c, par[b] = a, last = b;
+    }
+    if (!last) {
+        print("NO");
+        return;
+    }
+    // last may hang off the cycle: n steps back along par land on it
+    int x = last;
+    rep(i, n) x = par[x];
+    vi cycle{x};
+    for (int y = par[x]; y != x; y = par[y]) cycle.push_back(y);
+    cycle.push_back(x);
+    reverse(all(cycle));
+    print("YES");
+    print(cycle);
+}
+\end{code}
+
+\usetemplate{Bellman-Ford (negative edges)}{Ctrl+Alt+T, Shift+W}{cpbellman}
+
+\subsection{Longest paths and unbounded answers}
+
+Negating all weights turns a longest-path problem into a shortest-path problem, and a positive cycle into a negative one. The
+subtle part is deciding when the answer is unbounded: only if a cycle that can be improved forever is both reachable from the
+start \emph{and} able to reach the target.
+
+\begin{problem}{High Score (CSES)}
+Each tunnel $a \to b$ changes your score by $x$ (possibly negative). Find the maximum score of a route from room 1 to room $n$,
+or $-1$ if it can be arbitrarily large.
+\solution Run Bellman--Ford for $n - 1$ rounds on the negated scores. Any vertex that can still be improved afterwards is on or
+after a positive-score cycle reachable from 1. Then run $n$ more rounds that mark every such vertex and spread the mark along
+edges; if room $n$ gets marked, the answer is unbounded.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    vector<array<ll, 3>> e(m);
+    for (auto& [a, b, c] : e) cin >> a >> b >> c;
+    // longest path = shortest path with negated scores
+    const ll UNREACHED = LLONG_MAX;
+    vector<ll> dist(n + 1, UNREACHED);
+    dist[1] = 0;
+    rep(round, n - 1)
+        for (auto [a, b, c] : e)
+            if (dist[a] != UNREACHED && dist[a] - c < dist[b])
+                dist[b] = dist[a] - c;
+    // anything still improvable lies on or after a positive-score cycle;
+    // n more rounds spread that mark to everything reachable from it
+    vector<bool> inf(n + 1, false);
+    rep(round, n)
+        for (auto [a, b, c] : e) {
+            if (dist[a] == UNREACHED) continue;
+            if (inf[a] || dist[a] - c < dist[b])
+                inf[b] = true, dist[b] = dist[a] - c;
+        }
+    print(inf[n] ? -1 : -dist[n]);
+}
+\end{code}
+
+\begin{fact}[SPFA]
+The ``Shortest Path Faster Algorithm'' is Bellman--Ford with a queue of vertices whose distance changed. It is often much
+faster in practice, but its worst case is still $\Oh{nm}$, and problem setters build that case on purpose. Use it where
+Bellman--Ford is intended anyway, such as inside min-cost flow with negative costs, never as a replacement for Dijkstra.
+\end{fact}
+
+\begin{trick}[Johnson's reweighting]
+With negative edges but no negative cycle, all-pairs distances in a sparse graph are best computed with \emph{potentials}: run
+Bellman--Ford once from a virtual source to get $h(v)$, then run Dijkstra from every vertex with the weights
+$w'(u, v) = w(u, v) + h(u) - h(v)$, which are non-negative by the triangle inequality. Every path from $s$ to $t$ changes by the
+same amount $h(s) - h(t)$, so shortest paths are preserved and $\delta(s, t) = \delta'(s, t) - h(s) + h(t)$. Min-cost flow uses
+exactly these potentials to keep running Dijkstra after negative residual edges appear (Chapter~\ref{ch:flows}).
+\end{trick}
+
+% ======================================================================================================================
+\section[Difference constraints]{Systems of difference constraints \hfill \plat}\label{sec:diffcons}
+
+A surprising number of scheduling problems reduce to a system of inequalities of the form $x_b - x_a \le c$: ``task $b$ starts
+at most $c$ after task $a$'', ``the prefix sum up to $j$ exceeds the one up to $i$ by at least 3''. Such a \defn{system of
+difference constraints} is exactly the triangle inequality of shortest paths. Make a vertex per variable and an edge
+$a \to b$ of weight $c$ per constraint, and add a virtual source with 0-edges to all vertices. Then:
+\begin{itemize}
+  \item if the graph has a negative cycle, the system has no solution: adding up the constraints around the cycle gives
+        $0 \le (\text{negative number})$;
+  \item otherwise the shortest distances $x_v = d(v)$ satisfy every constraint, because $d(b) \le d(a) + c$ for every edge.
+\end{itemize}
+So Bellman--Ford decides feasibility and constructs a solution (Figure~\ref{fig:diffcons}). Among all solutions with every
+$x_v \le 0$, it even finds the componentwise largest one. Equalities are two inequalities, and $x_b - x_a \ge c$ is
+$x_a - x_b \le -c$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[vtx, dim] (s) at (-2.4, 0) {s};
+  \node[vtx] (x1) at (0, 1.3) {$x_1$};
+  \node[vtx] (x2) at (2.4, 0) {$x_2$};
+  \node[vtx] (x3) at (0, -1.3) {$x_3$};
+  \foreach \tg in {x1, x2, x3} \draw[->, line width=0.6pt, draw=fgline, dashed] (s) to[bend left=8] node[font=\tiny,
+    text=fggray, fill=white, inner sep=0.5pt] {0} (\tg);
+  \draw[ded] (x1) -- node[wl] {3} (x2);
+  \draw[ded] (x2) -- node[wl] {$-2$} (x3);
+  \draw[ded] (x3) -- node[wl] {1} (x1);
+  \node[font=\sffamily\scriptsize\bfseries, text=fgblue] at (0.55, 1.85) {$-1$};
+  \node[font=\sffamily\scriptsize\bfseries, text=fgblue] at (3.0, 0.4) {0};
+  \node[font=\sffamily\scriptsize\bfseries, text=fgblue] at (0.55, -1.85) {$-2$};
+  \node[notel, anchor=west, text width=5.8cm] at (3.7, 0) {Constraints $x_2 - x_1 \le 3$, $x_3 - x_2 \le -2$, $x_1 - x_3 \le
+    1$. The cycle $x_1 \to x_2 \to x_3 \to x_1$ has weight $2 \ge 0$, so the system is feasible, and the distances from the
+    virtual source $s$ (blue) are a solution: $x = (-1, 0, -2)$.};
+\end{tikzpicture}
+\caption{A system of difference constraints as a graph. Each constraint $x_b - x_a \le c$ is an edge $a \to b$ of weight $c$;
+shortest distances from a virtual source satisfy all constraints at once.}
+\label{fig:diffcons}
+\end{figure}
+
+\begin{problem}{Difference constraints}
+Given $n$ variables and $m$ constraints $x_b - x_a \le c$, print integer values satisfying all of them, or \texttt{NO}.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    // constraint x_b - x_a <= c becomes the edge a -> b of weight c
+    vector<array<ll, 3>> e(m);
+    for (auto& [a, b, c] : e) cin >> a >> b >> c;
+    vector<ll> x(n + 1, 0);  // a virtual source with 0-edges to everyone
+    rep(round, n + 1) {
+        bool changed = false;
+        for (auto [a, b, c] : e)
+            if (x[a] + c < x[b]) x[b] = x[a] + c, changed = true;
+        if (!changed) {  // shortest distances satisfy every constraint
+            print(vi(x.begin() + 1, x.end()));
+            return;
+        }
+    }
+    print("NO");  // still changing after n + 1 rounds: a negative cycle
+}
+\end{code}
+
+\usetemplate{System of difference constraints}{Ctrl+Alt+U, Shift+I}{cpdiffcons}
+
+\begin{recognize}
+Variables that are only compared by differences: start times with precedence and deadline constraints, positions on a line
+with minimum and maximum gaps, prefix sums with bounds on segment sums (``every window of length $k$ contains at least $a$
+chosen elements''). When the constraints involve a parameter, binary search the parameter and test feasibility with
+Bellman--Ford.
+\end{recognize}
+
+% ======================================================================================================================
+\section[All pairs: Floyd--Warshall]{All pairs: Floyd--Warshall \hfill \gold}\label{sec:floyd}
+
+\defn{Floyd--Warshall} computes all $n^2$ distances in $\Oh{n^3}$ with three nested loops. It is a dynamic programme over the set
+of vertices allowed as \emph{intermediate} stops: after the iteration for $k$, \cc{d[i][j]} is the length of the shortest path
+from $i$ to $j$ whose intermediate vertices all lie in $\{1, \ldots, k\}$. Allowing $k$ as a new stop either does not help, or
+the best path passes through $k$ exactly once, splitting into a path $i \leadsto k$ and a path $k \leadsto j$ that use only
+earlier stops (Figure~\ref{fig:floyd}):
+\[
+  d_k[i][j] = \min\bigl(d_{k-1}[i][j],\ d_{k-1}[i][k] + d_{k-1}[k][j]\bigr) .
+\]
+The update can be done in place, because row $k$ and column $k$ do not change during iteration $k$. It handles negative edges,
+and afterwards $d[i][i] < 0$ exactly when $i$ lies on a negative cycle.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[vtx] (i) at (0, 0) {$i$};
+  \node[vtx, hot] (k) at (3, 1.4) {$k$};
+  \node[vtx] (j) at (6, 0) {$j$};
+  \draw[line width=1pt, draw=fgblue, decorate, decoration={snake, amplitude=1.2pt, segment length=7pt, post length=2mm}, ->] (i) --
+    node[above left, font=\sffamily\scriptsize, text=fgblue] {stops $< k$} (k);
+  \draw[line width=1pt, draw=fgblue, decorate, decoration={snake, amplitude=1.2pt, segment length=7pt, post length=2mm}, ->] (k) --
+    node[above right, font=\sffamily\scriptsize, text=fgblue] {stops $< k$} (j);
+  \draw[line width=1pt, draw=fggray, decorate, decoration={snake, amplitude=1.2pt, segment length=7pt, post length=2mm}, ->] (i) --
+    node[below, font=\sffamily\scriptsize, text=fggray] {the best path with stops $< k$ only} (j);
+\end{tikzpicture}
+\caption{The Floyd--Warshall recurrence. With stops up to $k$ allowed, the best path from $i$ to $j$ either avoids $k$ (grey)
+or visits it once, and then both halves use only stops below $k$ (blue).}
+\label{fig:floyd}
+\end{figure}
+
+\begin{problem}{Shortest Routes II (CSES)}
+Answer $10^5$ queries for the shortest distance between two of $n \le 500$ cities connected by two-way roads.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, m, q;
+    cin >> n >> m >> q;
+    const ll NONE = LLONG_MAX / 4;  // large, but NONE + NONE does not overflow
+    vector<vector<ll>> d(n + 1, vector<ll>(n + 1, NONE));
+    rep(v, 1, n + 1) d[v][v] = 0;
+    rep(i, m) {
+        ll a, b, c;
+        cin >> a >> b >> c;
+        chmin(d[a][b], c);  // keep the cheapest of parallel roads
+        chmin(d[b][a], c);
+    }
+    rep(k, 1, n + 1) rep(i, 1, n + 1) rep(j, 1, n + 1)  // k outermost!
+        chmin(d[i][j], d[i][k] + d[k][j]);
+    while (q--) {
+        int a, b;
+        cin >> a >> b;
+        print(d[a][b] == NONE ? -1 : d[a][b]);
+    }
+}
+\end{code}
+
+\usetemplate{Floyd-Warshall (all pairs)}{Ctrl+Alt+T, W}{cpfloyd}
+
+\begin{trick}[Floyd--Warshall is a template for more]
+Replacing $(\min, +)$ by (\emph{or}, \emph{and}) computes the transitive closure, which with bitsets runs in $\Oh{n^3/64}$
+(Section~\ref{sec:bitset}); $(\max, \min)$ computes widest paths. Because the outer loop adds vertices one at a time in any
+order you like, processing them sorted by some value answers ``the shortest path using only vertices of value at most $x$''
+for every $x$ in one run. And adding a single new edge $(a, b)$ to a finished distance matrix costs only $\Oh{n^2}$:
+$d[i][j] \gets \min(d[i][j], d[i][a] + w + d[b][j])$.
+\end{trick}
+
+\begin{pitfall}[Loop order and infinity]
+The loop over $k$ must be the outermost; with any other order the result is wrong on some inputs. And ``infinity'' must survive
+additions: with \cc{LLONG_MAX}, \cc{d[i][k] + d[k][j]} overflows, so use a quarter of it (or skip pairs where either term is
+infinite, as the template does).
+\end{pitfall}
+
+% ======================================================================================================================
+\section[Shortest and longest paths in DAGs]{Shortest and longest paths in DAGs \hfill \gold}\label{sec:dagpaths}
+
+In a DAG, process the vertices in topological order (Chapter~\ref{ch:dsu}): when a vertex is reached, every edge into it has
+already been relaxed, so its distance is final, and relaxing its outgoing edges once is enough. This takes $\Oh{n + m}$ and
+allows any weights. Most importantly, it solves \emph{longest} paths, which are hopeless in general graphs (they generalise
+Hamiltonian paths) but easy in DAGs: just maximise instead of minimise (Figure~\ref{fig:dagpath}). Every DP is, at heart, a
+shortest or longest path in the DAG of its states (Part~V).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=1.6cm]
+  \foreach \vn/\xx/\yy/\val in {1/0/0/1, 2/1/0.8/2, 3/1/-0.8/2, 4/2/0.8/3, 5/2/-0.8/3, 6/3/0/4} {
+    \node[vtx] (n\vn) at (\xx, \yy) {\vn};
+    \node[font=\sffamily\scriptsize\bfseries, text=fgblue, above=1pt] at (n\vn.north) {\val};
+  }
+  \draw[ded] (n1) -- (n2); \draw[ded] (n1) -- (n3); \draw[ded] (n3) -- (n4); \draw[ded] (n3) -- (n5);
+  \draw[ded] (n2) -- (n5); \draw[ded] (n5) -- (n6);
+  \draw[hded] (n2) -- (n4); \draw[hded] (n4) -- (n6);
+  \draw[hded] (n1) -- (n2);
+  \node[notel, anchor=west, text width=5.2cm] at (3.5, 0) {Vertices in topological order, with the most cities on a route
+    from 1 (blue). Each value is one more than the best predecessor; the red route $1 \to 2 \to 4 \to 6$ visits 4 cities.};
+\end{tikzpicture}
+\caption{Longest path in a DAG by DP in topological order. Parent pointers recover the route.}
+\label{fig:dagpath}
+\end{figure}
+
+\begin{problem}{Longest Flight Route (CSES)}
+Find a route from city 1 to city $n$ that visits as many cities as possible, in a network of one-way flights that contains no
+cycles.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    vvi adj(n + 1);
+    vi indeg(n + 1, 0);
+    rep(i, m) {
+        int a, b;
+        cin >> a >> b;
+        adj[a].push_back(b);
+        indeg[b]++;
+    }
+    // Kahn's algorithm gives a topological order of the DAG
+    vi order, q;
+    rep(v, 1, n + 1) if (!indeg[v]) q.push_back(v);
+    while (!q.empty()) {
+        int u = q.back();
+        q.pop_back();
+        order.push_back(u);
+        for (int v : adj[u])
+            if (--indeg[v] == 0) q.push_back(v);
+    }
+    // best[v]: most cities on a route 1 -> v (0 = unreachable)
+    vi best(n + 1, 0), par(n + 1, 0);
+    best[1] = 1;
+    for (int u : order) {
+        if (!best[u]) continue;
+        for (int v : adj[u])
+            if (best[u] + 1 > best[v]) best[v] = best[u] + 1, par[v] = u;
+    }
+    if (!best[n]) {
+        print("IMPOSSIBLE");
+        return;
+    }
+    vi route;
+    for (int v = n; v; v = par[v]) route.push_back(v);
+    reverse(all(route));
+    print(sz(route));
+    print(route);
+}
+\end{code}
+
+\begin{summary}[Chapter summary]
+\begin{itemize}
+  \item All algorithms relax edges; they differ in the order. Parent pointers give the shortest-path tree.
+  \item Dijkstra finalises vertices in order of distance and needs non-negative weights; skip outdated queue entries.
+  \item Put extra information into the vertex (layered graphs); gather counts in finalisation order.
+  \item 0--1 weights: a deque. Negative weights: Bellman--Ford, $n - 1$ rounds, plus one to detect negative cycles.
+  \item Longest paths negate weights; they are unbounded only if an improvable cycle is reachable and reaches the target.
+  \item Difference constraints are shortest paths from a virtual source; a negative cycle means no solution.
+  \item Floyd--Warshall adds allowed intermediate vertices one by one: $\Oh{n^3}$, any weights.
+  \item In a DAG, relax in topological order: shortest and longest paths in linear time.
+\end{itemize}
+\end{summary}
+
+\begin{practice}
+\ppgroup{Single source}
+\begin{pplist}
+  \item Shortest Routes I
+  \item Flight Discount
+  \item Investigation
+  \item Flight Routes
+  \item High Score
+  \item Cycle Finding
+\end{pplist}
+\ppgroup{All pairs and DAGs}
+\begin{pplist}
+  \item Shortest Routes II
+  \item Longest Flight Route
+  \item Game Routes
+\end{pplist}
+\end{practice}

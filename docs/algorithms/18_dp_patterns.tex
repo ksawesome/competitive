@@ -1,0 +1,930 @@
+\chapter{DP Patterns}\label{ch:dppatterns}
+
+Most dynamic programs belong to a small number of families, and recognising the family gives the state almost for free. A set of
+up to 20 items becomes a bitmask; a contiguous segment becomes a pair of endpoints; a huge number becomes its digits plus a
+``still equal to the bound'' flag; a grid that is too wide to enumerate becomes the boundary between its filled and empty parts;
+a recurrence applied $10^{18}$ times becomes a matrix power. This chapter goes through these families, each with a problem solved
+end to end, together with the two topics that most often hide inside them: expectations and games.
+
+\begin{chapterintro}{\gold\ \plat}{Chapter~\ref{ch:dp} (the five-question recipe) and Chapter~\ref{ch:bits} (bitmasks).}
+  \item use bitmask DP over subsets, including pair-valued states and submask enumeration in $\Oh{3^n}$;
+  \item write interval DP, and turn two-player games into one difference;
+  \item count numbers up to $10^{18}$ with digit DP, and tile grids with profile DP;
+  \item sum over subsets in $\Oh{n 2^n}$, and convolve over disjoint subsets;
+  \item schedule weighted intervals, compute probabilities and expectations, and solve games by DP;
+  \item jump $10^{18}$ steps of a linear recurrence with a matrix power.
+\end{chapterintro}
+
+% ======================================================================================================================
+\section[Bitmask DP]{Bitmask DP \hfill \gold}\label{sec:bitmaskdp}
+
+When the future depends on \emph{which} of $n$ items have been used, and $n$ is at most about 20, store that set as an $n$-bit mask
+(Section~\ref{sec:bittricks}). There are $2^n$ sets, about $10^6$ for $n = 20$, so the state may add one more index of size $n$, and
+each transition may try every item: $\Oh{2^n n^2}$ is about $4 \cdot 10^8$ simple operations at $n = 20$, which is the usual
+budget.
+
+\begin{problem}{Hamiltonian Flights (CSES)}
+There are $n \le 20$ cities and $m$ one-way flights. Count the routes from city 1 to city $n$ that visit every city exactly once,
+modulo $10^9 + 7$.
+\solution $dp[\mathit{mask}][v]$ is the number of routes that start at city 1, visit exactly the cities of $\mathit{mask}$ and end
+at $v$. A route grows by one flight $v \to w$ to a city $w \notin \mathit{mask}$. Masks only grow, so increasing numeric order is a
+valid order (Figure~\ref{fig:hamilton}). Two observations halve the work and more: every useful mask contains city 1, and city $n$
+must be last, so a mask that contains city $n$ but not every city is never extended.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{mk/.style={draw=fgblue, fill=fgsky!14, rounded corners=2pt, font=\ttfamily\small, minimum width=12mm,
+    minimum height=6mm, line width=0.7pt}}
+  \foreach \nm/\px/\py in {0001/0/0, 0011/2.6/1.2, 0101/2.6/0, 1001/2.6/-1.2, 0111/5.2/1.2, 1011/5.2/0, 1101/5.2/-1.2,
+      1111/7.8/0}
+    \node[mk] (M\nm) at (\px, \py) {\nm};
+  \foreach \nm in {1001, 1011, 1101} \node[mk, dim] at (M\nm) {\nm};
+  \node[mk, fill=fgorange!20, draw=fgorange!85!black] at (M1111) {1111};
+  \foreach \ua/\ub in {0001/0011, 0001/0101, 0011/0111, 0101/0111, 0111/1111} \draw[ded] (M\ua) -- (M\ub);
+  \foreach \ua/\ub in {0001/1001, 0011/1011, 0101/1101} \draw[ded, dashed, draw=fgline] (M\ua) -- (M\ub);
+  \node[notel, anchor=west, text width=4.6cm] at (9.0, 0) {Masks for $n = 4$, city 1 being the lowest bit. Every route starts
+    at city 1, so only masks with that bit appear; masks with city 4 (the highest bit) that are not complete (grey) receive
+    values but are never extended.};
+\end{tikzpicture}
+\caption{The DP of Hamiltonian Flights moves through subsets of cities, one city per step.}
+\label{fig:hamilton}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    vvi cnt(n, vi(n, 0));  // the number of flights from city a to city b
+    rep(i, m) {
+        int a, b;
+        cin >> a >> b;
+        cnt[a - 1][b - 1]++;
+    }
+    // dp[mask * n + v]: routes from city 0 through exactly the cities of
+    // mask, ending at v; 32-bit entries, since there are 2^20 * 20 of them
+    vector<uint32_t> dp((1 << n) * n, 0);
+    dp[1 * n + 0] = 1;  // the route that has only visited city 0
+    int full = (1 << n) - 1;
+    rep(mask, 1, 1 << n) {
+        if (!(mask & 1)) continue;  // every route starts at city 0
+        if (mask >> (n - 1) & 1 && mask != full) continue;  // n - 1 is last
+        rep(u, n) {
+            ll ways = dp[mask * n + u];
+            if (!ways) continue;
+            rep(v, n) if (!(mask >> v & 1) && cnt[u][v]) {  // push to v
+                uint32_t& t = dp[(mask | 1 << v) * n + v];
+                t = (t + ways * cnt[u][v]) % MOD;
+            }
+        }
+    }
+    print(dp[full * n + n - 1]);
+}
+\end{code}
+
+The table has $2^{20} \cdot 20 \approx 2 \cdot 10^7$ entries: 84\,MB with 32-bit entries, twice that with 64-bit ones, which is why
+the type is chosen explicitly. With all 380 possible flights the program runs in 0.18\,s. A flat array indexed by $\mathit{mask}
+\cdot n + v$ is also much faster than a \cc{vector} of $2^{20}$ small vectors.
+
+\usetemplate{Bitmask DP (TSP)}{Ctrl+Alt+T, ]}{cptsp}
+
+\subsection{Pair-valued states}
+
+The state does not have to hold a single number. When a set of items is packed into bins one item at a time, the only thing the
+future needs is the number of bins used and how full the current bin is.
+
+\begin{problem}{Elevator Rides (CSES)}
+There are $n \le 20$ people with weights $w_i$ and an elevator with capacity $x$. What is the fewest rides that carry everyone?
+\solution For every set of people, keep the best pair $(\text{rides}, \text{weight of the last ride})$ that carries exactly that
+set, compared lexicographically. Adding person $p$ either fits into the last ride or opens a new one. Fewer rides is always better,
+and with as many rides a lighter last ride is better, because anything that can board after the heavier can board after the
+lighter: so the lexicographic minimum dominates every other way of carrying the set (Table~\ref{tab:elevator}).
+\end{problem}
+
+\begin{table}[htbp]
+\centering\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+people already carried & their best pair & boards last & new pair \\
+\midrule
+$\{4, 8, 6\}$ & $(2, 8)$ & 1 & $(2, 9)$ \\
+$\{4, 8, 1\}$ & $(2, 4)$ & 6 & $(2, 10)$ \\
+$\{4, 6, 1\}$ & $(2, 1)$ & 8 & $(2, 9)$ \\
+$\{8, 6, 1\}$ & $(2, 6)$ & 4 & $(2, 10)$ \\
+\midrule
+\multicolumn{3}{@{}l}{all four people, the minimum:} & $\mathbf{(2, 9)}$ \\
+\bottomrule
+\end{tabular}
+\caption{Elevator Rides with weights 4, 8, 6, 1 and capacity 10: the state of the full set, from its four predecessors. Two rides
+suffice, the last one carrying 9.}
+\label{tab:elevator}
+\end{table}
+
+\begin{code}
+void solve() {
+    int n, x;
+    cin >> n >> x;
+    vi w(n);
+    for (ll& v : w) cin >> v;
+    // best[mask]: the smallest (rides, weight of the last ride) for carrying
+    // exactly the people in mask; the last ride may still take more people
+    vector<pll> best(1 << n, {INF, 0});
+    best[0] = {1, 0};
+    rep(mask, 1, 1 << n) rep(p, n) {
+        if (!(mask >> p & 1)) continue;
+        auto [rides, last] = best[mask ^ (1 << p)];  // p is the last to board
+        if (last + w[p] <= x) last += w[p];
+        else rides++, last = w[p];
+        chmin(best[mask], pll{rides, last});
+    }
+    print(best[(1 << n) - 1].first);
+}
+\end{code}
+
+The obvious alternative, ``$dp[\mathit{mask}]$ is the fewest rides, built from a submask that fits into one ride'', is correct but
+costs $\Oh{3^n}$; the pair-valued state brings it to $\Oh{2^n n}$, 0.08\,s for $n = 20$.
+
+\subsection{Enumerating submasks}
+
+Some transitions really do range over all subsets of the current mask, for example ``split the set into groups, each with a
+cost''. The loop
+\begin{code}
+for (int sub = mask; sub > 0; sub = (sub - 1) & mask) { /* use sub */ }
+\end{code}
+visits every non-empty submask of \cc{mask} in decreasing order: subtracting 1 clears the lowest set bit and sets all bits below
+it, and the \cc{&} keeps only those inside the mask. Over all masks the total is $3^n$, not $4^n$, because each element is either
+outside the mask, in the mask but not the submask, or in both: three choices per element. That is $3.5 \cdot 10^9$ for $n = 20$,
+too many, but fine for $n \le 16$ ($4.3 \cdot 10^7$).
+
+\begin{recognize}
+$n \le 20$ (or $n \le 16$ for $\Oh{3^n}$) and an answer that depends on a \emph{set} of chosen or visited things: Hamiltonian
+paths, assigning $n$ tasks to $n$ people ($dp[\mathit{mask}]$ is the best cost of giving the first $|\mathit{mask}|$ people the tasks in
+$\mathit{mask}$), covering, packing into bins, partitioning into groups.
+\end{recognize}
+
+% ======================================================================================================================
+\section[Interval DP]{Interval DP \hfill \gold}\label{sec:intervaldp}
+
+When a problem removes, merges or splits \emph{contiguous} parts of a sequence, the state is a segment: $dp[l][r]$ is the answer for
+$a_l, \dots, a_r$. The transition either removes one end ($dp[l+1][r]$ and $dp[l][r-1]$) or tries every split point $k$,
+\[ dp[l][r] = \min_{l \le k < r} \bigl(dp[l][k] + dp[k+1][r]\bigr) + \mathit{cost}(l, r), \]
+and the states are computed by increasing length, so that every shorter segment is ready. Splits cost $\Oh{n^3}$ in total, and
+Knuth's optimization (Section~\ref{sec:knuth}) often brings them to $\Oh{n^2}$.
+
+\begin{problem}{Removal Game (CSES)}
+Two players take turns removing the first or the last number of a list ($n \le 5000$); each wants to maximise the sum of their own
+numbers. What is the first player's total when both play optimally?
+\solution Store the \emph{difference} $d[l][r]$, the best (mover's total minus the other's total) on $a_l, \dots, a_r$. The mover
+takes an end and then becomes the other player of the rest: $d[l][r] = \max(a_l - d[l+1][r],\ a_r - d[l][r-1])$
+(Figure~\ref{fig:removal}). The first player's total is $(\text{sum} + d[0][n-1])/2$.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{tc/.style={draw=fgline, line width=0.5pt, minimum size=8mm, inner sep=0pt, font=\ttfamily\small, anchor=center}}
+  \foreach \val [count=\cc from 0] in {4, 5, 1, 3}
+    \node[font=\sffamily\small\bfseries, text=fgblue] at (0.8*\cc, 0.75) {\val};
+  \node[lbl, anchor=east] at (-0.5, 0.75) {$a$};
+  \foreach \rr/\row in {0/{4,1,0,3}, 1/{5,4,3}, 2/{1,2}, 3/{3}}
+    \foreach \val [count=\cc from 0] in \row {
+      \pgfmathtruncatemacro{\col}{\cc + \rr}
+      \node[tc] (D\rr\col) at (0.8*\col, -0.8*\rr) {\val};
+    }
+  \foreach \rr in {0, 1, 2, 3} \node[lbl, anchor=east] at (-0.5, -0.8*\rr) {$l = \rr$};
+  \node[tc, hot] at (D03) {3};
+  \node[tc, cool] at (D13) {3};
+  \node[tc, cool] at (D02) {0};
+  \draw[->, line width=1.1pt, draw=fgverm, shorten <=2.3mm, shorten >=2.3mm] (D13.center) -- (D03.center);
+  \draw[->, line width=1.1pt, draw=fgverm, shorten <=2.3mm, shorten >=2.3mm] (D02.center) -- (D03.center);
+  \node[notel, anchor=west, text width=6.4cm] at (3.7, -1.2) {$d[l][r]$ for $a = 4, 5, 1, 3$; row $l$, column $r$. For the
+    whole list: taking 4 leaves $d[1][3] = 3$ to the opponent, $4 - 3 = 1$; taking 3 leaves $d[0][2] = 0$, $3 - 0 = 3$. So
+    $d[0][3] = 3$, and the first player collects $(13 + 3)/2 = 8$.};
+\end{tikzpicture}
+\caption{The difference table of Removal Game; each cell looks at the cell below it and the cell to its left.}
+\label{fig:removal}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vi a(n);
+    ll total = 0;
+    for (ll& x : a) cin >> x, total += x;
+    // d[l]: the best (mover's total - other's total) on the segment of the
+    // current length that starts at l; lengths grow, so d[l + 1] and d[l]
+    // still hold the values for the segments one shorter
+    vi d(a);
+    rep(len, 2, n + 1) rep(l, n - len + 1)
+        d[l] = max(a[l] - d[l + 1], a[l + len - 1] - d[l]);
+    print((total + d[0]) / 2);
+}
+\end{code}
+
+The full table would need $n^2 = 2.5 \cdot 10^7$ numbers; going by length, one array suffices, because the segment of length
+$\ell$ at $l$ needs only the two segments of length $\ell - 1$ at $l$ and $l + 1$, and $l + 1$ has not been overwritten yet when
+$l$ is computed. The program runs in 0.07\,s.
+
+\usetemplate{Range DP}{Ctrl+Alt+T, -}{cprangedp}
+
+\begin{trick}[One number for two players]
+In a two-player zero-sum game, store the \emph{difference} between the player to move and the other player. Since the roles swap
+after every move, the recurrence is always ``my gain now minus the opponent's best difference afterwards'', and a single table
+replaces two. The same trick turns any ``both play optimally'' DP into a maximisation.
+\end{trick}
+
+\begin{recognize}
+Merging adjacent things (piles of stones, matrix chain multiplication), removing elements whose neighbours then change, palindromes
+(``fewest insertions to make a palindrome''), parenthesisations, and games that take from either end. $n \le 500$ is typical for
+$\Oh{n^3}$, $n \le 5000$ for $\Oh{n^2}$.
+\end{recognize}
+
+% ======================================================================================================================
+\section[Digit DP]{Digit DP \hfill \plat}\label{sec:digitdp}
+
+``How many integers in $[a, b]$ have property $P$?'' with $b$ up to $10^{18}$ is answered as $f(b) - f(a - 1)$, where $f(x)$
+counts the good integers in $[0, x]$. To count up to $x$, build the integer digit by digit from the most significant one. As long as
+every digit so far equals $x$'s digit, the integer is \emph{tight}: the next digit may not exceed $x$'s next digit. The first time a
+smaller digit is chosen, the integer is already below $x$, every later digit is free, and the count of completions no longer depends
+on $x$ at all (Figure~\ref{fig:digitdp}). So the state is (position, tight, and whatever the property needs, such as the previous
+digit), only a few hundred states for 18 digits.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{dg/.style={draw=fgverm, fill=fgverm!12, line width=0.9pt, minimum size=7mm, font=\ttfamily\small},
+    br/.style={draw=fgblue, fill=fgsky!14, rounded corners=2pt, line width=0.6pt, font=\sffamily\scriptsize, align=center,
+      text width=2.55cm, inner sep=3pt}}
+  \foreach \dd [count=\ci] in {3, 5, 2, 7} \node[dg] (T\ci) at ({2.9*(\ci - 1)}, 0) {\dd};
+  \foreach \ci in {1, 2, 3} {
+    \pgfmathtruncatemacro{\nx}{\ci + 1}
+    \draw[->, line width=1.2pt, draw=fgverm] (T\ci) -- (T\nx);
+  }
+  \foreach \tx [count=\ci] in {{first digit 1 or 2,\\then 3 free digits:\\$2 \cdot 9^3 = 1458$},
+      {after 3: 0, 1, 2 or 4,\\then 2 free digits:\\$4 \cdot 9^2 = 324$},
+      {after 35: 0 or 1,\\then 1 free digit:\\$2 \cdot 9 = 18$},
+      {after 352: six digits\\below 7, not 2:\\$6$}}
+    { \node[br, anchor=north] (B\ci) at ({2.9*(\ci - 1)}, -1.0) {\tx};
+      \draw[->, line width=0.8pt, draw=fgblue, dashed] (T\ci.south) -- (B\ci.north); }
+  \node[lbl, anchor=west] at (9.2, 0.0) {$+1$: 3527 itself};
+  \node[notel, anchor=west, text width=13cm] at (-0.4, -3.05) {Shorter numbers add $9 + 81 + 729 = 819$ and the number 0 adds 1, so
+    $f(3527) = 1 + 819 + 1458 + 324 + 18 + 6 + 1 = 2627$ numbers in $[0, 3527]$ have no two equal adjacent digits.};
+\end{tikzpicture}
+\caption{Digit DP for Counting Numbers with $x = 3527$. The tight path (red) follows $x$; each dashed branch leaves it with a
+smaller digit, after which all later digits are free, so its count is a closed formula.}
+\label{fig:digitdp}
+\end{figure}
+
+\begin{problem}{Counting Numbers (CSES)}
+Count the integers in $[a, b]$ ($0 \le a \le b \le 10^{18}$) in which no two adjacent digits are equal.
+\solution For this property the free completions have a closed form: after a fixed digit, each later digit avoids only its left
+neighbour, so $k$ free digits give $9^k$ completions. The count is then a walk along the tight path with one branch per position,
+exactly the sum of Figure~\ref{fig:digitdp}. For properties without a closed form, the same walk with a memoized DP over (position,
+tight, extra state) is the general method, and the template implements it.
+\end{problem}
+
+\begin{code}
+void solve() {
+    ll a, b;
+    cin >> a >> b;
+    // the numbers in [0, x] with no two equal adjacent digits
+    auto count = [](ll x) -> ll {
+        if (x < 10) return x + 1;  // also right for x = -1: none
+        string s = to_string(x);
+        int L = sz(s);
+        vi pw(L + 1, 1);  // 9^k: each later digit avoids only its neighbour
+        rep(i, 1, L + 1) pw[i] = pw[i - 1] * 9;
+        ll res = 1;  // the number 0
+        rep(len, 1, L) res += pw[len];  // every shorter length
+        rep(i, L) {  // length L, first smaller than x at digit i
+            int lo = i == 0 ? 1 : 0;
+            rep(d, lo, s[i] - '0')
+                if (i == 0 || d != s[i - 1] - '0') res += pw[L - 1 - i];
+            if (i > 0 && s[i] == s[i - 1]) return res;  // x's prefix is bad
+        }
+        return res + 1;  // x itself
+    };
+    print(count(b) - count(a - 1));
+}
+\end{code}
+
+\usetemplate{Digit DP}{Ctrl+Alt+T, =}{cpdigit}
+
+\begin{pitfall}[Leading zeros and the empty prefix]
+When the property depends on the digits actually written (``no two equal adjacent digits'', ``the digit sum is prime''), leading
+zeros must not count as digits: $0012$ is the number 12, whose first digit is 1. Either count each shorter length separately, as
+above, or add a \texttt{started} flag to the state. Also check $f(a - 1)$ for $a = 0$: it must be 0, not an error.
+\end{pitfall}
+
+% ======================================================================================================================
+\section[Boundaries and profiles]{Boundaries and profiles \hfill \plat}\label{sec:profiledp}
+
+When a grid is filled piece by piece, the part already filled matters to the future only through its \emph{boundary}. If the grid is
+narrow, the boundary is small enough to be the state.
+
+\paragraph{A two-state boundary.} In Counting Towers (CSES), a tower of width 2 and height $n$ is cut into rectangular blocks; count
+the ways. Build it row by row from the bottom. What the next row may do depends only on whether the top row is one block of width 2
+(state $a$) or two separate blocks of width 1 (state $b$), as in Figure~\ref{fig:towers}. From $a$, the next row either continues
+the wide block, starts a new wide block, or starts two narrow ones; from $b$, each column continues its block or starts a new one
+($2 \cdot 2 = 4$ ways), or both blocks end and a wide one starts. So $a_{h+1} = 2a_h + b_h$ and $b_{h+1} = a_h + 4b_h$, with
+$a_1 = b_1 = 1$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{blk/.style={draw=fgink!80, line width=0.7pt, fill=#1}, blk/.default=fgsky!25}
+  \draw[blk=fgsky!30] (0, 0) rectangle (1.2, 0.55);
+  \draw[blk=fgsky!12] (0, -0.55) rectangle (0.6, 0);
+  \draw[blk=fgsky!12] (0.6, -0.55) rectangle (1.2, 0);
+  \node[blbl] at (0.6, -0.95) {state $a$};
+  \node[lbl] at (0.6, -1.3) {top: one wide block};
+  \draw[blk=fgorange!30] (5.0, 0) rectangle (5.6, 0.55);
+  \draw[blk=fgorange!30] (5.6, 0) rectangle (6.2, 0.55);
+  \draw[blk=fgorange!12] (5.0, -0.55) rectangle (6.2, 0);
+  \node[blbl] at (5.6, -0.95) {state $b$};
+  \node[lbl] at (5.6, -1.3) {top: two narrow blocks};
+  \draw[->, line width=1pt, draw=fgblue] (1.5, 0.35) to[bend left=25] node[above, font=\sffamily\scriptsize] {1 way} (4.7, 0.35);
+  \draw[->, line width=1pt, draw=fgorange!85!black] (4.7, -0.2) to[bend left=25]
+    node[below, font=\sffamily\scriptsize] {1 way} (1.5, -0.2);
+  \draw[->, line width=1pt, draw=fgblue] (-0.1, 0.45) arc (60:300:0.45);
+  \node[font=\sffamily\scriptsize, anchor=east] at (-0.85, 0.06) {2 ways};
+  \draw[->, line width=1pt, draw=fgorange!85!black] (6.3, -0.45) arc (240:480:0.45);
+  \node[font=\sffamily\scriptsize, anchor=west] at (7.05, -0.06) {4 ways};
+  \node[notel, anchor=west, text width=4.3cm] at (8.2, -0.2) {$a_{h+1} = 2a_h + b_h$\\$b_{h+1} = a_h + 4b_h$\\[2pt]
+    Height 2: $3 + 5 = 8$ towers.};
+\end{tikzpicture}
+\caption{Counting Towers as a two-state machine: the future of a partial tower depends only on the shape of its top row.}
+\label{fig:towers}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int t;
+    cin >> t;
+    const int N = 1000000;
+    // a[h]: towers of height h whose top row is one block of width 2;
+    // b[h]: towers whose top row is two different blocks of width 1.
+    // From a, the next row grows the wide block or starts a new one (to a),
+    // or starts two narrow blocks (to b); from b, each column grows its block
+    // or starts a new one (4 ways, to b), or a new wide block starts (to a).
+    vi a(N + 1), b(N + 1);
+    a[1] = b[1] = 1;
+    rep(h, 1, N) {
+        a[h + 1] = (2 * a[h] + b[h]) % MOD;
+        b[h + 1] = (a[h] + 4 * b[h]) % MOD;
+    }
+    while (t--) {
+        int n;
+        cin >> n;
+        print((a[n] + b[n]) % MOD);
+    }
+}
+\end{code}
+
+\paragraph{Broken profiles.} For a wider grid the boundary is a bitmask. In Counting Tilings (CSES), an $n \times m$ grid with
+$n \le 10$ is tiled with dominoes. Decide the cells one at a time, column by column and top to bottom within a column. The
+\emph{profile} is the set of $n$ cells just beyond the decided ones: in the current column below the current cell, and in the next
+column above it (Figure~\ref{fig:profile}). Bit $r$ of the state says whether that cell is already covered by a domino sticking out
+of a decided cell. At the current cell there are three cases: it is already covered (clear the bit and move on), a horizontal domino
+covers it and the cell to its right (set the bit), or a vertical domino covers it and the cell below (set the next bit, if that
+cell is free). That is $nm\,2^n$ steps of constant work, $10^7$ at the limits.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{gq/.style={draw=fgline, line width=0.4pt, minimum size=7mm, inner sep=0pt, anchor=center}}
+  \foreach \cc in {0, ..., 5} \foreach \rr in {0, ..., 3} \node[gq] (Q\cc\rr) at (0.7*\cc, -0.7*\rr) {};
+  \foreach \cc in {0, 1} \foreach \rr in {0, ..., 3} \node[gq, fill=fgline!45] at (Q\cc\rr) {};
+  \foreach \rr in {0, 1} \node[gq, fill=fgline!45] at (Q2\rr) {};
+  \foreach \cl in {30, 31, 22, 23} \node[gq, draw=fgblue, line width=1.2pt] at (Q\cl) {};
+  \node[gq, hot] at (Q22) {};
+  \draw[draw=fgink!80, fill=fgorange!30, rounded corners=2pt, line width=0.6pt] (1.12, 0.26) rectangle (2.38, -0.26);
+  \draw[draw=fgink!80, fill=fgorange!30, rounded corners=2pt, line width=0.6pt] (0.42, -1.84) rectangle (1.68, -2.36);
+  \node[notel, anchor=west, text width=7.0cm] at (4.6, -1.05) {Grey: decided. Blue frames: the profile, here the cells $(0,
+    3)$, $(1, 3)$, $(2, 2)$, $(3, 2)$, one per row. Two dominoes (orange) stick into it, so the state is the mask 1001 (rows 3
+    and 0 covered). The current cell (red) is free: place a horizontal domino into column 3, or a vertical one over row 3, which
+    is not possible here because that cell is covered.};
+\end{tikzpicture}
+\caption{The broken profile of Counting Tilings, column 2, row 2 of a $4 \times 6$ grid.}
+\label{fig:profile}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    // cells are decided column by column, top to bottom; bit r of the mask
+    // tells whether cell r of the frontier is already covered (rows above
+    // the current cell: in the next column, the others: in this column)
+    vi dp(1 << n, 0), nd(1 << n);
+    dp[0] = 1;
+    rep(c, m) rep(r, n) {
+        fill(all(nd), 0);
+        rep(mask, 1 << n) {
+            ll val = dp[mask];
+            if (!val) continue;
+            if (mask >> r & 1) {  // covered from the left: move on
+                int to = mask ^ 1 << r;
+                nd[to] = (nd[to] + val) % MOD;
+                continue;
+            }
+            int to = mask | 1 << r;  // a horizontal domino into column c + 1
+            nd[to] = (nd[to] + val) % MOD;
+            if (r + 1 < n && !(mask >> (r + 1) & 1)) {  // a vertical domino
+                to = mask | 1 << (r + 1);
+                nd[to] = (nd[to] + val) % MOD;
+            }
+        }
+        swap(dp, nd);
+    }
+    print(dp[0]);
+}
+\end{code}
+
+\usetemplate{Broken profile DP (domino tilings)}{Ctrl+Alt+Y, Shift+P}{cpprofile}
+
+Deciding one \emph{cell} at a time, rather than a whole column at once, is what makes the profile ``broken'': a whole column would
+need $2^n \times 2^n$ transitions per column, cell by cell only three per state. The program needs 0.06\,s for a $10 \times 1000$
+grid. The same idea counts colourings with local constraints, placements of non-attacking pieces, and paths in narrow grids.
+
+% ======================================================================================================================
+\section[Sums over subsets]{Sums over subsets \hfill \plat}\label{sec:sosdp}
+
+Given a value $f(T)$ for every subset $T$ of $B$ bits, the \emph{zeta transform} is $F(S) = \sum_{T \subseteq S} f(T)$ for every
+$S$. Enumerating submasks costs $\Oh{3^B}$; the \defn{sum over subsets} (SOS) DP does it in $\Oh{B \cdot 2^B}$ by adding one bit
+dimension at a time:
+\begin{code}
+rep(i, B) rep(m, 1 << B)
+    if (m >> i & 1) f[m] += f[m ^ 1 << i];
+\end{code}
+
+\emph{Why it works.} After the passes for bits $0, \dots, i$, $f[m]$ holds the sum of the original values of the masks $T$ that agree
+with $m$ on bits $i+1, \dots, B-1$ and are submasks of $m$ on bits $0, \dots, i$. The pass for bit $i$ adds, to every $m$ with bit
+$i$ set, the value of $m$ without bit $i$, which covers exactly the submasks that have bit $i$ cleared
+(Figure~\ref{fig:sos}). After the last pass, $f[m] = F(m)$. Running the passes with $-$ instead of $+$ undoes the transform (the
+M\"obius transform), and flipping the condition (\cc{!(m >> i & 1)}, adding $f[m \mid 2^i]$) gives sums over \emph{supersets}.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{sm/.style={draw=fgline, line width=0.5pt, fill=white, font=\ttfamily\scriptsize, minimum width=9mm,
+    minimum height=4.6mm, inner sep=0pt}}
+  \foreach \col/\tx in {0/{$f$}, 1/{after bit 0}, 2/{after bit 1}, 3/{after bit 2: $F$}}
+    \node[blbl] at (2.6*\col, 0.55) {\tx};
+  \foreach \col in {0, 1, 2, 3} \foreach \mm/\nm in {0/000, 1/001, 2/010, 3/011, 4/100, 5/101, 6/110, 7/111}
+    \node[sm] (S\col\mm) at (2.6*\col, -0.6*\mm) {\nm};
+  \foreach \col/\bt in {1/1, 2/2, 3/4} {
+    \pgfmathtruncatemacro{\prv}{\col - 1}
+    \foreach \mm in {0, ..., 7} {
+      \draw[line width=0.4pt, draw=fgline] (S\prv\mm.east) -- (S\col\mm.west);
+      \pgfmathtruncatemacro{\hasbit}{mod(floor(\mm / \bt), 2)}
+      \ifnum\hasbit=1
+        \pgfmathtruncatemacro{\src}{\mm - \bt}
+        \draw[->, line width=0.8pt, draw=fgblue] (S\prv\src.east) -- (S\col\mm.west);
+      \fi
+    }
+  }
+\end{tikzpicture}
+\caption{The SOS DP for three bits as a butterfly network. In the pass for bit $i$, every mask with bit $i$ set also receives the
+value of the mask without it (blue). After three passes each mask holds the sum over all its submasks; for example 111 has
+collected all eight values, along exactly one path each.}
+\label{fig:sos}
+\end{figure}
+
+\begin{problem}{Bit Problem (CSES)}
+Given $n \le 2 \cdot 10^5$ numbers $x_i \le 10^6$, report for every $x_i$ the number of $x_j$ with $x_i \mid x_j = x_i$, the number with
+$x_i \mathbin{\&} x_j = x_i$, and the number with $x_i \mathbin{\&} x_j \ne 0$.
+\solution The first condition says $x_j$ is a submask of $x_i$: subset sums of the count array. The second says $x_j$ is a
+supermask: superset sums. The third is the complement of ``$x_j$ is a submask of $\lnot x_i$''. One pass over 20 bits computes both
+tables; 0.34\,s in all.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    const int B = 20;  // x <= 10^6 < 2^20
+    vi x(n), sub(1 << B, 0), sup(1 << B, 0);
+    for (ll& v : x) cin >> v, sub[v]++, sup[v]++;
+    // sub[m]: how many x_j are submasks of m; sup[m]: how many are supermasks
+    rep(i, B) rep(m, 1 << B) {
+        if (m >> i & 1) sub[m] += sub[m ^ 1 << i];
+        else sup[m] += sup[m ^ 1 << i];
+    }
+    int full = (1 << B) - 1;
+    // x_j | x = x, x_j & x = x, and x_j & x != 0 (all but the submasks of ~x)
+    for (ll v : x) print(sub[v], sup[v], n - sub[full ^ v]);
+}
+\end{code}
+
+\usetemplate{SOS DP}{Ctrl+Alt+Y, U}{cpsos}
+
+\subsection{Subset convolution}
+
+The \emph{subset convolution} of $a$ and $b$ is $c(S) = \sum_{T \subseteq S} a(T)\, b(S \setminus T)$: the sum over all ways to split
+$S$ into two disjoint parts. Its brute force is $\Oh{3^n}$. The zeta transform alone cannot do it, because the pointwise product of
+two zeta transforms counts pairs $(T, U)$ with $T \cup U = S$ that may \emph{overlap}. The fix is to remember sizes: split $a$ by the
+number of elements, $a_k(T) = a(T)$ if $|T| = k$ and 0 otherwise, transform every $a_k$ and $b_k$, multiply them as polynomials in
+the size, $h_k = \sum_{i + j = k} \hat a_i \hat b_j$, and transform back. A pair $(T, U)$ with $T \cup U = S$ and $|T| + |U| = |S|$
+is necessarily disjoint, so $c(S)$ is the inverse transform of $h_{|S|}$ at $S$. The cost is $\Oh{n^2 2^n}$: about 1\,s for $n =
+20$ with the template, which also keeps the memory to 176\,MB by storing 32-bit values.
+
+\begin{problem}{Disjoint splits}
+Given $a(T)$ and $b(U)$ for every subset of $n \le 20$ elements, compute for every set $S$ the sum of $a(T)\,b(S \setminus T)$ over all
+splits of $S$, modulo $10^9 + 7$. (With $a = b = $ the indicator of the ``valid'' groups, $c(S)$ counts the ordered ways to split $S$
+into two valid groups.)
+\end{problem}
+
+\begin{code}
+void solve() {  // cpsubsetconv is pasted above solve()
+    int n;
+    cin >> n;
+    vi a(1 << n), b(1 << n);
+    for (ll& x : a) cin >> x;
+    for (ll& x : b) cin >> x;
+    print(subset_convolution(a, b));
+}
+\end{code}
+
+\usetemplate{Subset convolution}{Ctrl+Alt+U, Shift+S}{cpsubsetconv}
+
+\begin{recognize}
+``For every mask, sum (or count, or take the maximum) over its submasks or supermasks''; pairs with conditions like $x \mathbin{\&} y
+= 0$ or $x \mid y = x$; values up to $2^{20}$. Splitting a set into two or more disjoint parts with independent costs is a subset
+convolution, and repeating it $k$ times gives the ways to split into $k$ parts (Chapter~\ref{ch:linalg} also covers the XOR and AND
+convolutions).
+\end{recognize}
+
+% ======================================================================================================================
+\section[Scheduling with sorted events]{Scheduling with sorted events \hfill \gold}\label{sec:intervalsched}
+
+When the items are intervals in time, sorting them by \emph{end} time gives a natural order: a solution that ends with interval $i$
+consists of $i$ and a solution among the intervals that end before $i$ starts, which form a prefix of the sorted list. Binary search
+finds that prefix.
+
+\begin{problem}{Projects (CSES)}
+There are $n \le 2 \cdot 10^5$ projects, each with a start day, an end day and a reward. You can work on one project per day, and a
+project must be done entirely. Maximise the total reward.
+\solution Sort by end day. $dp[i]$ is the best reward using only the first $i$ projects: either project $i$ is skipped, $dp[i-1]$, or
+it is taken together with the best of the projects that end before its start day, $dp[j] + p_i$ (Figure~\ref{fig:projects}).
+$\Oh{n \log n}$, 0.26\,s at the limits.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.95cm]
+  \numline{1}{9}{0}{day}
+  \ivl{2}{4}{0.55}{fggreen!65}{$p = 4$}
+  \ivl{3}{6}{1.15}{fgline!80}{$p = 6$}
+  \ivl{5}{7}{1.75}{fggreen!65}{$p = 3$}
+  \ivl{6}{8}{2.35}{fgline!80}{$p = 2$}
+  \foreach \yy/\tx in {0.55/{$dp[1] = 4$}, 1.15/{$dp[2] = \max(4, 0 + 6) = 6$}, 1.75/{$dp[3] = \max(6, dp[1] + 3) = 7$},
+      2.35/{$dp[4] = \max(7, dp[1] + 2) = 7$}}
+    \node[lbl, anchor=west] at (9.6, \yy) {\tx};
+  \draw[->, line width=0.8pt, draw=fgblue, dashed] (5, 1.6) to[bend left=30] (4, 0.72);
+\end{tikzpicture}
+\caption{Projects sorted by end day. The project $[5, 7]$ is compatible with the projects that end before day 5, here only the
+first one (dashed), so taking it gives $dp[1] + 3 = 7$. The best schedule takes the two green projects.}
+\label{fig:projects}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vector<array<ll, 3>> pr(n);  // (end day, start day, reward)
+    for (auto& p : pr) cin >> p[1] >> p[0] >> p[2];
+    sort(all(pr));
+    vi ends(n);
+    rep(i, n) ends[i] = pr[i][0];
+    // dp[i]: the best total reward using only the first i projects by end
+    vi dp(n + 1, 0);
+    rep(i, n) {
+        // projects ending before this one's start day are compatible with it
+        int j = lower_bound(all(ends), pr[i][1]) - ends.begin();
+        dp[i + 1] = max(dp[i], dp[j] + pr[i][2]);  // skip it, or take it
+    }
+    print(dp[n]);
+}
+\end{code}
+
+% ======================================================================================================================
+\section[Probability and expectation]{Probability and expectation \hfill \plat}\label{sec:probdp}
+
+A probability DP replaces ``number of ways'' with ``probability'', and the transitions multiply by the probability of each choice.
+Expected values add one more idea.
+
+\begin{fact}[Linearity of expectation]
+$E[X + Y] = E[X] + E[Y]$ for \emph{any} random variables, independent or not. So the expected number of events that happen is the sum
+of their probabilities: the expected number of fixed points of a random permutation is $n \cdot \frac1n = 1$, whatever $n$ is.
+\end{fact}
+
+\begin{problem}{Dice Probability (CSES)}
+Throw $n \le 100$ dice. What is the probability that the sum is between $a$ and $b$?
+\solution The distribution of the sum after $i$ dice is a DP over the sum: each value spreads $\frac16$ of its probability to the six
+next sums (Figure~\ref{fig:diceprob}).
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[cpplot, width=12cm, height=5.2cm, xlabel={sum $/$ number of dice}, ylabel={probability $\times$ dice},
+  xmin=1, xmax=6, ymin=0, ymax=0.82, legend pos=north east, legend columns=2]
+  \addplot+[mark=none] coordinates {(1,0.1667) (2,0.1667) (3,0.1667) (4,0.1667) (5,0.1667) (6,0.1667)};
+  \addplot+[mark=none] coordinates {(1,0.0556) (1.5,0.1111) (2,0.1667) (2.5,0.2222) (3,0.2778) (3.5,0.3333) (4,0.2778)
+    (4.5,0.2222) (5,0.1667) (5.5,0.1111) (6,0.0556)};
+  \addplot+[mark=none] coordinates {(1,0.0139) (1.333,0.0417) (1.667,0.0833) (2,0.1389) (2.333,0.2083) (2.667,0.2917)
+    (3,0.3472) (3.333,0.375) (3.667,0.375) (4,0.3472) (4.333,0.2917) (4.667,0.2083) (5,0.1389) (5.333,0.0833) (5.667,0.0417)
+    (6,0.0139)};
+  \addplot+[mark=none] coordinates {(1.0,0.0) (1.6,0.001) (1.8,0.004) (2.0,0.014) (2.2,0.040) (2.4,0.095) (2.6,0.190)
+    (2.8,0.326) (3.0,0.485) (3.2,0.629) (3.4,0.715) (3.5,0.727) (3.6,0.715) (3.8,0.629) (4.0,0.485) (4.2,0.326) (4.4,0.190)
+    (4.6,0.095) (4.8,0.040) (5.0,0.014) (5.2,0.004) (5.4,0.001) (6.0,0.0)};
+  \legend{1 die, 2 dice, 3 dice, 10 dice}
+\end{axis}
+\end{tikzpicture}
+\caption{The distribution of the sum of $n$ dice, rescaled to the average per die. One die is flat, two give a triangle, and ten
+are already close to a bell curve centred at 3.5.}
+\label{fig:diceprob}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n, a, b;
+    cin >> n >> a >> b;
+    vector<double> p(6 * n + 1, 0.0);  // the distribution of the sum so far
+    p[0] = 1;
+    rep(i, n) {
+        vector<double> q(6 * n + 1, 0.0);
+        rep(s, 6 * i + 1) if (p[s] > 0)
+            rep(d, 1, 7) q[s + d] += p[s] / 6;
+        swap(p, q);
+    }
+    double ans = 0;
+    rep(s, a, b + 1) ans += p[s];
+    cout << fixed << setprecision(6) << ans << '\n';
+}
+\end{code}
+
+\paragraph{Counting with $P(\max \le x)$.} The maximum of independent values is awkward directly but easy through its cumulative
+distribution: $\max \le x$ exactly when every value is $\le x$. In Candy Lottery (CSES), each of $n$ children gets a uniform number of
+candies in $1..k$, and $P(\max \le x) = (x / k)^n$, so $P(\max = x) = (x/k)^n - ((x - 1)/k)^n$ and the expectation is a single sum.
+
+\begin{code}
+void solve() {
+    int n, k;
+    cin >> n >> k;
+    // P(max <= x) = (x / k)^n, so P(max = x) is a difference of two powers
+    double ans = 0;
+    rep(x, 1, k + 1) {
+        double le = pow((double)x / k, n), lt = pow((double)(x - 1) / k, n);
+        ans += x * (le - lt);
+    }
+    cout << fixed << setprecision(6) << ans << '\n';
+}
+\end{code}
+
+\begin{problem}{Moving Robots (CSES)}
+Each square of a chessboard has a robot. In each of $k \le 100$ steps, every robot moves to a uniformly random neighbouring square.
+What is the expected number of empty squares at the end?
+\solution By linearity, the expected number of empty squares is the sum over squares of the probability that the square is empty.
+The robots move independently, so that probability is the product, over all robots, of the probability that the robot is not
+there; and where one robot ends is a 64-state probability DP over $k$ steps (Figure~\ref{fig:robots}).
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \foreach \cc/\rr/\pc/\val in {0/0/60/0.54, 1/0/33/0.41, 2/0/32/0.40, 3/0/34/0.41, 4/0/34/0.41, 5/0/32/0.40, 6/0/33/0.41,
+      7/0/60/0.54, 0/1/33/0.41, 1/1/8/0.29, 2/1/12/0.31, 3/1/12/0.31, 4/1/12/0.31, 5/1/12/0.31, 6/1/8/0.29, 7/1/33/0.41,
+      0/2/32/0.40, 1/2/12/0.31, 2/2/12/0.31, 3/2/14/0.32, 4/2/14/0.32, 5/2/12/0.31, 6/2/12/0.31, 7/2/32/0.40, 0/3/34/0.41,
+      1/3/12/0.31, 2/3/14/0.32, 3/3/15/0.32, 4/3/15/0.32, 5/3/14/0.32, 6/3/12/0.31, 7/3/34/0.41, 0/4/34/0.41, 1/4/12/0.31,
+      2/4/14/0.32, 3/4/15/0.32, 4/4/15/0.32, 5/4/14/0.32, 6/4/12/0.31, 7/4/34/0.41, 0/5/32/0.40, 1/5/12/0.31, 2/5/12/0.31,
+      3/5/14/0.32, 4/5/14/0.32, 5/5/12/0.31, 6/5/12/0.31, 7/5/32/0.40, 0/6/33/0.41, 1/6/8/0.29, 2/6/12/0.31, 3/6/12/0.31,
+      4/6/12/0.31, 5/6/12/0.31, 6/6/8/0.29, 7/6/33/0.41, 0/7/60/0.54, 1/7/33/0.41, 2/7/32/0.40, 3/7/34/0.41, 4/7/34/0.41,
+      5/7/32/0.40, 6/7/33/0.41, 7/7/60/0.54}
+    \node[draw=white, line width=0.6pt, fill=fgblue!\pc, minimum size=7.5mm, inner sep=0pt, font=\sffamily\tiny,
+      text=fgink] at (0.75*\cc, -0.75*\rr) {\val};
+  \node[notel, anchor=west, text width=5.2cm] at (6.1, -2.6) {The probability that each square is empty after $k = 10$ steps.
+    Corner squares have only two neighbours, so robots leave them more often than they arrive. The expected number of empty
+    squares is the sum of the 64 values, 23.12.};
+\end{tikzpicture}
+\caption{Moving Robots: a heat map of the per-square probabilities whose sum is the answer.}
+\label{fig:robots}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int k;
+    cin >> k;
+    // the robots move independently, so a cell is empty with probability
+    // prod over robots (1 - P(this robot ends there)); add over the cells
+    vector<double> empty(64, 1.0);
+    rep(start, 64) {
+        vector<double> p(64, 0.0);  // where this robot is after each step
+        p[start] = 1;
+        rep(step, k) {
+            vector<double> q(64, 0.0);
+            rep(c, 64) {
+                if (p[c] == 0) continue;
+                int r = c / 8, col = c % 8;
+                vi nb;
+                if (r > 0) nb.push_back(c - 8);
+                if (r < 7) nb.push_back(c + 8);
+                if (col > 0) nb.push_back(c - 1);
+                if (col < 7) nb.push_back(c + 1);
+                for (int d : nb) q[d] += p[c] / sz(nb);
+            }
+            swap(p, q);
+        }
+        rep(c, 64) empty[c] *= 1 - p[c];
+    }
+    double ans = 0;
+    for (double e : empty) ans += e;
+    cout << fixed << setprecision(6) << ans << '\n';
+}
+\end{code}
+
+\paragraph{Expected values with loops.} An expected-value DP usually runs backwards from the end: $E[s]$, the expected remaining cost
+from state $s$, is the cost of one step plus $\sum_t P(s \to t)\, E[t]$. When a state can return to itself with probability $p$, the
+equation contains $E[s]$ on both sides and is solved for it: rolling a die until a 6 appears takes $E = 1 + \frac56 E$ throws, so $E =
+6$, and in general an experiment that succeeds with probability $p$ needs $1/p$ tries on average. When states form longer cycles,
+the equations form a linear system (Gaussian elimination, Chapter~\ref{ch:linalg}).
+
+\begin{trick}[Expectations modulo a prime]
+When an expected value is requested ``as $P \cdot Q^{-1} \bmod 998244353$'', run the whole DP in modular arithmetic: every division by
+a probability's denominator becomes a multiplication by a modular inverse (Chapter~\ref{ch:numbertheory}), and the result is exact.
+Floating point is only for problems that print decimals, and then \cc{double} with error $\le 10^{-6}$ is enough far more often than
+\cc{long double} is needed.
+\end{trick}
+
+% ======================================================================================================================
+\section[Games]{Games \hfill \gold}\label{sec:gamedp}
+
+In a two-player game with perfect information, no chance and no draws, where the player who cannot move loses, every position is
+either \defn{winning} for the player to move or \defn{losing}. A position is winning exactly when \emph{some} move leads to a losing
+position, and losing when \emph{every} move (possibly none) leads to a winning one. Positions that come later in play are decided
+first, so this is a DP over the DAG of positions, in reverse order of play.
+
+\begin{problem}{Stick Game (CSES)}
+A heap has $n \le 10^6$ sticks, and a move removes $p_1$, $p_2$, \dots or $p_k$ of them ($k \le 100$). For every heap size from 1 to $n$,
+does the first player win?
+\solution $\mathit{win}[0]$ is false (no move), and $\mathit{win}[i]$ is true when some $p_j \le i$ has $\mathit{win}[i - p_j]$ false
+(Figure~\ref{fig:stickgame}): $\Oh{nk}$, 0.11\,s.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[blbl, anchor=east] at (-0.2, 0) {position};
+  \arrs{W}{0}{0}{L/hot, W/good, L/hot, W/good, W/good, W/good, W/good, L/hot, W/good, L/hot, W/good, W/good, W/good, W/good,
+    L/hot}
+  \idx{W}{15}
+  \foreach \ua/\ub/\dx in {2/1/0.13, 5/1/-0.13, 6/3/0.13, 7/3/-0.13}
+    \draw[->, line width=0.8pt, draw=fggreen!70!black] (W-\ua.north) to[bend right=40] ($(W-\ub.north)+(\dx, 0)$);
+  \node[notel, anchor=north west, text width=10.4cm] at (0, -0.9) {Moves remove 1, 3 or 4 sticks. Every winning position (W)
+    has a move to a losing one (arrows: from 1, 4, 5 and 6 sticks); from 0, 2 and 7 sticks every move reaches a W. The pattern
+    repeats with period 7, which is typical: game DPs over a single number often become periodic.};
+\end{tikzpicture}
+\caption{Winning and losing positions of the Stick Game with moves $\{1, 3, 4\}$.}
+\label{fig:stickgame}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n, k;
+    cin >> n >> k;
+    vi p(k);
+    for (ll& x : p) cin >> x;
+    // win[i]: the player to move with i sticks left wins; with 0 sticks
+    // there is no move, so the player to move has lost
+    vector<bool> win(n + 1, false);
+    rep(i, 1, n + 1) for (ll x : p)
+        if (x <= i && !win[i - x]) {  // a move to a losing position
+            win[i] = true;
+            break;
+        }
+    string s;
+    rep(i, 1, n + 1) s += win[i] ? 'W' : 'L';
+    print(s);
+}
+\end{code}
+
+When a position is a \emph{sum} of independent games (several heaps, the player moves in one of them), the win/lose labels of the
+parts do not determine the label of the sum; their Grundy numbers do, and Nim is the model (Chapter~\ref{ch:combinatorics}).
+
+% ======================================================================================================================
+\section[Matrix exponentiation]{Linear recurrences and matrix powers \hfill \gold}\label{sec:matexp}
+
+When the state is a small vector and every step transforms it by the same linear map, $n$ steps are the $n$-th power of a matrix,
+and fast exponentiation computes it with $\Oh{\log n}$ matrix products. For a state of size $k$ that is $\Oh{k^3 \log n}$: for $k = 6$
+and $n = 10^{18}$, about 60 products of $6 \times 6$ matrices.
+
+\begin{problem}{Throwing Dice (CSES)}
+Count the ordered ways to reach the sum $n$ with dice, modulo $10^9 + 7$, for $n \le 10^{18}$.
+\solution Dice Combinations (Section~\ref{sec:dp-recipe}) with a huge $n$. The recurrence $f(s + 1) = f(s) + f(s - 1) + \dots + f(s -
+5)$ moves the vector of the last six values by a fixed matrix (Figure~\ref{fig:matpow}); since $f(0) = 1$ and earlier values are 0,
+$f(n)$ is the top-left entry of $T^n$. The program takes 0.08\,s.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\small
+$\begin{pmatrix} f(s+1) \\ f(s) \\ f(s-1) \\ f(s-2) \\ f(s-3) \\ f(s-4) \end{pmatrix} =
+\underbrace{\begin{pmatrix} 1&1&1&1&1&1 \\ 1&0&0&0&0&0 \\ 0&1&0&0&0&0 \\ 0&0&1&0&0&0 \\ 0&0&0&1&0&0 \\ 0&0&0&0&1&0
+\end{pmatrix}}_{T}
+\begin{pmatrix} f(s) \\ f(s-1) \\ f(s-2) \\ f(s-3) \\ f(s-4) \\ f(s-5) \end{pmatrix}$
+\par\bigskip
+\begin{tikzpicture}
+  \foreach \ex/\sy [count=\ci from 0] in {1/hot, 2/n, 4/hot, 8/hot}
+    \node[draw=fgline, line width=0.6pt, rounded corners=2pt, minimum width=10mm, minimum height=7mm, \sy] (P\ci) at
+      (1.35*\ci, 0) {$T^{\ex}$};
+  \foreach \ci in {1, 2, 3} {
+    \pgfmathtruncatemacro{\pv}{\ci - 1}
+    \draw[->, line width=0.8pt, draw=fgline] (P\pv) -- (P\ci);
+  }
+  \node[notel, anchor=west, text width=6.2cm] at (4.75, 0) {Each power is the square of the one before it.
+    $n = 13 = 1101_2$, so $T^{13} = T^{8} \cdot T^{4} \cdot T^{1}$ (red).};
+\end{tikzpicture}
+\caption{Top: one step of the dice recurrence as a matrix product. Bottom: fast exponentiation squares $T$ repeatedly and
+multiplies in the powers that match the set bits of $n$.}
+\label{fig:matpow}
+\end{figure}
+
+\begin{code}
+void solve() {
+    ll n;
+    cin >> n;
+    using Mat = array<array<ll, 6>, 6>;
+    auto mul = [](const Mat& A, const Mat& B) {
+        Mat C{};
+        rep(i, 6) rep(k, 6) if (A[i][k]) rep(j, 6)
+            C[i][j] = (C[i][j] + A[i][k] * B[k][j]) % MOD;
+        return C;
+    };
+    // the vector (f(s), f(s - 1), ..., f(s - 5)) moves one step by T
+    Mat T{}, R{};
+    rep(j, 6) T[0][j] = 1;  // f(s + 1) = f(s) + ... + f(s - 5)
+    rep(i, 1, 6) T[i][i - 1] = 1;  // the other entries shift down
+    rep(i, 6) R[i][i] = 1;
+    for (ll e = n; e > 0; e >>= 1, T = mul(T, T))
+        if (e & 1) R = mul(R, T);
+    print(R[0][0]);  // T^n applied to (f(0), 0, ..., 0) = (1, 0, ..., 0)
+}
+\end{code}
+
+\usetemplate{Matrix exponentiation}{Ctrl+Alt+T, Shift+X}{cpmatrix}
+
+\begin{trick}[Beyond addition and multiplication]
+A matrix power works over any \emph{semiring}. With $(\min, +)$ in place of $(+, \times)$, the $n$-th power of the weighted adjacency
+matrix gives the shortest walks with exactly $n$ edges (Graph Paths~II); with ordinary arithmetic it counts walks of length $n$
+(Graph Paths~I); with (OR, AND) it gives reachability in exactly $n$ steps. For a recurrence of order $k$ in the thousands, the
+$\Oh{k^3 \log n}$ matrix power is too slow, and the polynomial methods of Chapter~\ref{ch:linalg} (Kitamasa, Berlekamp--Massey) take
+$\Oh{k^2 \log n}$ or $\Oh{k \log k \log n}$.
+\end{trick}
+
+\begin{recognize}
+$n$ up to $10^{18}$, a DP whose state is small ($k \le 100$) and whose transition does not depend on the step: linear recurrences,
+counting walks of length $n$ in a small graph, DP over positions with a small alphabet, tilings of a $k \times n$ strip.
+\end{recognize}
+
+\begin{summary}[Chapter summary]
+\begin{itemize}
+  \item Bitmask DP handles sets of up to about 20 items in $\Oh{2^n n^2}$; pair-valued states and dominance can replace $\Oh{3^n}$
+        submask enumeration, which is itself $3^n$ and not $4^n$.
+  \item Interval DP fills $dp[l][r]$ by increasing length; for games, storing the difference of the two players' scores turns the
+        game into a single maximisation.
+  \item Digit DP counts up to $10^{18}$ with a tight flag: after the first smaller digit, the count of completions is independent of
+        the bound.
+  \item A narrow grid is filled cell by cell with its boundary (profile) as a bitmask: $\Oh{nm\,2^n}$.
+  \item SOS DP sums over subsets in $\Oh{B\,2^B}$; ranking by size turns it into subset convolution in $\Oh{n^2 2^n}$.
+  \item Linearity of expectation reduces an expected count to a sum of probabilities; maxima go through $P(\max \le x)$.
+  \item Win/lose positions are a DP in reverse order of play; fixed linear transitions jump $10^{18}$ steps with matrix powers.
+\end{itemize}
+\end{summary}
+
+\begin{practice}
+\ppgroup{Sets, intervals, digits and profiles}
+\begin{pplist}
+  \item Hamiltonian Flights
+  \item Elevator Rides
+  \item Removal Game
+  \item Counting Numbers
+  \item Counting Towers
+  \item Counting Tilings
+  \item Bit Problem
+  \item Projects
+\end{pplist}
+\ppgroup{Probability, games and matrices}
+\begin{pplist}
+  \item Dice Probability
+  \item Candy Lottery
+  \item Moving Robots
+  \item Stick Game
+  \item Throwing Dice
+  \item Fibonacci Numbers
+  \item Graph Paths I
+  \item Graph Paths II
+\end{pplist}
+\end{practice}

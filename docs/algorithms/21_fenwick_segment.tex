@@ -1,0 +1,773 @@
+\chapter{Fenwick Trees and Segment Trees}\label{ch:segtree}
+
+When the array changes between queries, prefix sums break: a single update would invalidate $\Oh{n}$ prefix values. Fenwick trees
+and segment trees store \emph{partial} aggregates, arranged so that both an update and a query touch only $\Oh{\log n}$ of them.
+The Fenwick tree is the smallest and fastest structure for sums; the segment tree is the general one, which adapts to almost any
+associative summary, to range updates through lazy tags, to descents that search instead of summing, and to persistence. This chapter
+builds both in detail and then turns to the offline sweeps that make many two-dimensional questions one-dimensional.
+
+\begin{chapterintro}{\gold\ \plat\ \ioi}{Chapter~\ref{ch:static} (static range queries) and Chapter~\ref{ch:bits}
+(lowest set bits).}
+  \item use Fenwick trees for point and range updates, order statistics by descent, and two dimensions;
+  \item build segment trees bottom-up, prove the $\Oh{\log n}$ bounds, and design nodes for non-trivial merges;
+  \item search a segment tree by descending it, and update ranges with lazy propagation;
+  \item compute the area of a union of rectangles, keep every version with persistence, and know when segment tree beats apply;
+  \item turn offline two-dimensional conditions into a sweep plus a Fenwick tree.
+\end{chapterintro}
+
+% ======================================================================================================================
+\section[Fenwick trees]{Fenwick trees \hfill \gold}\label{sec:fenwick}
+
+A \defn{Fenwick tree} (binary indexed tree) over $a_1, \dots, a_n$ stores in cell $i$ the sum of the $\mathit{lowbit}(i)$ elements
+that end at position $i$, where $\mathit{lowbit}(i) = i \mathbin{\&} (-i)$ is the value of the lowest set bit of $i$
+(Figure~\ref{fig:fenwick}). Cell 12 $= 1100_2$ covers 4 elements, positions 9 to 12; cell 13 covers only itself.
+
+\begin{itemize}
+  \item \textbf{Prefix sum up to $p$}: add cell $p$, remove the lowest set bit of $p$, and repeat until $p = 0$. The blocks visited
+        are consecutive and tile $[1, p]$ exactly: $13 = 1101_2 \to 1100_2 \to 1000_2$ visits the blocks $[13, 13]$, $[9, 12]$ and
+        $[1, 8]$. One step per set bit: at most $\log_2 n$.
+  \item \textbf{Adding to position $p$}: every cell whose block contains $p$ must change. Those are $p$, then $p +
+        \mathit{lowbit}(p)$, and so on: adding the lowest set bit carries into the next block that covers $p$. Again at most
+        $\log_2 n$ steps.
+\end{itemize}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.86cm]
+  \foreach \ii in {1, ..., 16} \node[font=\ttfamily\scriptsize, text=fgblue] at (\ii, 0) {\ii};
+  \foreach \ii/\bl/\lv in {1/1/0, 2/2/1, 3/1/0, 4/4/2, 5/1/0, 6/2/1, 7/1/0, 8/8/3, 9/1/0, 10/2/1, 11/1/0, 12/4/2, 13/1/0,
+      14/2/1, 15/1/0, 16/16/4}
+    \draw[line width=0.7pt, draw=fgline, fill=fgfill, rounded corners=1.5pt] (\ii - \bl + 0.58, 0.4 + 0.42*\lv)
+      rectangle (\ii + 0.42, 0.68 + 0.42*\lv);
+  \foreach \ii/\bl/\lv in {13/1/0, 12/4/2, 8/8/3}
+    \draw[line width=1.2pt, draw=fgorange!90!black, fill=fgorange!25, rounded corners=1.5pt] (\ii - \bl + 0.58, 0.4 + 0.42*\lv)
+      rectangle (\ii + 0.42, 0.68 + 0.42*\lv);
+  \foreach \ii/\bl/\lv in {5/1/0, 6/2/1, 8/8/3, 16/16/4}
+    \draw[line width=1.6pt, draw=fgblue, rounded corners=1.5pt] (\ii - \bl + 0.58, 0.4 + 0.42*\lv) rectangle
+      (\ii + 0.42, 0.68 + 0.42*\lv);
+  \node[notel, anchor=north, align=center, text width=14cm] at (8.5, -0.3) {Orange: $\mathit{prefix}(13)$ adds the cells 13, 12 and 8
+    ($1101_2 \to 1100_2 \to 1000_2$).\\Blue frames: $\mathit{add}(5)$ changes the cells 5, 6, 8 and 16 ($101_2 \to 110_2 \to
+    1000_2 \to 10000_2$), every block that contains position 5.};
+\end{tikzpicture}
+\caption{The blocks of a Fenwick tree with 16 cells: cell $i$ covers the $\mathit{lowbit}(i)$ positions ending at $i$.}
+\label{fig:fenwick}
+\end{figure}
+
+The template stores the cells in an array of $n + 1$ numbers and uses 0-based positions in its interface; the worked problem Dynamic
+Range Sum Queries (Section~\ref{wp:bit}) is the basic use. It needs half the memory of a bottom-up segment tree and its loops are
+shorter, so it is the default for sums and counts.
+
+\usetemplate{Fenwick tree}{Ctrl+Alt+T, I}{cpbit}
+
+\paragraph{Range updates, point queries.} To add $u$ to every element of $[a, b]$ and read single elements, keep a Fenwick tree over
+the \emph{differences}: add $u$ at position $a$ and $-u$ at $b + 1$. The value of element $k$ is its original value plus the prefix sum of
+the differences up to $k$.
+
+\begin{problem}{Range Update Queries (CSES)}
+An array receives $q$ operations: add $u$ to every value in $[a, b]$, or report the value at position $k$ ($n, q \le 2 \cdot 10^5$).
+\end{problem}
+
+\begin{code}
+void solve() {  // BIT (cpbit) is pasted above solve()
+    int n, q;
+    cin >> n >> q;
+    vi x(n);
+    for (ll& v : x) cin >> v;
+    BIT d(n + 1);  // the differences added so far: x[k] grew by d[0..k]
+    while (q--) {
+        int type;
+        cin >> type;
+        if (type == 1) {
+            int a, b;
+            ll u;
+            cin >> a >> b >> u;
+            d.add(a - 1, u), d.add(b, -u);  // +u from a on, -u after b
+        } else {
+            int k;
+            cin >> k;
+            print(x[k - 1] + d.prefix(k));  // the differences at 0..k-1
+        }
+    }
+}
+\end{code}
+
+\paragraph{Order statistics by descent.} If the Fenwick tree holds counts (1 for every element present), ``the $k$-th element'' is
+the first position whose prefix sum reaches $k$. Binary search over prefix sums costs $\Oh{\log^2 n}$; descending through the powers of
+two costs $\Oh{\log n}$. Start at position 0 and, for $2^j = $ the highest power of two down to 1, look at the cell
+$\mathit{pos} + 2^j$: it holds exactly the count of the block just after $\mathit{pos}$, so if that count is below $k$, jump over the
+block and subtract it (Figure~\ref{fig:fendescent}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[blbl, anchor=east] at (-0.2, 0) {present};
+  \arrs{P}{0}{0}{1/n, 1/n, 0/dim, 1/n, 1/n, 0/dim, 1/hot, 1/n}
+  \foreach \ii in {1, ..., 8} \node[lbl] at ($(P-\ii.south)+(0, -0.22)$) {\ii};
+  \node[blbl, anchor=east] at (-0.2, -1.1) {cell $t[i]$};
+  \arrs{T}{0}{-1.1}{1/n, 2/n, 0/n, 3/good, 1/n, 1/good, 1/cool, 6/cool}
+  \node[notel, anchor=west, text width=7.2cm] at (6.2, -0.55) {Find the 5th present element. Cell 8 holds 6, not below 5:
+    stay. Cell 4 holds 3 $< 5$: jump to position 4, $k = 2$. Cell $4 + 2 = 6$ holds 1 $< 2$: jump to 6, $k = 1$. Cell
+    $6 + 1 = 7$ holds 1, not below 1: stay. The answer is the position after 6, that is 7 (red). Blue: looked at and not
+    taken; green: jumped over.};
+\end{tikzpicture}
+\caption{Fenwick descent: one cell per power of two, $\Oh{\log n}$ for the $k$-th element.}
+\label{fig:fendescent}
+\end{figure}
+
+\begin{problem}{List Removals (CSES)}
+A list of $n \le 2 \cdot 10^5$ numbers loses one element at a time, given by its current position; print the removed elements.
+\solution A Fenwick tree with a 1 for every element still in the list. The element at current position $p$ is the $p$-th 1:
+\cc{lower_bound(p)} finds it by descent, and removing it subtracts 1.
+\end{problem}
+
+\begin{code}
+void solve() {  // BIT (cpbit) is pasted above solve()
+    int n;
+    cin >> n;
+    vi x(n);
+    for (ll& v : x) cin >> v;
+    BIT alive(n);  // a 1 at every position still in the list
+    rep(i, n) alive.add(i, 1);
+    vi out;
+    rep(j, n) {
+        int p;
+        cin >> p;
+        int i = alive.lower_bound(p);  // the p-th remaining position
+        out.push_back(x[i]);
+        alive.add(i, -1);
+    }
+    print(out);
+}
+\end{code}
+
+\begin{trick}[More from one Fenwick tree]
+\begin{itemize}
+  \item \textbf{Inversions}: scan from left to right and, for each $a_i$, count the earlier elements larger than it with a Fenwick
+        tree over the (compressed) values; $\Oh{n \log n}$.
+  \item \textbf{An ordered multiset of small values}: counts per value, insertion and deletion are $\pm 1$, ``how many below
+        $x$'' is a prefix sum and ``the $k$-th smallest'' a descent. Faster than a balanced tree when the values are at most
+        about $10^6$ (Salary Queries, offline, after compressing).
+  \item \textbf{Prefix maxima}: when values only increase, a Fenwick tree with $\max$ instead of $+$ answers prefix maxima; this
+        is the $\Oh{n \log n}$ LIS with weights.
+\end{itemize}
+\end{trick}
+
+\subsection{Range updates with range sums}
+
+To add $v$ to a range \emph{and} ask for range sums, keep two Fenwick trees over differences. If $D$ is the difference array,
+\[ \sum_{i < p} a_i = \sum_{i < p} \sum_{j \le i} D_j = \sum_{j < p} D_j\,(p - j) = p \sum_{j < p} D_j - \sum_{j < p} j\,D_j, \]
+so one tree keeps $D_j$ and the other $j \cdot D_j$, and a prefix sum is $p \cdot \mathit{first}(p) - \mathit{second}(p)$. A range
+update changes two entries of each tree.
+
+\usetemplate{Fenwick tree with range updates}{Ctrl+Alt+Y, I}{cpbitrange}
+
+\subsection{Two dimensions}
+
+Nesting the two loops gives a Fenwick tree over a grid: cell $(i, j)$ covers the rows $(i - \mathit{lowbit}(i), i]$ and the columns
+$(j - \mathit{lowbit}(j), j]$, and both operations cost $\Oh{\log n \log m}$. The memory is $\Oh{nm}$, so it suits grids up to a few
+thousand on a side; for sparse points, use the offline sweep of Section~\ref{sec:sweepqueries}.
+
+\begin{problem}{Forest Queries II (CSES)}
+In an $n \times n$ grid ($n \le 1000$) trees appear and disappear one cell at a time; report the number of trees in rectangles
+($q \le 2 \cdot 10^5$ operations).
+\end{problem}
+
+\begin{code}
+void solve() {  // BIT2D (cpbit2d) is pasted above solve()
+    int n, q;
+    cin >> n >> q;
+    vector<string> g(n);
+    for (auto& row : g) cin >> row;
+    BIT2D b(n, n);
+    rep(r, n) rep(c, n) if (g[r][c] == '*') b.add(r, c, 1);
+    while (q--) {
+        int type;
+        cin >> type;
+        if (type == 1) {  // a tree appears or disappears
+            int y, x;
+            cin >> y >> x;
+            y--, x--;
+            b.add(y, x, g[y][x] == '*' ? -1 : 1);
+            g[y][x] = g[y][x] == '*' ? '.' : '*';
+        } else {
+            int y1, x1, y2, x2;
+            cin >> y1 >> x1 >> y2 >> x2;
+            print(b.sum(y1 - 1, x1 - 1, y2, x2));
+        }
+    }
+}
+\end{code}
+
+\usetemplate{2D Fenwick tree}{Ctrl+Alt+Y, Shift+I}{cpbit2d}
+
+Building the tree with $n^2$ single additions costs $\Oh{n^2 \log^2 n}$, here $10^8$ cheap steps; an $\Oh{n^2}$ build exists (each cell
+adds itself to its parent cell, row by row and then column by column), but the whole program already runs in 0.21\,s.
+
+% ======================================================================================================================
+\section[Segment trees]{Segment trees \hfill \gold}\label{sec:segtree}
+
+A \defn{segment tree} is a complete binary tree over the array: every node stores the aggregate of a range, the root the whole array,
+the leaves single elements, and the children of a node split its range in half (Figure~\ref{fig:segtree}). Any associative operation
+works: sums, minima, gcds, matrix products, or custom summaries.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[s/.style={seg, minimum height=6mm}]
+  \node[s, minimum width=11.8cm] at (0, 0) {$[0, 8)$\quad 27};
+  \node[s, minimum width=5.8cm] at (-3, -0.85) {$[0, 4)$\quad 13};
+  \node[s, minimum width=5.8cm, cool] at (3, -0.85) {$[4, 8)$\quad 14};
+  \foreach \px/\tx in {-4.5/{$[0, 2)$\quad 4}, 1.5/{$[4, 6)$\quad 8}, 4.5/{$[6, 8)$\quad 6}}
+    \node[s, minimum width=2.8cm] at (\px, -1.7) {\tx};
+  \node[s, minimum width=2.8cm, cool] at (-1.5, -1.7) {$[2, 4)$\quad 9};
+  \foreach \val [count=\ii from 0] in {3, 1, 4, 5, 2, 6, 5, 1} \node[s, minimum width=1.3cm] (L\ii) at (-5.25 + \ii*1.5, -2.55) {\val};
+  \node[s, minimum width=1.3cm, cool] at (L1) {1};
+  \node[notel, align=center, text width=12cm] at (0, -3.35) {The query $[1, 8)$ uses the nodes $[1, 2)$, $[2, 4)$ and $[4, 8)$
+    (blue): $1 + 9 + 14 = 24$. A node is used when its range lies inside the query and its parent's does not.};
+\end{tikzpicture}
+\caption{A segment tree of sums over $3, 1, 4, 5, 2, 6, 5, 1$.}
+\label{fig:segtree}
+\end{figure}
+
+\paragraph{Why $\Oh{\log n}$.} An update changes the leaf and its ancestors, one node per level. For a query, call a node \emph{used}
+if its range lies inside $[l, r)$ but its parent's does not. On each level, at most two nodes are used: if three were, the middle one's
+sibling would also lie inside the query, so their common parent would lie inside too, and the middle node would not be used. So a
+query combines at most $2 \log_2 n$ nodes.
+
+\paragraph{Bottom-up implementation.} The template stores the tree in an array of $2n$ cells: the leaves in cells $n, \dots, 2n - 1$
+and the parent of cell $i$ in cell $i / 2$. An update sets a leaf and walks up with $i \mathrel{/}= 2$; a query moves two pointers $l$
+and $r$ up from the leaves, taking the cell at $l$ whenever $l$ is a right child and the cell left of $r$ whenever $r$ is a right
+child, which are exactly the used nodes of the argument above. No recursion and no power-of-two padding; it is typically about
+twice as fast as a recursive tree. For operations that are not commutative,
+the template keeps the left and right parts separately so that the order is preserved.
+
+\usetemplate{Segment tree}{Ctrl+Alt+T, S}{cpseg}
+
+% ======================================================================================================================
+\section[Descending a segment tree]{Descending a segment tree \hfill \plat}\label{sec:segdescent}
+
+A query asks ``what is the aggregate of this range?''. Many problems ask the inverse: ``where is the first position at which the
+aggregate reaches $x$?''. Binary search over queries costs $\Oh{\log^2 n}$; walking down the tree costs $\Oh{\log n}$: at each node,
+look at the left child, go left if the answer is there, otherwise go right (and, for prefix aggregates, remember what the left child
+contributed).
+
+\begin{problem}{Hotel Queries (CSES)}
+Hotels in a row have $h_i$ free rooms. Each of $m$ groups, in order, takes the first hotel with at least $r_j$ free rooms; report the
+hotel or 0 ($n, m \le 2 \cdot 10^5$).
+\solution A maximum segment tree over the free rooms. If the root's maximum is below $r_j$, no hotel fits; otherwise walk down,
+always into the left child when it has enough rooms (Figure~\ref{fig:hotel}), then subtract $r_j$ at the leaf and repair the
+path. $\Oh{\log n}$ per group, 0.15\,s.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[s/.style={seg, minimum height=6mm}]
+  \node[s, minimum width=11.8cm, cool] at (0, 0) {max 6};
+  \node[s, minimum width=5.8cm, cool] at (-3, -0.85) {max 4};
+  \node[s, minimum width=5.8cm] at (3, -0.85) {max 6};
+  \node[s, minimum width=2.8cm, dim] at (-4.5, -1.7) {max 3};
+  \node[s, minimum width=2.8cm, cool] at (-1.5, -1.7) {max 4};
+  \node[s, minimum width=2.8cm] at (1.5, -1.7) {max 5};
+  \node[s, minimum width=2.8cm] at (4.5, -1.7) {max 6};
+  \foreach \val/\sy [count=\ii from 0] in {3/n, 2/n, 4/hot, 1/n, 5/n, 5/n, 2/n, 6/n}
+    \node[s, minimum width=1.3cm, \sy] at (-5.25 + \ii*1.5, -2.55) {\val};
+  \node[notel, align=center, text width=12cm] at (0, -3.35) {A group needs 4 rooms. The root's maximum 6 says that some hotel
+    fits. The left child (max 4) can take it: go left. Its left child (max 3, grey) cannot: go right. There the left leaf has 4:
+    hotel 3 (red), the leftmost that fits.};
+\end{tikzpicture}
+\caption{Descending a maximum segment tree to the leftmost leaf with value at least 4.}
+\label{fig:hotel}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    int size = 1;
+    while (size < n) size *= 2;
+    vi t(2 * size, 0);  // a max segment tree over the free rooms
+    rep(i, n) cin >> t[size + i];
+    per(i, 1, size) t[i] = max(t[2 * i], t[2 * i + 1]);
+    vi ans;
+    rep(j, m) {
+        ll need;
+        cin >> need;
+        if (t[1] < need) {  // no hotel has enough free rooms
+            ans.push_back(0);
+            continue;
+        }
+        int v = 1;  // walk down to the leftmost leaf with enough rooms
+        while (v < size) v = t[2 * v] >= need ? 2 * v : 2 * v + 1;
+        ans.push_back(v - size + 1);
+        for (t[v] -= need; v > 1; v /= 2) t[v / 2] = max(t[v], t[v ^ 1]);
+    }
+    print(ans);
+}
+\end{code}
+
+The tree here is padded to a power of two, because the descent needs every node's children to be its two halves; the bottom-up
+template without padding does not have that shape. The custom-node template offers the general version, \cc{max_right(l, pred)}:
+the largest $r$ such that the aggregate of $[l, r)$ still satisfies a monotone predicate.
+
+% ======================================================================================================================
+\section[Designing a node]{Designing a node \hfill \plat}\label{sec:segnode}
+
+A segment tree works for any summary that two neighbouring ranges can merge. The question to ask is: \emph{what must the merge of two
+halves know about each half?} For the maximum subarray sum, the best subarray of a range lies in the left half, in the right half, or
+crosses the middle, and a crossing one is a best suffix of the left half plus a best prefix of the right half. So a node holds four
+numbers: the total, the best prefix, the best suffix and the best subarray (Figure~\ref{fig:segnode}), and
+\[
+  \mathit{best} = \max(\mathit{best}_L,\ \mathit{best}_R,\ \mathit{suf}_L + \mathit{pref}_R), \quad
+  \mathit{pref} = \max(\mathit{pref}_L,\ \mathit{sum}_L + \mathit{pref}_R),
+\]
+and symmetrically for the suffix.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[blbl, anchor=east] at (-0.2, 0) {left half};
+  \arrs{L}{0}{0}{2/n, -3/n, 4/cool, -1/cool}
+  \node[blbl, anchor=east] at (3.9, 0) {};
+  \arrs{R}{3.0}{0}{3/cool, 2/cool, -6/n, 1/n}
+  \node[blbl, anchor=west] at (5.95, 0) {right half};
+  \node[notel, anchor=north west, text width=13cm] at (-1.6, -0.6) {Left: sum 2, best prefix $2 - 3 + 4 = 3$, best suffix $4 - 1 =
+    3$, best 4. Right: sum 0, best prefix $3 + 2 = 5$, best suffix 1, best 5. Merged: the best crossing subarray is the left
+    suffix plus the right prefix, $3 + 5 = 8$ (blue), larger than 4 and 5; the merged best prefix is $\max(3, 2 + 5) = 7$.};
+\end{tikzpicture}
+\caption{The four numbers of a maximum-subarray node, and how two nodes merge.}
+\label{fig:segnode}
+\end{figure}
+
+\begin{problem}{Subarray Sum Queries (CSES)}
+An array of $n \le 2 \cdot 10^5$ values receives $m$ point assignments; after each, report the maximum sum of a subarray (the empty
+subarray, with sum 0, is allowed).
+\end{problem}
+
+\begin{code}
+void solve() {  // SegNode (cpsegnode) is pasted above solve()
+    int n, m;
+    cin >> n >> m;
+    vector<Node> leaves(n);
+    for (auto& nd : leaves) {
+        ll x;
+        cin >> x;
+        nd = Node::leaf(x);
+    }
+    SegNode st(leaves);
+    while (m--) {
+        int k;
+        ll x;
+        cin >> k >> x;
+        st.set(k - 1, Node::leaf(x));
+        print(max(0LL, st.query(0, n).best));  // the empty subarray counts
+    }
+}
+\end{code}
+
+\usetemplate{Custom-node segment tree}{Ctrl+Alt+Y, N}{cpsegnode}
+
+\begin{trick}[Nodes for other questions]
+\begin{itemize}
+  \item \textbf{Maximum prefix sum of a range} (Prefix Sum Queries): sum and best prefix, the first two fields above.
+  \item \textbf{Number of distinct adjacent pairs, or of runs}: the count plus the first and last element of the range, so the merge
+        can tell whether the boundary creates a new pair.
+  \item \textbf{$\min_k (p_k + |k - i|)$} (Pizzeria Queries): split the absolute value at $i$; keep one tree of $p_k - k$ for $k \le i$
+        and one of $p_k + k$ for $k \ge i$, and add back $+i$ or $-i$.
+  \item \textbf{Is the range a permutation, a palindrome, sorted?}: hashes, minima, or ``sorted and the boundary is in order''.
+\end{itemize}
+\end{trick}
+
+% ======================================================================================================================
+\section[Lazy propagation]{Lazy propagation \hfill \plat}\label{sec:lazy}
+
+A range \emph{update} (add $v$ to every element of $[l, r)$) would touch every leaf below the range. Instead, apply it to the
+$\Oh{\log n}$ nodes that cover the range exactly and leave a \emph{tag} on them: ``my children still owe this update''
+(Figure~\ref{fig:lazy}). When a later operation needs to go below a tagged node, it first \emph{pushes} the tag to the two children,
+updating their aggregates and composing it with their own tags. Every operation still visits $\Oh{\log n}$ nodes.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[s/.style={seg, minimum height=6mm}]
+  \node[s, minimum width=11.8cm] at (0, 0) {$[0, 8)$\quad sum $27 + 30$};
+  \node[s, minimum width=5.8cm] at (-3, -0.85) {$[0, 4)$\quad sum $13 + 10$};
+  \node[s, minimum width=5.8cm, hot] at (3, -0.85) {$[4, 8)$\quad sum $14 + 20$, tag $+5$};
+  \node[s, minimum width=2.8cm] at (-4.5, -1.7) {$[0, 2)$\quad 4};
+  \node[s, minimum width=2.8cm, hot] at (-1.5, -1.7) {$[2, 4)$\ \ $9 + 10$, tag $+5$};
+  \node[s, minimum width=2.8cm, dim] at (1.5, -1.7) {$[4, 6)$\quad 8};
+  \node[s, minimum width=2.8cm, dim] at (4.5, -1.7) {$[6, 8)$\quad 6};
+  \node[notel, align=center, text width=12.5cm] at (0, -2.6) {Adding 5 on $[2, 8)$: the two covering nodes (red) update their sums
+    ($+5$ per element) and keep a tag; their ancestors are recomputed on the way back. The grey nodes are stale until some
+    operation descends into $[4, 8)$ and pushes the tag down.};
+\end{tikzpicture}
+\caption{Lazy tags record updates that the subtree below still owes.}
+\label{fig:lazy}
+\end{figure}
+
+\begin{fact}[What can be lazy]
+Two things are needed: a tag must update a node's aggregate without looking at its children (``add $v$'' changes a sum by $v$ times the
+length, a minimum by $v$), and two tags must \emph{compose} into one (``assign $x$, then add $y$'' is ``assign $x + y$''; ``add $y$,
+then assign $x$'' is ``assign $x$''). Affine maps $a \mapsto ca + d$ compose, so ``multiply a range and add to a range'' is lazy; an
+arithmetic progression added to a range (Polynomial Queries) is a tag $(\text{first term}, \text{step})$, and two of them add. ``Replace
+each element by its square root'' does not compose into anything small; segment tree beats handle some such updates.
+\end{fact}
+
+\begin{problem}{Range Updates and Sums (CSES)}
+An array receives range additions, range assignments and range-sum queries ($n, q \le 2 \cdot 10^5$).
+\solution A lazy tree whose tag is the pair (assigned value or none, added amount), composed as in the fact above: 0.33\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // LazyAssign (cplazyassign) is pasted above solve()
+    int n, q;
+    cin >> n >> q;
+    vi a(n);
+    for (ll& x : a) cin >> x;
+    LazyAssign st(a);
+    while (q--) {
+        int type, l, r;
+        cin >> type >> l >> r;
+        l--;  // the range [l, r)
+        if (type == 3) {
+            print(st.sum_of(l, r));
+            continue;
+        }
+        ll x;
+        cin >> x;
+        if (type == 1) st.add(l, r, x);
+        else st.assign(l, r, x);
+    }
+}
+\end{code}
+
+\usetemplate{Lazy segment tree (add; sum, min) / (assign + add)}{Ctrl+Alt+T, Shift+S / Ctrl+Alt+Y, A}{cplazy, cplazyassign}
+
+% ======================================================================================================================
+\section[Counting minimums]{Counting minimums: the union of rectangles \hfill \plat}\label{sec:mincount}
+
+A node that stores the minimum of its range \emph{and the total weight of the elements that attain it} supports range additions (the
+minimum shifts, the weight does not change) and answers ``how much of the array is 0?'' whenever the values never go below 0. That is
+exactly what a sweep over rectangles needs: sweep a vertical line from left to right, keep for every elementary $y$-interval how many
+rectangles cover it, add $+1$ over a rectangle's $y$-range at its left edge and $-1$ at its right edge. Between two consecutive events
+the covered length is the total length minus the length with count 0, and the area is that length times the width of the strip
+(Figure~\ref{fig:rectsweep}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[scale=0.62]
+  \fill[fgsky!30] (0, 0) rectangle (4, 3);
+  \fill[fgorange!25] (2, 1) rectangle (6, 5);
+  \fill[fggreen!30] (2, 1) rectangle (4, 3);
+  \draw[line width=0.9pt, draw=fgblue] (0, 0) rectangle (4, 3);
+  \draw[line width=0.9pt, draw=fgorange!85!black] (2, 1) rectangle (6, 5);
+  \foreach \xx in {0, 2, 4, 6} \draw[line width=0.8pt, draw=fgverm, dashed] (\xx, -0.5) -- (\xx, 5.5);
+  \foreach \xx/\tx in {1/{$3 \cdot 2$}, 3/{$5 \cdot 2$}, 5/{$4 \cdot 2$}}
+    \node[font=\sffamily\scriptsize\bfseries, text=fgverm, fill=white, inner sep=1pt] at (\xx, -0.95) {\tx};
+  \draw[->, line width=0.5pt, fgink!70] (-0.6, 0) -- (7, 0) node[right, lbl] {$x$};
+  \draw[->, line width=0.5pt, fgink!70] (0, -0.3) -- (0, 5.8) node[above, lbl] {$y$};
+  \node[notel, anchor=west, text width=6.6cm] at (8.2, 2.5) {Events at $x = 0, 2, 4, 6$ (dashed). In the strip $[0, 2)$ the
+    covered $y$-length is 3, in $[2, 4)$ it is 5 (the union $[0, 5)$, overlap counted once), in $[4, 6)$ it is 4. Area $= 6 + 10 + 8
+    = 24 = 12 + 16 - 4$. The segment tree over the elementary $y$-intervals reports the uncovered length in $\Oh{1}$ after each
+    event.};
+\end{tikzpicture}
+\caption{The union of two rectangles by a sweep line: the area is the sum of covered length times strip width.}
+\label{fig:rectsweep}
+\end{figure}
+
+\begin{problem}{Area of Rectangles (CSES)}
+Compute the area of the union of $n \le 10^5$ axis-parallel rectangles with coordinates up to $10^6$ in absolute value.
+\end{problem}
+
+\begin{code}
+void solve() {  // MinCount (cpmincount) is pasted above solve()
+    int n;
+    cin >> n;
+    vector<array<ll, 4>> ev;  // (x, +1 or -1, y1, y2)
+    vi ys;
+    rep(i, n) {
+        ll x1, y1, x2, y2;
+        cin >> x1 >> y1 >> x2 >> y2;
+        ev.push_back({x1, 1, y1, y2});
+        ev.push_back({x2, -1, y1, y2});
+        ys.push_back(y1), ys.push_back(y2);
+    }
+    sort(all(ys));
+    ys.erase(unique(all(ys)), ys.end());
+    int m = sz(ys) - 1;  // elementary intervals [ys[j], ys[j + 1])
+    vi len(m);
+    rep(j, m) len[j] = ys[j + 1] - ys[j];
+    MinCount st(len);  // how often each interval is covered, weighted
+    ll total = ys.back() - ys[0], area = 0;
+    sort(all(ev));
+    rep(i, sz(ev)) {
+        auto [x, d, y1, y2] = ev[i];
+        int l = lower_bound(all(ys), y1) - ys.begin();
+        int r = lower_bound(all(ys), y2) - ys.begin();
+        st.add(l, r, d);
+        if (i + 1 < sz(ev))  // the covered length times the strip's width
+            area += (total - st.zero_weight()) * (ev[i + 1][0] - x);
+    }
+    print(area);
+}
+\end{code}
+
+\usetemplate{Min + count segment tree}{Ctrl+Alt+Y, Shift+C}{cpmincount}
+
+The weights are the lengths of the elementary intervals between consecutive distinct $y$-coordinates, so the tree has at most $2n$
+leaves whatever the coordinates are; $10^5$ rectangles take 0.27\,s.
+
+% ======================================================================================================================
+\section[Dynamic and persistent segment trees]{Dynamic and persistent segment trees \hfill \plat}\label{sec:persistent}
+
+\paragraph{Dynamic trees.} When positions go up to $10^9$ or $10^{18}$ and arrive online, so that they cannot be compressed in
+advance, create nodes only when an update reaches them. Each update creates $\Oh{\log C}$ nodes for a coordinate range of size $C$; parts
+of the range that nothing has touched do not exist and count as the identity.
+
+\usetemplate{Dynamic segment tree}{Ctrl+Alt+Y, D}{cpdynseg}
+
+\paragraph{Persistence.} A \defn{persistent} structure keeps every old version. An update in a segment tree changes one root-to-leaf
+path, so copy just that path and let the new nodes point at the old, unchanged subtrees (Figure~\ref{fig:persistent}): $\Oh{\log n}$
+new nodes per update, and every version stays queryable through its own root. Copying a whole array is free: the copy is just another
+pointer to the same root.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{pn/.style={vtxs, minimum size=6.5mm}}
+  \node[pn] (r0) at (0, 0) {$v_0$};
+  \node[pn] (a) at (-1.4, -1.1) {$a$}; \node[pn] (b) at (1.4, -1.1) {$b$};
+  \node[pn] (c) at (0.7, -2.2) {$c$}; \node[pn] (d) at (2.1, -2.2) {$d$};
+  \node[pn] (e) at (-2.1, -2.2) {}; \node[pn] (f) at (-0.7, -2.2) {};
+  \draw[ed] (r0) -- (a) (r0) -- (b) (a) -- (e) (a) -- (f) (b) -- (c) (b) -- (d);
+  \node[pn, hot] (r1) at (4.2, 0) {$v_1$};
+  \node[pn, hot] (b1) at (5.4, -1.1) {$b'$};
+  \node[pn, hot] (d1) at (6.1, -2.2) {$d'$};
+  \draw[hded] (r1) -- (b1);
+  \draw[hded] (b1) -- (d1);
+  \draw[ded, draw=fgorange!90!black, dashed] (r1) to[bend right=12] (a);
+  \draw[ded, draw=fgorange!90!black, dashed] (b1) to[bend left=20] (c);
+  \node[notel, anchor=west, text width=5.0cm] at (7.0, -1.1) {Changing the leaf $d$ of version $v_0$ creates $v_1$: only the
+    three red nodes $v_1$, $b'$ and $d'$ are new, and the dashed edges point into $v_0$'s unchanged subtrees $a$ and $c$. Both
+    versions remain complete trees.};
+\end{tikzpicture}
+\caption{Path copying: a persistent update costs $\Oh{\log n}$ new nodes.}
+\label{fig:persistent}
+\end{figure}
+
+\begin{problem}{Range Queries and Copies (CSES)}
+Starting with one array, process: set a value in array $k$, ask for a range sum in array $k$, or append a copy of array $k$ as a new
+array ($n, q \le 2 \cdot 10^5$).
+\solution One persistent tree, one root per array. An assignment adds the difference along a copied path; a copy appends the root
+pointer. Building the initial version directly costs $2n$ nodes instead of the $n \log n$ of $n$ insertions; the program runs in
+0.29\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // PersistentSeg (cppersist) is pasted above solve()
+    int n, q;
+    cin >> n >> q;
+    vi a(n);
+    for (ll& x : a) cin >> x;
+    PersistentSeg ps(n);
+    vi roots{-1, ps.build(a)};  // roots[k]: the current version of array k
+    while (q--) {
+        int type, k;
+        cin >> type >> k;
+        if (type == 3) {  // a copy shares every node with the original
+            roots.push_back(roots[k]);
+            continue;
+        }
+        int x;
+        ll y;
+        cin >> x >> y;
+        if (type == 1) {  // a[x] = y: add the difference, copying one path
+            ll cur = ps.query(roots[k], x - 1, x);
+            roots[k] = ps.update(roots[k], x - 1, y - cur);
+        } else print(ps.query(roots[k], x - 1, y));
+    }
+}
+\end{code}
+
+\usetemplate{Persistent segment tree}{Ctrl+Alt+Y, P}{cppersist}
+
+\begin{trick}[The $k$-th smallest value in a range, online]
+Build version $i$ of a persistent tree over the (compressed) values as ``the counts of $a_0, \dots, a_{i-1}$''. The difference of
+versions $r$ and $l$ holds the counts of $a_l, \dots, a_{r-1}$, and a node-by-node difference can be descended without building it:
+if the left children's counts differ by at least $k$, go left; otherwise subtract that difference and go right. That is $\Oh{\log n}$
+per query, online, and the template's \cc{kth} does exactly this walk.
+\end{trick}
+
+% ======================================================================================================================
+\section[Segment tree beats]{Segment tree beats \hfill \ioi}\label{sec:beats}
+
+The update ``$a_i \leftarrow \min(a_i, x)$ for every $i$ in a range'' is not lazy in general: its effect on a sum depends on how many
+elements exceed $x$. \defn{Segment tree beats} store in each node the maximum, the second largest distinct value and the number of
+elements equal to the maximum. At a node, if $x \ge$ the maximum, nothing changes; if the second maximum $< x <$ the maximum, only the
+maximal elements change, and the node updates its sum as $\mathit{sum} \mathrel{-}= (\mathit{max} - x) \cdot \mathit{count}$ and
+keeps a tag; only otherwise does the update recurse. A potential argument (the number of distinct values in the nodes, which a
+recursion strictly decreases) bounds the total work by $\Oh{(n + q) \log^2 n}$, and by $\Oh{(n + q) \log n}$ without range additions.
+The same idea handles $\max$ updates and mixes of $\min$, $\max$ and additions.
+
+\usetemplate{Segment tree beats}{Ctrl+Alt+Y, S}{cpbeats}
+
+% ======================================================================================================================
+\section[Offline sweeps]{Offline sweeps over queries \hfill \plat}\label{sec:sweepqueries}
+
+Many range questions become one-dimensional when the queries are sorted and the array is \emph{swept}: a query $[l, r)$ is answered
+at the moment the sweep reaches $r$, by a Fenwick tree over the positions or values to the left. The classic example is the number of
+distinct values: sweep $r$ from left to right and keep a 1 at the \emph{last} occurrence of every value seen so far, moving it when a
+value reappears. Then a value occurs in $[l, r)$ exactly when its last occurrence before $r$ is at least $l$, so the answer is the number
+of 1s in $[l, r)$ (Figure~\ref{fig:sweepdistinct}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[blbl, anchor=east] at (-0.2, 0) {$a$};
+  \arrs{A}{0}{0}{1/n, 2/n, 1/n, 3/n, 2/n}
+  \idx{A}{5}
+  \node[blbl, anchor=east] at (-0.2, -1.35) {last occurrences};
+  \arrs{B}{0}{-1.35}{0/dim, 0/dim, 1/good, 1/good, 1/good}
+  \cellframe{B-2}{B-5}{fgverm}
+  \node[notel, anchor=west, text width=7.4cm] at (4.0, -0.55) {After the sweep has passed 5 elements, the 1s mark the last
+    occurrences of the values 1, 3 and 2. The query $[1, 5)$ counts the 1s in positions 1 to 4 (red frame): 3 distinct values,
+    $\{2, 1, 3\}$. The first 1 and the first 2 were cleared when their values reappeared.};
+\end{tikzpicture}
+\caption{Distinct values by sweeping the right end: only the last occurrence of each value carries a 1.}
+\label{fig:sweepdistinct}
+\end{figure}
+
+\begin{code}
+void solve() {  // BIT (cpbit) is pasted above solve()
+    int n, q;
+    cin >> n >> q;
+    vi a(n);
+    for (ll& x : a) cin >> x;
+    vector<vector<pii>> at(n + 1);  // the queries by right end: (l, index)
+    rep(i, q) {
+        int l, r;
+        cin >> l >> r;
+        at[r].push_back({l - 1, i});  // the range [l - 1, r)
+    }
+    // sweep r; the BIT holds a 1 at the last occurrence of every value in
+    // a[0, r), so the 1s inside [l, r) are exactly the distinct values
+    BIT b(n);
+    map<ll, int> last;
+    vi ans(q);
+    rep(r, 1, n + 1) {
+        ll v = a[r - 1];
+        if (last.count(v)) b.add(last[v], -1);
+        b.add(r - 1, 1), last[v] = r - 1;
+        for (auto [l, i] : at[r]) ans[i] = b.sum(l, r);
+    }
+    for (ll x : ans) print(x);
+}
+\end{code}
+
+This solves Distinct Values Queries in $\Oh{(n + q) \log n}$, 0.25\,s, the same as Mo's algorithm on these limits but without the
+$\sqrt n$ factor. The library also has it as a function.
+
+\usetemplate{Distinct values in ranges}{Ctrl+Alt+Y, Shift+D}{cpdistinct}
+
+\paragraph{Containment as a sweep.} ``How many ranges does each range contain, and how many contain it?'' is a two-dimensional
+condition: $[x_j, y_j] \subseteq [x_i, y_i]$ means $x_i \le x_j$ and $y_j \le y_i$. Sort the ranges by start, longer ones first among
+equal starts; then every range \emph{before} $i$ starts no later than $i$, and the ones that contain $i$ are those that also end no
+earlier, a count over the end points in a Fenwick tree. Sweeping backwards counts the contained ranges the same way. Identical ranges
+contain each other and need one line of care: they are processed as a group.
+
+\begin{problem}{Nested Ranges Count (CSES)}
+For each of $n \le 2 \cdot 10^5$ ranges, count the ranges it contains and the ranges that contain it.
+\end{problem}
+
+\begin{code}
+void solve() {  // BIT (cpbit) is pasted above solve()
+    int n;
+    cin >> n;
+    vi x(n), y(n);
+    rep(i, n) cin >> x[i] >> y[i];
+    vi ys = y;
+    sort(all(ys));
+    ys.erase(unique(all(ys)), ys.end());
+    auto rk = [&](ll v) { return lower_bound(all(ys), v) - ys.begin(); };
+    vi ord(n);
+    iota(all(ord), 0);
+    // by start, longer first: every earlier range starts no later
+    sort(all(ord), [&](int a, int b) {
+        return pll{x[a], -y[a]} < pll{x[b], -y[b]};
+    });
+    auto same = [&](int a, int b) { return x[a] == x[b] && y[a] == y[b]; };
+    vi inside(n), around(n);
+    BIT bit(sz(ys));
+    for (int s = 0, e; s < n; s = e) {  // one group of equal ranges at a time
+        for (e = s; e < n && same(ord[e], ord[s]); e++) {}
+        int i = ord[s];
+        ll c = bit.sum(rk(y[i]), sz(ys)) + (e - s - 1);  // earlier, ends later
+        rep(k, s, e) around[ord[k]] = c;
+        bit.add(rk(y[i]), e - s);
+    }
+    bit = BIT(sz(ys));
+    for (int s = n - 1, e; s >= 0; s = e) {  // backwards: every later range
+        for (e = s; e >= 0 && same(ord[e], ord[s]); e--) {}  // starts later
+        int i = ord[s];
+        ll c = bit.prefix(rk(y[i]) + 1) + (s - e - 1);  // and ends sooner
+        rep(k, e + 1, s + 1) inside[ord[k]] = c;
+        bit.add(rk(y[i]), s - e);
+    }
+    print(inside);
+    print(around);
+}
+\end{code}
+
+\begin{recognize}
+Offline queries whose answer depends on ``the last or first occurrence'', on the nearest greater element, or on pairs $(i, j)$ with
+conditions in two coordinates: sort by one coordinate, sweep it, and keep the other in a Fenwick tree. Counting points in rectangles
+the same way (each rectangle split into two prefix queries in $x$) takes $\Oh{(n + q) \log n}$ time and $\Oh{n}$ memory, far less than
+a 2D Fenwick tree when the coordinates are large.
+\end{recognize}
+
+% ======================================================================================================================
+\section[A staircase for dominance]{A staircase for two-dimensional dominance \hfill \ioi}\label{sec:staircase}
+
+If pairs $(k, v)$ are only inserted, and a query asks for the maximum $v$ among the keys $\ge x$, a full segment tree is not needed. Keep
+a \cc{map} from keys to values in which the values strictly \emph{decrease} as the keys increase: a new pair that is dominated (some key
+at least as large already has a value at least as large) is not inserted, and otherwise it removes the pairs it dominates, which sit
+just before it. The answer to a query is the value of the first key $\ge x$. Every pair is inserted and removed at most once, so the
+operations are $\Oh{\log n}$ amortised. This staircase keeps two-dimensional dominance DPs, such as the longest chain of pairs
+increasing in both coordinates, short and fast.
+
+\begin{summary}[Chapter summary]
+\begin{itemize}
+  \item A Fenwick cell covers the $\mathit{lowbit}(i)$ positions ending at $i$: prefix sums remove lowest bits, updates add them. Two
+        trees give range updates with range sums; descending by powers of two finds the $k$-th element in $\Oh{\log n}$.
+  \item A segment tree query uses at most two nodes per level; a bottom-up array of $2n$ cells is the fastest implementation.
+  \item Descending finds the first position where an aggregate reaches a value; a node stores whatever the merge of two halves needs.
+  \item Lazy tags need a cheap effect on aggregates and closure under composition; min-count nodes measure unions of rectangles.
+  \item Path copying makes a segment tree persistent with $\Oh{\log n}$ nodes per update; versions difference into $k$-th smallest
+        queries.
+  \item Sorting queries and sweeping one coordinate turns two-dimensional conditions into Fenwick-tree prefix sums.
+\end{itemize}
+\end{summary}
+
+\begin{practice}
+\ppgroup{Fenwick trees and segment trees}
+\begin{pplist}
+  \item Dynamic Range Sum Queries
+  \item Dynamic Range Minimum Queries
+  \item Range Update Queries
+  \item Forest Queries II
+  \item Hotel Queries
+  \item List Removals
+  \item Salary Queries
+  \item Prefix Sum Queries
+  \item Pizzeria Queries
+\end{pplist}
+\ppgroup{Nodes, lazy tags, persistence and sweeps}
+\begin{pplist}
+  \item Subarray Sum Queries
+  \item Range Updates and Sums
+  \item Polynomial Queries
+  \item Range Queries and Copies
+  \item Distinct Values Queries
+  \item Nested Ranges Check
+  \item Nested Ranges Count
+  \item Area of Rectangles
+  \item Increasing Array Queries
+\end{pplist}
+\end{practice}

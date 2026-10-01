@@ -1,0 +1,786 @@
+\chapter{Dynamic Programming Fundamentals}\label{ch:dp}
+
+Dynamic programming (DP) solves a problem by combining the answers to smaller versions of the same problem, computing each
+smaller answer only once. After complexity analysis it is the most important idea in competitive programming, and the one that
+takes longest to master, because the hard part is not the code but the choice of \emph{what} to compute. The good news is that
+almost every DP is designed by answering the same five questions, and that a handful of classic families (sums of coins, paths in
+grids, knapsacks, subsequences, pairs of strings, shapes) cover most of what appears in practice. This chapter develops the method on
+those families; Chapter~\ref{ch:dppatterns} adds the patterns built on top of it (bitmasks, intervals, digits, profiles, trees of
+states), and Chapter~\ref{ch:dpopt} the optimizations that make a correct but slow DP fast.
+
+\begin{chapterintro}{\gold}{Chapter~\ref{ch:search} (recursion and complete search) and Chapter~\ref{ch:complexity}.}
+  \item recognise overlapping subproblems, and see every DP as a computation on a DAG of states;
+  \item design a DP by answering five questions: state, transition, base cases, order and answer;
+  \item write it top-down or bottom-up, pulling values into a state or pushing them out of it;
+  \item solve the classic families: coins and sums, grid paths, knapsacks, increasing subsequences, edit distance and shapes;
+  \item reconstruct an optimal solution, shrink the memory to one or two rows, and debug a DP systematically.
+\end{chapterintro}
+
+% ======================================================================================================================
+\section[What DP is]{What dynamic programming is \hfill \gold}\label{sec:dp-what}
+
+The Fibonacci numbers satisfy $F_0 = 0$, $F_1 = 1$ and $F_n = F_{n-1} + F_{n-2}$. Computed by plain recursion, $F_n$ takes
+exponential time, because the recursion solves the same subproblems over and over (Figure~\ref{fig:fibdag}): the call for $F_n$
+makes $2F_{n+1} - 1$ calls in total, about $4 \cdot 10^{10}$ for $F_{50}$ (Section~\ref{sec:recursion}). Yet there are only 51
+\emph{different} subproblems, $F_0$ to $F_{50}$. Remembering each answer the first time it is computed brings the cost down to 51
+additions.
+
+\begin{figure}[htbp]
+\centering
+\begin{minipage}[c]{9.4cm}\centering
+\begin{forest}
+  for tree={circle, draw=fgink!85, fill=fgfill, line width=0.7pt, minimum size=6.4mm, inner sep=0pt,
+    font=\sffamily\scriptsize, s sep=1.6mm, l sep=4mm, edge={line width=0.7pt, draw=fgline!80!fgink}}
+  [$F_5$
+    [$F_4$
+      [$F_3$, warn [$F_2$, cool [$F_1$] [$F_0$]] [$F_1$]]
+      [$F_2$, cool [$F_1$] [$F_0$]]]
+    [$F_3$, warn [$F_2$, cool [$F_1$] [$F_0$]] [$F_1$]]]
+\end{forest}
+\end{minipage}
+\hspace{3mm}
+\begin{minipage}[c]{5.4cm}\centering
+\begin{tikzpicture}
+  \foreach \nm/\px/\py in {5/0/0, 3/1.6/0, 1/3.2/0, 4/0.8/-1.2, 2/2.4/-1.2, 0/4.0/-1.2}
+    \node[vtx] (f\nm) at (\px, \py) {$F_{\nm}$};
+  \foreach \ua/\ub in {5/4, 4/3, 3/2, 2/1, 1/0, 5/3, 3/1, 4/2, 2/0} \draw[ded] (f\ua) -- (f\ub);
+  \node[lbl] at (2.0, -2.0) {6 states, 9 dependencies};
+\end{tikzpicture}
+\end{minipage}
+\caption{Left: the recursion tree of $F_5$ has 15 calls, because $F_3$ (orange) is solved twice and $F_2$ (blue) three times.
+Right: the same computation as a DAG of distinct states, where an arrow points to a value that is needed; DP evaluates each state
+once, in an order that respects the arrows.}
+\label{fig:fibdag}
+\end{figure}
+
+DP applies when a problem has two properties. \textbf{Overlapping subproblems}: the same smaller problem is needed many times, so
+remembering its answer pays off. \textbf{Optimal substructure}: the answer for a problem can be assembled from the answers of its
+subproblems; for an optimisation problem, an optimal solution is made of optimal solutions of the parts, and for a counting problem,
+the solutions split into disjoint classes that are counted separately and added. When the subproblems do not overlap at all, the
+same recursion is plain divide and conquer.
+
+\paragraph{DP is a computation on a DAG.} Draw one vertex per \emph{state} (subproblem) and an arrow from each state to the
+states its answer depends on. The arrows never form a cycle, because each state depends only on smaller ones, so the states form a
+DAG, and DP evaluates a function on it in topological order. A minimisation DP is a shortest path in this DAG, a maximisation a
+longest path, and a counting DP counts paths (Section~\ref{sec:dagpaths}). This view explains the cost, $\Oh{\text{states} +
+\text{transitions}}$, and it tells you what to do when the dependencies \emph{do} form cycles: then the problem is a shortest-path
+problem on a general graph, solved with Dijkstra or BFS rather than DP.
+
+% ======================================================================================================================
+\section[The recipe]{The recipe: five questions \hfill \gold}\label{sec:dp-recipe}
+
+\begin{enumerate}[label=\textbf{\color{cpteal}\arabic*.}, itemsep=2pt]
+  \item \textbf{State.} What does $dp[\dots]$ mean, in one precise sentence? (``$dp[s]$ is the number of ordered ways to roll a total
+        of $s$.'') Most wrong DPs have a vague state.
+  \item \textbf{Transition.} How is a state computed from smaller ones? Look at the \emph{last} decision: the last roll, the last
+        coin, the last item taken or skipped.
+  \item \textbf{Base cases.} Which smallest states are known directly? ($dp[0] = 1$: the empty sequence.)
+  \item \textbf{Order.} In which order must the states be computed so that every state's dependencies are ready? (Increasing $s$.)
+  \item \textbf{Answer.} Which state, or combination of states, answers the question? ($dp[n]$.)
+\end{enumerate}
+
+The running time is the number of states times the cost of one transition; if that is too slow, shrink one of the two
+(Chapter~\ref{ch:dpopt}). The memory is the number of states that must be stored at the same time, which is often far fewer than
+all of them (Section~\ref{sec:dp-debug}).
+
+\begin{problem}{Dice Combinations (CSES)}
+Count the ways to get the sum $n$ by throwing a die one or more times, where the order of the throws matters, modulo $10^9 + 7$
+($n \le 10^6$).
+\solution The five answers above: $dp[s] = dp[s-1] + dp[s-2] + \dots + dp[s-6]$, the last throw being $1, 2, \dots$ or 6
+(Figure~\ref{fig:dice}). There are $n + 1$ states and six terms per state; the program runs in 0.15\,s for $n = 10^6$.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[blbl, anchor=east] at (-0.2, 0) {$dp[s]$};
+  \arrs{D}{0}{0}{1/n, 1/cool, 2/cool, 4/cool, 8/cool, 16/cool, 32/cool, 63/hot, 125/n}
+  \idx{D}{9}
+  \node[lbl, anchor=east] at (-0.2, -0.53) {$s$};
+  \spanabove{D-2}{D-7}{the last throw was 6, 5, 4, 3, 2 or 1}
+  \node[notel, anchor=west, text width=5.4cm] at (6.6, -0.05) {$dp[7] = 1 + 2 + 4 + 8 + 16 + 32 = 63$: every sequence with sum
+    7 ends with exactly one throw $d$, after a sequence with sum $7 - d$.};
+\end{tikzpicture}
+\caption{The recipe on Dice Combinations. Each state adds up the six states before it; $dp[0] = 1$ counts the empty sequence.}
+\label{fig:dice}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vi dp(n + 1, 0);  // dp[s]: the number of ordered ways to roll the sum s
+    dp[0] = 1;
+    rep(s, 1, n + 1) rep(d, 1, 7)  // the last roll is d
+        if (d <= s) dp[s] = (dp[s] + dp[s - d]) % MOD;
+    print(dp[n]);
+}
+\end{code}
+
+\subsection{Top-down or bottom-up}
+
+There are two ways to evaluate the same recurrence. \defn{Memoization} (top-down) keeps the recursive definition and adds a cache:
+the first call for a state computes and stores its answer, later calls return it. \defn{Tabulation} (bottom-up) fills a table in an
+order that respects the dependencies.
+
+\begin{code}
+vi memo(n + 1, -1);  // -1: not computed yet
+auto fib = [&](auto&& self, int i) -> ll {  // top-down
+    if (i <= 1) return i;
+    ll& res = memo[i];
+    if (res != -1) return res;
+    return res = self(self, i - 1) + self(self, i - 2);
+};
+vi f(n + 1);  // bottom-up
+f[1] = 1;
+rep(i, 2, n + 1) f[i] = f[i - 1] + f[i - 2];
+\end{code}
+
+Memoization is the quickest to write from a recurrence, needs no thought about the order, and computes only the states that are
+actually reached, which matters when few of them are. Tabulation has no recursion overhead (often two to five times faster), no
+risk of a deep recursion overflowing the stack, and allows the memory tricks of Section~\ref{sec:dp-debug}. A reasonable habit:
+think top-down, write bottom-up, and fall back to memoization when the reachable states are sparse or the order is awkward.
+
+\begin{pitfall}[The ``not computed'' marker]
+A cache initialised with $-1$ fails silently if $-1$ is a legitimate answer, and one initialised with 0 recomputes every state
+whose answer is 0, which can make a memoized DP exponential again. Use a separate \cc{vector<bool> done}, or a value outside the
+range of answers.
+\end{pitfall}
+
+\subsection{Pulling and pushing}
+
+A transition can be written in two directions (Figure~\ref{fig:pullpush}). In \emph{pull} form, each state reads the states it
+depends on: $dp[s] = \sum_d dp[s - d]$. In \emph{push} form, each finished state adds its value into the states that depend on it:
+for every $d$, $dp[s + d] \mathrel{+}= dp[s]$. Both visit the same arrows of the DAG and give the same result. Pull is natural when
+the predecessors of a state are easy to list; push when the successors are, as in ``from this position you may jump to any of
+these'', or when a state has many predecessors but only a few successors.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[title, anchor=west] at (0, 1.35) {pull: $dp[s]$ reads};
+  \arrs{P}{0}{0}{{}/n, {}/cool, {}/cool, {}/cool, s/hot, {}/n}
+  \foreach \cc in {2, 3, 4} \draw[->, line width=0.9pt, draw=fgblue] (P-\cc.north) to[bend left=50] (P-5.north);
+  \node[title, anchor=west] at (6.2, 1.35) {push: $dp[s]$ adds itself into};
+  \arrs{Q}{6.2}{0}{{}/n, s/hot, {}/cool, {}/cool, {}/cool, {}/n}
+  \foreach \cc in {3, 4, 5} \draw[->, line width=0.9pt, draw=fgverm] (Q-2.north) to[bend left=50] (Q-\cc.north);
+\end{tikzpicture}
+\caption{The same transitions in pull form (left) and push form (right). Pull computes one state from finished ones; push
+distributes one finished state forwards.}
+\label{fig:pullpush}
+\end{figure}
+
+% ======================================================================================================================
+\section[Coins and sums]{Coins and sums \hfill \gold}\label{sec:dp-coins}
+
+Coin problems are the cleanest place to see what a state must and must not remember. Given coin values $c_1, \dots, c_k$ (each
+usable any number of times) and a target sum $x$, three questions have three different DPs.
+
+\begin{problem}{Minimizing Coins (CSES)}
+Find the fewest coins with total $x$, or report that it is impossible ($k \le 100$, $x \le 10^6$).
+\solution $dp[s] = 1 + \min_j dp[s - c_j]$ over the coins with $c_j \le s$, with $dp[0] = 0$ and impossible sums marked by a value
+larger than any answer (Figure~\ref{fig:mincoins}). Here $10^8$ transitions take 0.21\,s.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[blbl, anchor=east] at (-0.2, 0) {fewest coins};
+  \arrs{M}{0}{0}{0/n, 1/n, 2/n, 3/n, 4/cool, 1/n, 2/cool, 1/n, 2/n, 3/n, 2/cool, 3/hot}
+  \idx{M}{12}
+  \draw[->, line width=0.9pt, draw=fgblue] (M-11.north) to[bend left=70] ($(M-12.north)+(-0.22, 0)$);
+  \draw[->, line width=0.9pt, draw=fgblue] (M-7.north) to[bend left=35] (M-12.north);
+  \draw[->, line width=0.9pt, draw=fgblue] (M-5.north) to[bend left=30] ($(M-12.north)+(0.22, 0)$);
+  \foreach \cl/\tx in {11/{$+1$}, 7/{$+5$}, 5/{$+7$}}
+    \node[font=\sffamily\scriptsize\bfseries, text=fgblue, anchor=south east] at ($(M-\cl.north)+(0.02, 0.06)$) {\tx};
+  \node[notel, anchor=north west, text width=8.2cm] at (0, -0.85) {Coins $\{1, 5, 7\}$:
+    $dp[11] = 1 + \min(dp[10], dp[6], dp[4]) = 1 + \min(2, 2, 4) = 3$, for example $5 + 5 + 1$. Taking the largest coin first
+    gives $7 + 1 + 1 + 1 + 1$, five coins.};
+\end{tikzpicture}
+\caption{Minimizing Coins for every sum up to 11. The last coin is 1, 5 or 7, so $dp[11]$ looks back at three cells.}
+\label{fig:mincoins}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n, x;
+    cin >> n >> x;
+    vi c(n);
+    for (ll& v : c) cin >> v;
+    vi dp(x + 1, INF);  // dp[s]: the fewest coins with sum s (INF: impossible)
+    dp[0] = 0;
+    rep(s, 1, x + 1) for (ll v : c)  // the last coin is v
+        if (v <= s && dp[s - v] != INF) chmin(dp[s], dp[s - v] + 1);
+    print(dp[x] == INF ? -1 : dp[x]);
+}
+\end{code}
+
+\begin{pitfall}[Greedy coins]
+Taking the largest coin that fits is optimal for ``canonical'' systems such as $\{1, 2, 5, 10, 20, 50\}$, but not in general:
+Figure~\ref{fig:mincoins} shows coins $\{1, 5, 7\}$ where greedy uses five coins for 11 and the DP three. Unless the statement
+guarantees a canonical system, or you can prove the greedy choice, use the DP.
+\end{pitfall}
+
+\subsection{Counting: the order of the loops is the order of the coins}
+
+Counting the ways to form $x$ comes in two flavours. If the order of the coins matters ($2 + 1$ and $1 + 2$ are different), sum over
+the \emph{last} coin, exactly as in Dice Combinations. If it does not (Coin Combinations~II), the same recurrence counts every
+multiset once for each of its orderings, and the fix is a different state: $dp_j[s]$ is the number of ways to form $s$ using only
+the first $j$ coin types. Then $dp_j[s] = dp_{j-1}[s] + dp_j[s - c_j]$ (no coin of type $j$, or at least one), every multiset is
+built in one canonical order, types in increasing order, and the two loops are nested the other way round (Figure~\ref{fig:coinorder}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[title, anchor=west] at (-1.9, 1.0) {sums outside, coins inside: ordered};
+  \node[blbl, anchor=east] at (-0.2, 0) {$dp[s]$};
+  \arrs{O}{0}{0}{1/n, 1/n, 2/n, 3/hot}
+  \idx{O}{4}
+  \node[notel, anchor=north west, text width=4.6cm] at (-1.9, -0.85) {$s = 3$: $1 + 1 + 1$, $1 + 2$, $2 + 1$.};
+  \node[title, anchor=west] at (6.0, 1.0) {coins outside, sums inside: unordered};
+  \node[blbl, anchor=east] at (8.6, 0) {coin 1 only};
+  \arrs{U}{8.8}{0}{1/n, 1/n, 1/n, 1/n}
+  \node[blbl, anchor=east] at (8.6, -0.8) {coins 1 and 2};
+  \arrs{V}{8.8}{-0.8}{1/n, 1/n, 2/n, 2/hot}
+  \idx{V}{4}
+  \node[notel, anchor=north west, text width=5cm] at (6.0, -1.65) {$s = 3$: $\{1, 1, 1\}$ and $\{1, 2\}$.};
+\end{tikzpicture}
+\caption{Coins $\{1, 2\}$ and sum 3. With the sums in the outer loop, the inner loop chooses the last coin, so every order is
+counted. With the coins in the outer loop, coin 2 is added only after all coins 1 are placed, so every multiset is counted once.}
+\label{fig:coinorder}
+\end{figure}
+
+\begin{problem}{Coin Combinations I (CSES)}
+Count the \emph{ordered} ways to form $x$ from the coins, modulo $10^9 + 7$ ($k \le 100$, $x \le 10^6$).
+\solution Sums outside, coins inside. Coin Combinations~II, the unordered version, is the worked problem of
+Section~\ref{wp:coins}; its code differs only in the order of the two loops.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, x;
+    cin >> n >> x;
+    vi c(n);
+    for (ll& v : c) cin >> v;
+    vi dp(x + 1, 0);  // dp[s]: ordered sequences of coins with sum s
+    dp[0] = 1;
+    rep(s, 1, x + 1) for (ll v : c)  // sums outside: the last coin is any v
+        if (v <= s && (dp[s] += dp[s - v]) >= MOD) dp[s] -= MOD;
+    print(dp[x]);
+}
+\end{code}
+
+Both values being added are below $10^9 + 7$, so a single subtraction replaces the slower \cc{%} operator in the inner loop: the
+program runs in 0.21\,s for $10^8$ transitions.
+
+\begin{tip}
+When a counting DP gives too large an answer, the usual cause is that the same object is reached along several paths of the state
+DAG. Pin down a \emph{canonical} way to build each object (a fixed order of the parts, the smallest element first, the last change
+at a fixed place) and make the state follow it.
+\end{tip}
+
+% ======================================================================================================================
+\section[Paths in grids]{Paths in grids \hfill \gold}\label{sec:dp-grid}
+
+Monotone paths in a grid, moving only right or down, are the simplest two-dimensional DP: the last step into a cell came from the
+cell above or the cell to the left. Counting paths adds the two; a maximum-sum path takes the larger and adds the cell's value; a
+minimum-cost path takes the smaller.
+
+\begin{problem}{Grid Paths (CSES)}
+An $n \times n$ grid has traps. Count the paths from the top-left to the bottom-right corner that move only right or down and avoid
+the traps, modulo $10^9 + 7$ ($n \le 1000$).
+\solution $dp[r][c] = dp[r-1][c] + dp[r][c-1]$ for a free cell, 0 for a trap (Figure~\ref{fig:gridpathsdp}); 0.11\,s for
+$n = 1000$.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{gc/.style={draw=fgline, line width=0.5pt, minimum size=8mm, inner sep=0pt, font=\ttfamily\small, anchor=center}}
+  \foreach \rr/\row in {0/{1,1,1,1}, 1/{1,0,1,2}, 2/{1,1,2,0}, 3/{0,1,3,3}}
+    \foreach \val [count=\cc from 0] in \row
+      \node[gc] (G\rr\cc) at (0.8*\cc, -0.8*\rr) {\val};
+  \foreach \cl in {11, 23, 30} \node[gc, fill=fgink!75] at (G\cl) {};
+  \node[gc, hot] at (G33) {3};
+  \node[gc, cool] at (G32) {3};
+  \draw[->, line width=1.1pt, draw=fgblue] ($(G22.center)+(0.22, -0.12)$) -- ($(G32.center)+(0.22, 0.14)$);
+  \draw[->, line width=1.1pt, draw=fgblue] ($(G31.center)+(0.12, -0.22)$) -- ($(G32.center)+(-0.14, -0.22)$);
+  \node[notel, anchor=west, text width=6.2cm] at (3.4, -1.2) {Dark cells are traps and hold 0. Each free cell adds the
+    cell above and the cell to its left: $3 = 2 + 1$ (blue). The corner holds 3, the number of trap-free monotone paths.};
+\end{tikzpicture}
+\caption{Grid Paths on the sample grid of the problem.}
+\label{fig:gridpathsdp}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vector<string> g(n);
+    for (auto& row : g) cin >> row;
+    vvi dp(n, vi(n, 0));  // dp[r][c]: paths from (0, 0) to (r, c)
+    rep(r, n) rep(c, n) {
+        if (g[r][c] == '*') continue;  // a trap: no path ends here
+        if (r == 0 && c == 0) dp[r][c] = 1;
+        if (r > 0) dp[r][c] += dp[r - 1][c];  // arrived from above
+        if (c > 0) dp[r][c] += dp[r][c - 1];  // arrived from the left
+        dp[r][c] %= MOD;
+    }
+    print(dp[n - 1][n - 1]);
+}
+\end{code}
+
+\begin{trick}[Two walkers at once]
+``Walk from the top-left to the bottom-right and back, collecting values; a cell visited twice counts once'' is not two independent
+paths, because the second path depends on what the first collected. Move two walkers forward \emph{simultaneously}, one step each:
+after $t$ steps both lie on the anti-diagonal $r + c = t$, so the state $(t, r_1, r_2)$ determines both positions. The walkers are on
+the same cell exactly when $r_1 = r_2$, which is where the double count is removed. That is $\Oh{n^3}$ states with four transitions
+each.
+\end{trick}
+
+% ======================================================================================================================
+\section[Knapsack]{Knapsack \hfill \gold}\label{sec:knapsack}
+
+Items have weights $w_i$ and values $v_i$; choose a set of total weight at most $W$ with the largest total value. The last decision
+is whether item $i$ is in the set: with $dp[i][c]$ the best value using the first $i$ items and capacity $c$,
+\[
+  dp[i][c] = \max\bigl(dp[i-1][c],\ dp[i-1][c - w_i] + v_i\bigr) \qquad (\text{the second option only if } w_i \le c),
+\]
+in $\Oh{nW}$ time. The worked problem Book Shop (Section~\ref{wp:books}) is exactly this, with prices as weights and pages as values.
+
+\paragraph{One row is enough.} Row $i$ depends only on row $i - 1$, so a single array can be updated in place, with one catch:
+$dp[c]$ needs the \emph{old} $dp[c - w_i]$. Updating the capacities from high to low keeps that value old; updating them from low to
+high would use a value that already includes item $i$, so the item could be taken again and again (Figure~\ref{fig:knapdir}). That is
+not a bug but a different problem: the low-to-high loop solves the \emph{unbounded} knapsack, where every item has unlimited copies.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[blbl, anchor=east] at (-0.2, 0) {high to low (0/1)};
+  \arrs{K}{0}{0}{0/n, 0/n, 3/cool, 3/cool, 3/cool, 3/cool, 3/cool}
+  \node[blbl, anchor=east] at (-0.2, -1.5) {low to high (unbounded)};
+  \arrs{L}{0}{-1.5}{0/n, 0/n, 3/cool, 3/cool, 6/hot, 6/hot, 9/hot}
+  \idx{L}{7}
+  \foreach \ua/\ub in {1/3, 2/4, 3/5, 4/6, 5/7} \draw[->, line width=0.8pt, draw=fgline] (K-\ua.north) to[bend left=45] (K-\ub.north);
+  \foreach \ua/\ub in {3/5, 4/6, 5/7} \draw[->, line width=0.9pt, draw=fgverm] (L-\ua.north) to[bend left=45] (L-\ub.north);
+  \node[notel, anchor=west, text width=5.8cm] at (5.4, -0.7) {One item of weight 2 and value 3 is added to an empty table.
+    Going down, every cell reads a cell that does not contain the item yet, so it is used at most once. Going up, cell 4 reads cell
+    2, which already contains it (red): the item is taken twice, then three times.};
+\end{tikzpicture}
+\caption{The direction of the capacity loop is the whole difference between the 0/1 and the unbounded knapsack.}
+\label{fig:knapdir}
+\end{figure}
+
+\subsection{Counting subsets}
+
+Replacing $\max$ by $+$ counts the subsets instead of optimising over them, and the same direction rule applies.
+
+\begin{problem}{Two Sets II (CSES)}
+Count the ways to split $\{1, 2, \dots, n\}$ into two sets with equal sums, modulo $10^9 + 7$ ($n \le 500$).
+\solution The total $n(n+1)/2$ must be even; then count the subsets with half the total. Every split is two such subsets (one side
+and the other), so the count must be halved, which modulo a prime means multiplying by the inverse of 2. Simpler: leave the number
+$n$ out of the DP. Exactly one side of every split lacks $n$, so the subsets of $\{1, \dots, n-1\}$ with half the total are the
+splits, each counted once.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    int total = n * (n + 1) / 2;
+    if (total % 2) {
+        print(0);
+        return;
+    }
+    int half = total / 2;
+    vi dp(half + 1, 0);  // dp[s]: subsets of the numbers seen so far with sum s
+    dp[0] = 1;
+    // leave n out: each split is counted once, by its side without n
+    rep(i, 1, n) per(s, i, half + 1) dp[s] = (dp[s] + dp[s - i]) % MOD;
+    print(dp[half]);
+}
+\end{code}
+
+\subsection{Bounded copies}
+
+When item $i$ has $k_i$ copies, treating every copy as a separate item costs $\Oh{W \sum k_i}$. \emph{Binary splitting} replaces the
+$k$ copies by bundles of $1, 2, 4, \dots, 2^{t-1}$ copies and a remainder $r = k - (2^t - 1) < 2^t$, each bundle a 0/1 item. Every
+count from 0 to $2^t - 1$ is a sum of distinct powers of two, and every count from $2^t - 1$ to $k$ is $r$ plus one of those, so the
+bundles reach exactly the counts $0, \dots, k$. The cost drops to $\Oh{W \sum \log k_i}$.
+
+\begin{problem}{Bounded knapsack}
+There are $n$ kinds of items; kind $i$ has weight $w_i$, value $v_i$ and $k_i$ copies. Maximise the value within capacity $W$
+($n \le 100$, $W \le 10^5$, $k_i \le 1000$).
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, cap;
+    cin >> n >> cap;
+    vi dp(cap + 1, 0);  // dp[c]: the best value with total weight at most c
+    rep(i, n) {
+        ll w, v, k;
+        cin >> w >> v >> k;
+        // bundles of 1, 2, 4, ... copies and a remainder: every count from
+        // 0 to k is a sum of distinct bundles, so 0/1 choices suffice
+        for (ll b = 1; k > 0; b *= 2) {
+            ll take = min(b, k);
+            k -= take;
+            per(c, take * w, cap + 1)
+                chmax(dp[c], dp[c - take * w] + take * v);
+        }
+    }
+    print(dp[cap]);
+}
+\end{code}
+
+With $n = 100$ kinds of 1000 copies each and $W = 10^5$ the program makes about $10^8$ updates in 0.15\,s. An exact $\Oh{nW}$
+algorithm, which splits the capacities by their remainder modulo $w_i$ and slides a monotone queue along each class, is in
+Section~\ref{sec:dpopt-window}.
+
+\usetemplate{Knapsack (0/1, unbounded)}{Ctrl+Alt+T, Shift+Q}{cpknap}
+
+\begin{trick}[When the capacity is huge but the values are small]
+With $W$ up to $10^9$ but values summing to at most $10^5$, swap the roles of the two numbers: $dp[v]$ is the smallest weight that
+reaches value exactly $v$, and the answer is the largest $v$ with $dp[v] \le W$. Always ask which quantity is small enough to index
+the table. For plain subset-sum feasibility, a bitset makes the 0/1 knapsack 64 times faster (Section~\ref{sec:bitset}).
+\end{trick}
+
+% ======================================================================================================================
+\section[Increasing subsequences]{Increasing subsequences \hfill \gold}\label{sec:lis}
+
+The \defn{longest increasing subsequence} (LIS) of $a_0, \dots, a_{n-1}$ is the longest sequence of indices $i_1 < i_2 < \dots$ with
+$a_{i_1} < a_{i_2} < \dots$. The textbook DP takes the last element as the state: $dp[i]$, the length of the longest increasing
+subsequence that ends at $a_i$, is $1 + \max\{dp[j] : j < i,\ a_j < a_i\}$, in $\Oh{n^2}$.
+
+\paragraph{The $\Oh{n \log n}$ method.} Keep instead, for every length $k$, the \emph{smallest possible last value} of an increasing
+subsequence of length $k + 1$ seen so far; call it $\mathit{tail}[k]$. A smaller last value is never worse, because anything that
+extends a subsequence also extends one that ends lower. The tails are strictly increasing (a subsequence of length $k + 2$ contains
+one of length $k + 1$ that ends lower), so a new element $x$ either extends the longest subsequence, when it is larger than every
+tail, or improves the first tail that is $\ge x$, found by binary search (Figure~\ref{fig:lis}). The number of tails at the end is
+the LIS length. The worked problem of Section~\ref{wp:lis} uses exactly this.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[blbl, anchor=east] at (-0.2, 0) {$a$};
+  \arrs{A}{0}{0}{3/n, 1/good, 4/good, 1/n, 5/good, 9/n, 2/n, 6/good}
+  \idx{A}{8}
+  \draw[->, line width=0.9pt, draw=fggreen!70!black] (A-8.north) to[bend right=40] (A-5.north);
+  \draw[->, line width=0.9pt, draw=fggreen!70!black] (A-5.north) to[bend right=40] (A-3.north);
+  \draw[->, line width=0.9pt, draw=fggreen!70!black] (A-3.north) to[bend right=60] (A-2.north);
+  \node[lbl, anchor=north west] at (0, -0.85) {predecessor links: $6 \to 5 \to 4 \to 1$};
+  \foreach \row/\vals/\txt in {1/{3}/{3: start}, 2/{1}/{1 replaces 3}, 3/{1,4}/{4 extends}, 4/{1,4}/{1 replaces 1},
+      5/{1,4,5}/{5 extends}, 6/{1,4,5,9}/{9 extends}, 7/{1,2,5,9}/{2 replaces 4}, 8/{1,2,5,6}/{6 replaces 9}} {
+    \arr{T\row}{6.7}{0.75 - \row*0.62}{\vals}
+    \node[lbl, anchor=west] at (9.7, 0.75 - \row*0.62) {\txt};
+  }
+  \node[lbl] at (8.1, 0.65) {tails after each element};
+\end{tikzpicture}
+\caption{The tails for $3, 1, 4, 1, 5, 9, 2, 6$. The final list has length 4, the LIS length. The tails themselves ($1, 2, 5, 6$) are
+not a subsequence; following each element's predecessor, the tail before it at the moment it was placed, gives one: $1, 4, 5, 6$.}
+\label{fig:lis}
+\end{figure}
+
+\paragraph{Reconstruction.} When $a_i$ is placed at position $k$ of the tails, the element at position $k - 1$ at that moment is
+the end of a subsequence of length $k$ that $a_i$ extends; record it as $\mathit{prv}[i]$. Storing indices rather than values in the
+tails makes this possible, and following $\mathit{prv}$ from the last tail spells out an LIS backwards.
+
+\begin{problem}{Print a longest increasing subsequence}
+Given $n \le 2 \cdot 10^5$ numbers, print the length of a longest strictly increasing subsequence and one such subsequence.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vi a(n);
+    for (ll& x : a) cin >> x;
+    // tail[k]: index of the smallest possible last element of an increasing
+    // subsequence of length k + 1; prv[i]: the element before a[i] in it
+    vi tail, prv(n, -1);
+    rep(i, n) {
+        auto it = lower_bound(all(tail), a[i],
+                              [&](ll j, ll x) { return a[j] < x; });
+        int k = it - tail.begin();
+        if (k > 0) prv[i] = tail[k - 1];
+        if (it == tail.end()) tail.push_back(i);
+        else *it = i;
+    }
+    vi lis;  // walk the predecessors back from the end of the longest one
+    for (int i = tail.back(); i != -1; i = prv[i]) lis.push_back(a[i]);
+    reverse(all(lis));
+    print(sz(lis));
+    print(lis);
+}
+\end{code}
+
+\usetemplate{Longest increasing subsequence}{Ctrl+Alt+T, Shift+L}{cplis}
+
+\begin{trick}[The LIS in disguise]
+\begin{itemize}
+  \item \textbf{Non-decreasing} subsequences: search with \cc{upper_bound} instead of \cc{lower_bound}, so that equal values extend.
+  \item \textbf{Fewest decreasing subsequences} covering an array equals the LIS length (a case of Dilworth's theorem); greedily
+        placing each element on the leftmost pile whose top is larger, as in Towers (CSES), builds such a cover.
+  \item \textbf{Nested boxes or envelopes}: sort by width increasing and, for equal widths, by height \emph{decreasing}, then take
+        the LIS of the heights; the decreasing tie-break stops two boxes of equal width from nesting.
+  \item \textbf{Fewest changes} that make an integer array strictly increasing: $n$ minus the longest non-decreasing subsequence
+        of $a_i - i$.
+\end{itemize}
+\end{trick}
+
+% ======================================================================================================================
+\section[Two sequences: LCS and edit distance]{Two sequences: LCS and edit distance \hfill \gold}\label{sec:editdist}
+
+With two sequences, the state is a pair of prefixes: $dp[i][j]$ is the answer for the first $i$ elements of $a$ and the first $j$ of
+$b$, and the transitions look at the last elements, $a_{i-1}$ and $b_{j-1}$.
+\begin{itemize}
+  \item \textbf{Longest common subsequence}: if the last elements are equal, match them; otherwise at least one of the two is not
+        in the common subsequence:
+        \[ dp[i][j] = \begin{cases} dp[i-1][j-1] + 1 & \text{if } a_{i-1} = b_{j-1},\\ \max\bigl(dp[i-1][j],\ dp[i][j-1]\bigr)
+           & \text{otherwise.} \end{cases} \]
+  \item \textbf{Edit distance} (the fewest insertions, deletions and replacements turning $a$ into $b$): the last operation deletes
+        $a_{i-1}$, inserts $b_{j-1}$, or aligns the two, for free if they are equal:
+        \[ dp[i][j] = \min\bigl(dp[i-1][j] + 1,\ dp[i][j-1] + 1,\ dp[i-1][j-1] + [a_{i-1} \ne b_{j-1}]\bigr), \]
+        with $dp[i][0] = i$ and $dp[0][j] = j$.
+\end{itemize}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{ec/.style={draw=fgline, line width=0.5pt, minimum size=7mm, inner sep=0pt, font=\ttfamily\small, anchor=center}}
+  \foreach \ch [count=\cc] in {M, O, V, I, E}
+    \node[font=\ttfamily\small\bfseries, text=fgblue] at (0.7*\cc + 0.7, 0) {\ch};
+  \foreach \ch [count=\rr] in {L, O, V, E}
+    \node[font=\ttfamily\small\bfseries, text=fgblue] at (0, -0.7*\rr - 0.7) {\ch};
+  \foreach \row [count=\rr from 0] in {{0,1,2,3,4,5}, {1,1,2,3,4,5}, {2,2,1,2,3,4}, {3,3,2,1,2,3}, {4,4,3,2,2,2}}
+    \foreach \val [count=\cc from 0] in \row
+      \node[ec] (E\rr\cc) at (0.7*\cc + 0.7, -0.7*\rr - 0.7) {\val};
+  \foreach \cl/\val in {00/0, 11/1, 22/1, 33/1, 34/2, 45/2} \node[ec, cool] at (E\cl) {\val};
+  \foreach \ua/\ub in {00/11, 11/22, 22/33, 33/34, 34/45}
+    \draw[->, line width=1.1pt, draw=fgverm, shorten <=2.1mm, shorten >=2.1mm] (E\ua.center) -- (E\ub.center);
+  \node[notel, anchor=west, text width=5.6cm] at (5.1, -2.2) {Edit distance from \texttt{LOVE} to \texttt{MOVIE} is 2. The
+    highlighted path, read from the top-left: replace L by M (diagonal, $+1$), keep O and V (diagonal, $+0$), insert I (right, $+1$),
+    keep E. A diagonal step is a match or a replacement, a step right an insertion, a step down a deletion.};
+\end{tikzpicture}
+\caption{The edit-distance table of \texttt{LOVE} (rows) and \texttt{MOVIE} (columns), and an optimal alignment read from it.}
+\label{fig:editdist}
+\end{figure}
+
+\begin{problem}{Edit Distance (CSES)}
+Find the edit distance of two strings of length at most 5000.
+\solution The table has $2.5 \cdot 10^7$ cells; each row depends only on the previous one, so two rows of length $m + 1$ suffice.
+That keeps the memory at $\Oh{m}$ instead of 200\,MB of 64-bit numbers, and the program runs in 0.19\,s.
+\end{problem}
+
+\begin{code}
+void solve() {
+    string a, b;
+    cin >> a >> b;
+    int n = sz(a), m = sz(b);
+    // prev[j]: edits turning a[0, i) into b[0, j); only two rows are kept
+    vi prev(m + 1), cur(m + 1);
+    iota(all(prev), 0);  // from the empty prefix: insert j characters
+    rep(i, 1, n + 1) {
+        cur[0] = i;  // to the empty prefix: delete i characters
+        rep(j, 1, m + 1)  // delete a[i - 1], insert b[j - 1], replace or keep
+            cur[j] = min({prev[j] + 1, cur[j - 1] + 1,
+                          prev[j - 1] + (a[i - 1] != b[j - 1])});
+        swap(prev, cur);
+    }
+    print(prev[m]);
+}
+\end{code}
+
+\usetemplate{LCS + edit distance}{Ctrl+Alt+T, [}{cplcs}
+
+\begin{trick}[Reconstruction in linear memory: Hirschberg]
+Two rows give the distance but not the alignment, which needs the whole table to walk back. \emph{Hirschberg's algorithm} recovers
+it in $\Oh{nm}$ time and $\Oh{n + m}$ memory: run the two-row DP forwards on the first half of $a$ and backwards on the second half,
+find the column $j$ where the optimal path crosses the middle row (the one minimising the sum of the two half costs), and recurse
+on the two halves. The total work is $nm + nm/2 + nm/4 + \dots < 2nm$.
+\end{trick}
+
+% ======================================================================================================================
+\section[Choosing the state]{Choosing the state \hfill \gold}\label{sec:dp-state}
+
+The state must contain exactly what the future depends on. A useful test: if two different histories reach the same state but
+could continue in different ways, the state is missing information; if the state distinguishes histories that always continue
+alike, it is larger than necessary.
+
+\begin{problem}{Array Description (CSES)}
+An array of $n$ values in $1..m$ has adjacent values differing by at most 1. Some values are known, the others (shown as 0) are
+lost. Count the arrays that match, modulo $10^9 + 7$ ($n \le 10^5$, $m \le 100$).
+\solution The index alone is not a valid state, since which values may come next depends on the last value; so the state is the
+pair (position, last value). Each layer of states depends only on the previous layer (Figure~\ref{fig:arraydesc}): $\Oh{nm}$ time,
+0.11\,s at the limits.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{av/.style={vtx, minimum size=7mm}}
+  \foreach \lay/\vals in {0/{0,1,0,0,0}, 1/{1,1,1,0,0}, 2/{0,3,0,0,0}}
+    \foreach \val [count=\vv] in \vals
+      \node[av] (A\lay\vv) at (2.6*\lay, -0.85*\vv) {\val};
+  \foreach \cl in {01, 03, 04, 05, 21, 23, 24, 25} \node[av, dim] at (A\cl) {0};
+  \node[av, hot] at (A02) {1};
+  \node[av, hot] at (A22) {3};
+  \foreach \vv in {1, 2, 3} \node[av, cool] at (A1\vv) {1};
+  \foreach \vv in {1, ..., 5} \node[lbl, anchor=east] at ($(A0\vv.west)+(-0.15, 0)$) {value \vv};
+  \foreach \ua/\ub in {2/1, 2/2, 2/3} \draw[ded, draw=fgblue] (A0\ua) -- (A1\ub);
+  \foreach \ua/\ub in {1/2, 2/2, 3/2} \draw[ded, draw=fgblue] (A1\ua) -- (A2\ub);
+  \foreach \lay/\tx in {0/{$a_0 = 2$}, 1/{$a_1 = 0$}, 2/{$a_2 = 2$}} \node[blbl] at (2.6*\lay, -0.05) {\tx};
+  \node[notel, anchor=west, text width=5.6cm] at (6.2, -2.55) {Each vertex is a state (position, last value) and shows its
+    number of ways. A known value allows a single vertex in its layer (red). The three arrays $2,1,2$, $2,2,2$ and $2,3,2$ are the
+    three paths into the last layer.};
+\end{tikzpicture}
+\caption{Array Description with $n = 3$, $m = 5$ and the array $2, 0, 2$ as a layered DAG of states.}
+\label{fig:arraydesc}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    vi a(n);
+    for (ll& v : a) cin >> v;
+    // dp[v]: ways to fill the prefix so far, ending with the value v;
+    // dp[0] and dp[m + 1] stay 0 as sentinels
+    vi dp(m + 2, 0);
+    rep(v, 1, m + 1) dp[v] = a[0] == 0 || a[0] == v;
+    rep(i, 1, n) {
+        vi nd(m + 2, 0);
+        rep(v, 1, m + 1) {
+            if (a[i] != 0 && a[i] != v) continue;
+            nd[v] = (dp[v - 1] + dp[v] + dp[v + 1]) % MOD;
+        }
+        dp = nd;
+    }
+    ll ans = 0;
+    rep(v, 1, m + 1) ans = (ans + dp[v]) % MOD;
+    print(ans);
+}
+\end{code}
+
+\paragraph{States that are shapes.} Sometimes the natural subproblem is a smaller copy of the input's \emph{shape}, as when a
+rectangle is cut into rectangles.
+
+\begin{problem}{Rectangle Cutting (CSES)}
+A rectangle of $a \times b$ unit squares is cut, one straight cut through a whole piece at a time, until every piece is a square. Find
+the fewest cuts ($a, b \le 500$).
+\solution A first cut splits $w \times h$ into $i \times h$ and $(w - i) \times h$, or $w \times i$ and $w \times (h - i)$, and the
+two pieces are then solved independently: $dp[w][h]$ is the minimum over all first cuts of $1 + $ the two pieces' values, with
+$dp[w][w] = 0$ (Figure~\ref{fig:rectcut}). Cuts at $i$ and at $w - i$ give the same two pieces, so only cuts up to the middle are
+tried, which halves the $\Oh{ab(a + b)}$ work; 0.24\,s for $500 \times 499$.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[scale=0.62]
+  \fill[fgsky!20] (0, 0) rectangle (3, 3);
+  \fill[fggreen!14] (3, 1) rectangle (5, 3);
+  \fill[fgorange!16] (3, 0) rectangle (4, 1);
+  \fill[fgorange!16] (4, 0) rectangle (5, 1);
+  \draw[step=1, draw=fgline!70, line width=0.3pt] (0, 0) grid (5, 3);
+  \draw[line width=1pt, draw=fgink] (0, 0) rectangle (5, 3);
+  \draw[line width=1.8pt, draw=fgverm, dashed] (3, -0.3) -- (3, 3.3);
+  \draw[line width=1.8pt, draw=fgverm, dashed] (3, 1) -- (5.3, 1);
+  \draw[line width=1.8pt, draw=fgverm, dashed] (4, -0.3) -- (4, 1);
+  \foreach \px/\py/\tx in {3/3.75/1, 5.65/1/2, 4/-0.75/3}
+    \node[circle, draw=fgverm, fill=white, line width=0.8pt, inner sep=0.8pt, minimum size=4.2mm,
+      font=\sffamily\scriptsize\bfseries, text=fgverm] at (\px, \py) {\tx};
+  \node[notel, anchor=west, text width=6.4cm] at (7.0, 1.5) {$3 \times 5$: cut off a $3 \times 3$ square (cut 1); the
+    remaining $3 \times 2$ piece loses a $2 \times 2$ square (cut 2); the last $1 \times 2$ strip is cut into two unit squares
+    (cut 3). No two cuts suffice, so $dp[3][5] = 3$.};
+\end{tikzpicture}
+\caption{An optimal way to cut a $3 \times 5$ rectangle into squares.}
+\label{fig:rectcut}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int a, b;
+    cin >> a >> b;
+    // dp[w][h]: the fewest cuts that turn a w x h rectangle into squares
+    vvi dp(a + 1, vi(b + 1, INF));
+    rep(w, 1, a + 1) rep(h, 1, b + 1) {
+        if (w == h) {
+            dp[w][h] = 0;
+            continue;
+        }
+        // the first cut, vertical or horizontal; by symmetry, up to the middle
+        rep(i, 1, w / 2 + 1) chmin(dp[w][h], dp[i][h] + dp[w - i][h] + 1);
+        rep(i, 1, h / 2 + 1) chmin(dp[w][h], dp[w][i] + dp[w][h - i] + 1);
+    }
+    print(dp[a][b]);
+}
+\end{code}
+
+% ======================================================================================================================
+\section[Reconstruction, memory and debugging]{Reconstruction, memory and debugging \hfill \gold}\label{sec:dp-debug}
+
+\paragraph{Reconstructing a solution.} To output the choices and not only the value, either store, for every state, which transition
+achieved the optimum (a parent pointer, as $\mathit{prv}$ in the LIS), or keep the table and re-derive the choice afterwards: walk from
+the answer state and, at each step, find a transition whose value plus its cost equals the stored value, exactly as the highlighted path
+of Figure~\ref{fig:editdist} was found. The second way costs no extra memory during the DP but needs the full table during the walk.
+
+\paragraph{Shrinking the memory.} If row $i$ of the table depends only on row $i - 1$, keep two rows and swap them (edit distance), or
+one row updated in the right direction (knapsack). If a state depends on the last $k$ states only, a ring buffer of $k$ cells is
+enough. Each saving gives up reconstruction, unless the choices are stored separately in a compact form, such as one bit per state.
+
+\begin{pitfall}[A checklist for wrong DP answers]
+\begin{itemize}
+  \item Unreachable states initialised to 0 instead of $-\infty$ or $+\infty$, so that impossible choices look free.
+  \item An in-place update in the wrong direction, so that one item is used twice (or a value is read after it changed).
+  \item Overflow in a counting DP: reduce modulo after \emph{every} addition and multiplication, and multiply in 64 bits.
+  \item A state that is missing information: two histories reach it but need different futures.
+  \item Double counting: the same object built along two paths of the state DAG; fix a canonical construction order.
+  \item Off-by-one base cases: is $dp[0]$ the empty prefix (usually 1 way, or cost 0), and is the answer $dp[n]$ or $dp[n-1]$?
+\end{itemize}
+The fastest way to find such bugs is a brute force on tiny inputs and a random test generator (Chapter~\ref{ch:craft}).
+\end{pitfall}
+
+\begin{recognize}
+Counting ways, a minimum or maximum cost, or ``is it possible'', over a sequence of decisions where the future depends on the past
+only through a small summary. Limits such as $n \le 5000$ (for $\Oh{n^2}$), $n \cdot W \le 10^8$, or a grid of $1000 \times 1000$
+are typical. A brute-force recursion that keeps being called with the same arguments is a DP waiting to be memoized.
+\end{recognize}
+
+\begin{summary}[Chapter summary]
+\begin{itemize}
+  \item A DP evaluates a function on a DAG of states: the cost is states times transitions, and minimum, maximum and counting DPs
+        are shortest paths, longest paths and path counts in that DAG.
+  \item Design with five questions: state, transition (look at the last decision), base cases, order, answer.
+  \item Memoization is quick to write; tabulation is faster, stack-safe, and allows rolling arrays. Pull and push are the same
+        arrows read in two directions.
+  \item The loop order of a coin DP decides between ordered and unordered counts; the capacity direction decides between the 0/1
+        and the unbounded knapsack; binary splitting handles bounded copies.
+  \item The LIS needs only the smallest tail of every length: $\Oh{n \log n}$, and predecessor links reconstruct it.
+  \item Pairs of prefixes solve LCS and edit distance; two rows suffice for the value, Hirschberg recovers the alignment.
+  \item The state must hold exactly what the future depends on: the last value, the shape that remains.
+\end{itemize}
+\end{summary}
+
+\begin{practice}
+\ppgroup{Counting and optimising sums}
+\begin{pplist}
+  \item Dice Combinations
+  \item Minimizing Coins
+  \item Coin Combinations I
+  \item Coin Combinations II
+  \item Removing Digits
+  \item Money Sums
+  \item Two Sets II
+\end{pplist}
+\ppgroup{Grids, knapsacks and sequences}
+\begin{pplist}
+  \item Grid Paths
+  \item Book Shop
+  \item Array Description
+  \item Edit Distance
+  \item Rectangle Cutting
+  \item Increasing Subsequence
+  \item Towers
+\end{pplist}
+\end{practice}

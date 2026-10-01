@@ -1,0 +1,155 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\@writefile{toc}{\contentsline {chapter}{\numberline {7}Sorting and Greedy Algorithms}{79}{chapter.7}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{ch:sorting}{{7}{79}{Sorting and Greedy Algorithms}{chapter.7}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {7.1}Sorting as a tool}{79}{section.7.1}\protected@file@percent }
+\newlabel{sec:sorting-tool}{{7.1}{79}{Sorting as a tool}{section.7.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {7.1}{\ignorespaces Missing Coin Sum with the sorted coins $1, 1, 3, 6, 20$. Each green bar is the range $0, \ldots  , r$ of sums that can be formed after taking the coins so far. Each coin at most $r + 1$ extends the range without a gap; the coin 20 would leave the gap $12, \ldots  , 19$, so the answer is 12.}}{80}{figure.caption.106}\protected@file@percent }
+\newlabel{fig:missingcoin}{{7.1}{80}{Missing Coin Sum with the sorted coins $1, 1, 3, 6, 20$. Each green bar is the range $0, \ldots , r$ of sums that can be formed after taking the coins so far. Each coin at most $r + 1$ extends the range without a gap; the coin 20 would leave the gap $12, \ldots , 19$, so the answer is 12}{figure.caption.106}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.1.1}The sorting toolbox}{80}{subsection.7.1.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {7.2}{\ignorespaces What \texttt  {sort}, \texttt  {partial\_sort} and \texttt  {nth\_element} guarantee. Grey cells are in an unspecified order; with \texttt  {nth\_element}, blue cells are at most the value at index $k$ and orange cells at least it.}}{81}{figure.caption.107}\protected@file@percent }
+\newlabel{fig:sortfamily}{{7.2}{81}{What \texttt {sort}, \texttt {partial\_sort} and \texttt {nth\_element} guarantee. Grey cells are in an unspecified order; with \texttt {nth\_element}, blue cells are at most the value at index $k$ and orange cells at least it}{figure.caption.107}{}}
+\newlabel{tpl:cpargsort}{{7.1.1}{81}{The sorting toolbox}{section*.108}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {7.2}Counting sort and radix sort}{81}{section.7.2}\protected@file@percent }
+\newlabel{sec:radix}{{7.2}{81}{Counting sort and radix sort}{section.7.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{Counting sort.}{81}{paragraph*.109}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Radix sort.}{81}{paragraph*.111}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {7.3}{\ignorespaces Counting sort with keys in $[0, 4)$. Count the keys, turn the counts into first positions with a prefix sum, then place the items in input order, each at the next free position of its key.}}{82}{figure.caption.110}\protected@file@percent }
+\newlabel{fig:countingsort}{{7.3}{82}{Counting sort with keys in $[0, 4)$. Count the keys, turn the counts into first positions with a prefix sum, then place the items in input order, each at the next free position of its key}{figure.caption.110}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {7.4}{\ignorespaces Radix sort of three-digit numbers: three stable counting sorts, by the ones digit, the tens digit and the hundreds digit (the digit used in each pass is red). After the pass on the tens digit, the numbers are sorted by their last two digits; after the last pass, completely.}}{82}{figure.caption.112}\protected@file@percent }
+\newlabel{fig:radix}{{7.4}{82}{Radix sort of three-digit numbers: three stable counting sorts, by the ones digit, the tens digit and the hundreds digit (the digit used in each pass is red). After the pass on the tens digit, the numbers are sorted by their last two digits; after the last pass, completely}{figure.caption.112}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {7.1}{\ignorespaces Measured costs of sorting random 64-bit integers (\texttt  {g++ -O2}, best of three runs).}}{82}{table.caption.113}\protected@file@percent }
+\newlabel{tab:sortcost}{{7.1}{82}{Measured costs of sorting random 64-bit integers (\texttt {g++ -O2}, best of three runs)}{table.caption.113}{}}
+\newlabel{tpl:cpradix}{{7.2}{82}{Radix sort}{section*.114}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {7.3}Comparators and exchange arguments}{82}{section.7.3}\protected@file@percent }
+\newlabel{sec:comparators}{{7.3}{82}{Comparators and exchange arguments}{section.7.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {7.5}{\ignorespaces The exchange argument behind Smith's rule. Swapping two adjacent tasks changes only their own finishing times; the tasks before and after them are unaffected.}}{83}{figure.caption.115}\protected@file@percent }
+\newlabel{fig:smith}{{7.5}{83}{The exchange argument behind Smith's rule. Swapping two adjacent tasks changes only their own finishing times; the tasks before and after them are unaffected}{figure.caption.115}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.3.1}When is a comparator legal?}{84}{subsection.7.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {7.4}Coordinate compression}{84}{section.7.4}\protected@file@percent }
+\newlabel{sec:compression}{{7.4}{84}{Coordinate compression}{section.7.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {7.6}{\ignorespaces Coordinate compression: every value is replaced by its index in the sorted list of distinct values.}}{85}{figure.caption.116}\protected@file@percent }
+\newlabel{fig:compress}{{7.6}{85}{Coordinate compression: every value is replaced by its index in the sorted list of distinct values}{figure.caption.116}{}}
+\newlabel{tpl:cpcompress}{{7.4}{85}{Coordinate compression}{section*.117}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {7.5}Greedy algorithms and their proofs}{85}{section.7.5}\protected@file@percent }
+\newlabel{sec:greedy}{{7.5}{85}{Greedy algorithms and their proofs}{section.7.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.5.1}Interval scheduling}{85}{subsection.7.5.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {7.7}{\ignorespaces Earliest end first. Each interval is on its own row, in order of end time. The algorithm takes an interval whenever it starts at or after the end of the last one taken (dashed lines): four intervals, the maximum.}}{86}{figure.caption.118}\protected@file@percent }
+\newlabel{fig:intervalsched}{{7.7}{86}{Earliest end first. Each interval is on its own row, in order of end time. The algorithm takes an interval whenever it starts at or after the end of the last one taken (dashed lines): four intervals, the maximum}{figure.caption.118}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.5.2}Breaking a wrong greedy}{86}{subsection.7.5.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {7.8}{\ignorespaces Three plausible greedy rules and their counterexamples. Interval scheduling needs the earliest \emph  {end}; coin change needs dynamic programming unless the coin system is special (such as $1, 2, 5, 10, \ldots  $).}}{86}{figure.caption.119}\protected@file@percent }
+\newlabel{fig:greedyfail}{{7.8}{86}{Three plausible greedy rules and their counterexamples. Interval scheduling needs the earliest \emph {end}; coin change needs dynamic programming unless the coin system is special (such as $1, 2, 5, 10, \ldots $)}{figure.caption.119}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {7.6}Classic greedy problems}{86}{section.7.6}\protected@file@percent }
+\newlabel{sec:greedy-classics}{{7.6}{86}{Classic greedy problems}{section.7.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.6.1}Medians minimise distances}{87}{subsection.7.6.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {7.9}{\ignorespaces The cost $f(x) = \DOTSI \sumop \slimits@ |p_i - x|$ for sticks $1, 2, 3, 7, 9$. It is piecewise linear and convex; its slope (numbers on the segments) goes up by 2 at each stick, and changes sign at the median.}}{87}{figure.caption.120}\protected@file@percent }
+\newlabel{fig:sticks}{{7.9}{87}{The cost $f(x) = \sum |p_i - x|$ for sticks $1, 2, 3, 7, 9$. It is piecewise linear and convex; its slope (numbers on the segments) goes up by 2 at each stick, and changes sign at the median}{figure.caption.120}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.6.2}Merging with the smallest first: Huffman's algorithm}{87}{subsection.7.6.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {7.10}{\ignorespaces Cutting a stick of length 18 into pieces $2, 3, 5, 8$ (orange). Huffman's algorithm joins $2 + 3 = 5$, then $5 + 5 = 10$, then $10 + 8 = 18$; the cuts (blue) cost $5 + 10 + 18 = 33 = 8 \cdot 1 + 5 \cdot 2 + 2 \cdot 3 + 3 \cdot 3$.}}{88}{figure.caption.121}\protected@file@percent }
+\newlabel{fig:huffman}{{7.10}{88}{Cutting a stick of length 18 into pieces $2, 3, 5, 8$ (orange). Huffman's algorithm joins $2 + 3 = 5$, then $5 + 5 = 10$, then $10 + 8 = 18$; the cuts (blue) cost $5 + 10 + 18 = 33 = 8 \cdot 1 + 5 \cdot 2 + 2 \cdot 3 + 3 \cdot 3$}{figure.caption.121}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.6.3}A catalogue of classic greedy rules}{88}{subsection.7.6.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {7.2}{\ignorespaces Classic greedy rules. The 0/1 knapsack and coin change with arbitrary coins are \emph  {not} solved by greedy rules; they need dynamic programming (Part~V).}}{89}{table.caption.122}\protected@file@percent }
+\newlabel{tab:greedyrules}{{7.2}{89}{Classic greedy rules. The 0/1 knapsack and coin change with arbitrary coins are \emph {not} solved by greedy rules; they need dynamic programming (Part~V)}{table.caption.122}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {7.7}Greedy with heaps and ordered sets}{89}{section.7.7}\protected@file@percent }
+\newlabel{sec:greedy-ds}{{7.7}{89}{Greedy with heaps and ordered sets}{section.7.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.7.1}Deadlines and profits}{89}{subsection.7.7.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {7.11}{\ignorespaces Scheduling unit jobs with a min-heap. Whenever the heap holds more jobs than days available, the cheapest job is dropped. The final jobs are done on days 1, 2, 3 in order of deadline: profits 5, 8, 6.}}{90}{figure.caption.123}\protected@file@percent }
+\newlabel{fig:jobheap}{{7.11}{90}{Scheduling unit jobs with a min-heap. Whenever the heap holds more jobs than days available, the cheapest job is dropped. The final jobs are done on days 1, 2, 3 in order of deadline: profits 5, 8, 6}{figure.caption.123}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.7.2}Best fit with an ordered multiset}{90}{subsection.7.7.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.7.3}Greedy that can change its mind}{91}{subsection.7.7.3}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {7.12}{\ignorespaces Regret greedy on the prices $3, 1, 4, 5, 2, 6$. The optimal plan buys on days 1, 2 and 5 and sells on days 3, 4 and 6, for a profit of 9. The duplicated prices are the options to move a sale to a later, better day.}}{91}{figure.caption.124}\protected@file@percent }
+\newlabel{fig:regret}{{7.12}{91}{Regret greedy on the prices $3, 1, 4, 5, 2, 6$. The optimal plan buys on days 1, 2 and 5 and sells on days 3, 4 and 6, for a profit of 9. The duplicated prices are the options to move a sale to a later, better day}{figure.caption.124}{}}
+\@setckpt{algorithms/06_sorting_greedy}{
+\setcounter{page}{94}
+\setcounter{equation}{0}
+\setcounter{enumi}{2}
+\setcounter{enumii}{0}
+\setcounter{enumiii}{0}
+\setcounter{enumiv}{0}
+\setcounter{footnote}{0}
+\setcounter{mpfootnote}{0}
+\setcounter{part}{2}
+\setcounter{chapter}{7}
+\setcounter{section}{7}
+\setcounter{subsection}{3}
+\setcounter{subsubsection}{0}
+\setcounter{paragraph}{0}
+\setcounter{subparagraph}{0}
+\setcounter{figure}{12}
+\setcounter{table}{2}
+\setcounter{parentequation}{0}
+\setcounter{lstnumber}{18}
+\setcounter{tcbbreakpart}{2}
+\setcounter{tcblayer}{0}
+\setcounter{tcolorbox@number}{283}
+\setcounter{tcblisting}{51}
+\setcounter{tcbrastercolumn}{1}
+\setcounter{tcbrasterrow}{1}
+\setcounter{tcbrasternum}{1}
+\setcounter{tcbraster}{1}
+\setcounter{cpsegfig}{0}
+\setcounter{LT@tables}{0}
+\setcounter{LT@chunks}{0}
+\setcounter{nlinenum}{0}
+\setcounter{ALG@line}{9}
+\setcounter{ALG@rem}{0}
+\setcounter{ALG@nested}{0}
+\setcounter{ALG@Lnr}{2}
+\setcounter{ALG@blocknr}{15}
+\setcounter{ALG@storecount}{0}
+\setcounter{ALG@tmpcounter}{0}
+\setcounter{algpx@codeBoxCount}{0}
+\setcounter{algpx@nestedCBoxCount}{0}
+\setcounter{algpx@startedBoxesCount}{0}
+\setcounter{algpx@endedBoxesCount}{0}
+\setcounter{algpx@nestedBoxedStringCount}{0}
+\setcounter{algpx@nestedBoxedStringMaxCount}{0}
+\setcounter{algpx@indentCount}{4}
+\setcounter{algpx@lastIndentEnded}{3}
+\setcounter{algpx@pageCount}{0}
+\setcounter{algpx@tmpCount}{0}
+\setcounter{caption@flags}{2}
+\setcounter{continuedfloat}{0}
+\setcounter{float@type}{16}
+\setcounter{section@level}{0}
+\setcounter{Item}{8}
+\setcounter{Hfootnote}{0}
+\setcounter{bookmark@seq@number}{0}
+\setcounter{algpx@indentEndPage-0@totc}{0}
+\setcounter{algpx@indentEndPage-1@totc}{0}
+\setcounter{algpx@indentEndPage-2@totc}{0}
+\setcounter{algpx@indentEndPage-3@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-2@totc}{3}
+\setcounter{algpx@indentEndCoordIndex-0@totc}{3}
+\setcounter{algpx@indentEndPage-4@totc}{0}
+\setcounter{algpx@indentEndPage-5@totc}{0}
+\setcounter{algpx@indentEndPage-6@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-4@totc}{6}
+\setcounter{algpx@indentEndPage-7@totc}{0}
+\setcounter{algpx@indentEndPage-8@totc}{0}
+\setcounter{algpx@indentEndPage-9@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-8@totc}{9}
+\setcounter{algpx@indentEndPage-10@totc}{0}
+\setcounter{algpx@indentEndPage-11@totc}{0}
+\setcounter{algpx@indentEndPage-12@totc}{0}
+\setcounter{algpx@indentEndPage-13@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-12@totc}{13}
+\setcounter{algpx@indentEndCoordIndex-10@totc}{13}
+\setcounter{algpx@indentEndPage-14@totc}{0}
+\setcounter{algpx@indentEndPage-15@totc}{0}
+\setcounter{algpx@indentEndPage-16@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-15@totc}{16}
+\setcounter{algpx@indentEndPage-17@totc}{0}
+\setcounter{algpx@indentEndPage-18@totc}{1}
+\setcounter{algpx@indentEndPage-19@totc}{1}
+\setcounter{algpx@indentEndCoordIndex-18@totc}{19}
+\setcounter{lstlisting}{0}
+\setcounter{algpx@indentEndPage-0}{0}
+\setcounter{algpx@indentEndPage-1}{0}
+\setcounter{algpx@indentEndPage-2}{0}
+\setcounter{algpx@indentEndPage-3}{0}
+\setcounter{algpx@indentEndCoordIndex-2}{3}
+\setcounter{algpx@indentEndCoordIndex-0}{3}
+}

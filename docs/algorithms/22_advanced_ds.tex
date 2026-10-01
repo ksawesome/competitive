@@ -1,0 +1,753 @@
+\chapter{Ordered Sets, Treaps and Other Structures}\label{ch:advds}
+
+Segment trees answer questions about a fixed array. This chapter collects the structures for the other situations: a set whose
+contents change and whose \emph{order} matters (the neighbours of a value, the $k$-th smallest), a sequence whose \emph{shape} changes
+(insertions in the middle, reversals, cut and paste), many versions of a sequence at once, offline questions in three dimensions, and
+range questions about \emph{values} rather than positions. It ends with hashing, the right tool when no order is needed at all, and
+with a way to hash whole sets.
+
+\begin{chapterintro}{\gold\ \plat\ \ioi}{Chapter~\ref{ch:cpp} (\cc{set}, \cc{map} and the policy-based tree),
+Chapter~\ref{ch:ds-basics} (interval sets and linked lists) and Chapter~\ref{ch:segtree} (Fenwick trees and persistence).}
+  \item combine sorted containers to answer neighbour, gap and order-statistic questions in $\Oh{\log n}$;
+  \item use treaps keyed by position to insert, delete, reverse and move whole ranges, and prove their expected depth;
+  \item keep every version of a sequence with a persistent treap, and budget its memory;
+  \item count three-dimensional dominance offline with CDQ divide and conquer;
+  \item answer $k$-th smallest and counting queries on ranges with a wavelet matrix;
+  \item choose between ordered containers, hash tables, sorting and plain arrays from measured costs, and hash whole sets.
+\end{chapterintro}
+
+% ======================================================================================================================
+\section[Sets beyond lookups]{Sets beyond lookups \hfill \gold}\label{sec:setsorder}
+
+A \cc{set}, \cc{multiset} or \cc{map} keeps its elements sorted in a balanced binary search tree, so besides insert, erase and
+find it answers \emph{ordered} questions in $\Oh{\log n}$: Chapter~\ref{ch:cpp} showed how \cc{lower_bound} walks the tree
+(Figure~\ref{fig:bst-lower}), and Section~\ref{sec:ordered-sets} kept a set of disjoint intervals. Table~\ref{tab:setops} collects
+the idioms that come up again and again. Two habits prevent most bugs: compare an iterator with \cc{end()} (or \cc{begin()}) before
+dereferencing it or its predecessor, and erase \emph{one} copy from a multiset with \cc{ms.erase(ms.find(x))}, because
+\cc{ms.erase(x)} removes all of them.
+
+The flexibility has a price in memory and in locality. Every element of a set is a separate allocation that holds the key, three
+pointers and a colour: on the machine used for this book, a \cc{set<int>} of $10^6$ random numbers occupied 51.5\,MB, thirteen times the
+4\,MB of the numbers themselves, and $10^6$ insertions followed by $10^6$ lookups took 1.14\,s. Sorting a \cc{vector} and searching it
+with \cc{binary_search} did the same work in 0.14\,s and 5.3\,MB. When the collection does not change between queries, a sorted vector
+is the right structure; a set earns its cost only when insertions and queries interleave.
+
+\begin{table}[htbp]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}>{\ttfamily\raggedright\arraybackslash}p{5.6cm}X@{}}
+\toprule
+\normalfont expression & \normalfont meaning \\
+\midrule
+*s.lower\_bound(x) & the smallest element $\ge x$ (check \texttt{!= s.end()} first) \\
+*s.upper\_bound(x) & the smallest element $> x$ \\
+*prev(s.lower\_bound(x)) & the largest element $< x$ (check \texttt{!= s.begin()} first) \\
+*prev(s.upper\_bound(x)) & the largest element $\le x$ \\
+*s.begin(), *s.rbegin() & the minimum and the maximum \\
+next(it), prev(it) & the neighbours of an element, amortised $\Oh{1}$ \\
+ms.erase(ms.find(x)) & remove \emph{one} copy of $x$ from a multiset \\
+s.emplace\_hint(s.end(), x) & append a value larger than all others, amortised $\Oh{1}$ \\
+s.extract(it) & take the node out without freeing it (C++17); change its key through \texttt{.value()} (\texttt{.key()} in a
+  map) and \texttt{insert} it back, with no new allocation \\
+\bottomrule
+\end{tabularx}
+\caption{Idioms for \cc{std::set}, \cc{multiset} and \cc{map}; each costs $\Oh{\log n}$ unless stated otherwise.}
+\label{tab:setops}
+\end{table}
+
+The interesting problems keep \emph{two} containers that describe the same situation from two sides, and update both on every event.
+
+\begin{problem}{Traffic Lights (CSES)}
+A street of length $x$ receives traffic lights one at a time, at distinct positions; after each, report the length of the longest
+stretch of the street without lights ($x \le 10^9$, $n \le 2 \cdot 10^5$).
+\solution Keep the positions in a \cc{set}, with the two ends of the street as sentinels, and the lengths of the stretches between
+neighbouring lights in a \cc{multiset}. A new light at $p$ lies inside exactly one stretch, between the first light after $p$
+(\cc{upper_bound}) and its predecessor. That stretch is replaced by two (Figure~\ref{fig:traffic}), and the answer is the largest
+element of the multiset. Each light costs a constant number of $\Oh{\log n}$ operations.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=1.1cm]
+  \foreach \row/\lights/\gaps/\ttx in {0/{0,3,8}/{3/1.5, 5/5.5}/{light at 3: longest 5},
+      1/{0,3,6,8}/{3/1.5, 3/4.5, 2/7}/{light at 6: longest 3},
+      2/{0,2,3,6,8}/{2/1, 1/2.5, 3/4.5, 2/7}/{light at 2: longest 3}} {
+    \begin{scope}[yshift=-1.05*\row cm]
+      \draw[line width=1pt, draw=fgline] (0, 0) -- (8, 0);
+      \foreach \pp in \lights \fill[fgverm] (\pp, 0) circle (2.6pt);
+      \foreach \glen/\gpos in \gaps \node[font=\sffamily\scriptsize\bfseries, text=fgblue, above=2pt] at (\gpos, 0) {\glen};
+      \node[lbl, anchor=west] at (8.4, 0) {\ttx};
+    \end{scope}
+  }
+  \draw[line width=0.5pt, fgink!60] (0, -2.45) -- (8, -2.45);
+  \foreach \pp in {0, ..., 8} {
+    \draw[line width=0.5pt, fgink!60] (\pp, -2.38) -- (\pp, -2.52);
+    \node[lbl, below=1pt] at (\pp, -2.5) {\pp};
+  }
+\end{tikzpicture}
+\caption{Traffic Lights on a street of length 8 with lights added at 3, 6 and 2. The set holds the red points, the multiset the
+blue lengths; each new light removes one length and inserts two.}
+\label{fig:traffic}
+\end{figure}
+
+\begin{code}
+void solve() {
+    ll x;
+    int n;
+    cin >> x >> n;
+    set<ll> lights{0, x};  // the two ends of the street act as lights
+    multiset<ll> gaps{x};  // the lengths between neighbouring lights
+    vi ans;
+    rep(i, n) {
+        ll p;
+        cin >> p;
+        auto it = lights.upper_bound(p);  // the light just right of p
+        ll right = *it, left = *prev(it);
+        gaps.erase(gaps.find(right - left));  // one gap splits into two
+        gaps.insert(p - left), gaps.insert(right - p);
+        lights.insert(p);
+        ans.push_back(*gaps.rbegin());
+    }
+    print(ans);
+}
+\end{code}
+
+The same problem has an offline solution without any tree. Run time backwards: start from all the lights, sorted once, and
+\emph{remove} them in reverse order. A removal merges two stretches into one, so the longest stretch can only grow, and a running
+maximum together with a linked list over the sorted positions (Section~\ref{sec:linked}) answers every step in $\Oh{1}$. Reversing
+time to turn splits into merges is a recurring trick. The two-container idea also recurs: Section~\ref{sec:sliding} keeps the lower
+and the upper half of a sliding window in two multisets to maintain its median.
+
+\paragraph{Custom comparators.} A set orders its elements by any strict weak ordering. Two elements of which neither is ``less'' than
+the other count as \emph{equal}, and only one of them is kept, even if they differ in fields that the comparator ignores. A set of
+segments ordered by right end alone would silently drop every segment whose right end is already present; a unique id as the last
+tie-breaker keeps them apart.
+
+\begin{code}
+struct Seg {
+    int l, r, id;
+};
+struct ByRight {  // order by right end; the id keeps distinct segments apart
+    bool operator()(const Seg& a, const Seg& b) const {
+        return make_pair(a.r, a.id) < make_pair(b.r, b.id);
+    }
+};
+set<Seg, ByRight> active;
+\end{code}
+
+\begin{pitfall}[Comparators that change]
+Never modify a field that the comparator uses while the element is inside the set: the tree does not notice, and later searches go
+the wrong way. Take the node out with \cc{extract}, change it, and insert it again. For the same reason a comparator must not depend
+on state that changes, such as a global ``current $x$'', unless you can prove that the relative order of the stored elements never
+changes; the sweep-line algorithms that order segments by their height at the current $x$ (Chapter~\ref{ch:geometry}) rest on
+exactly such a proof.
+\end{pitfall}
+
+% ======================================================================================================================
+\section[Order statistics]{Order statistics \hfill \gold}\label{sec:orderstats}
+
+``What is the $k$-th smallest element?'' and ``how many elements are smaller than $x$?'' in a changing set are beyond
+\cc{std::set}, whose iterators move one step at a time. The policy-based tree of Section~\ref{sec:pbds} stores subtree sizes:
+\cc{find_by_order(k)} returns an iterator to the $k$-th smallest element (0-based) and \cc{order_of_key(x)} counts the elements
+$< x$, both in $\Oh{\log n}$. When all values that will ever be inserted are known in advance, a Fenwick tree over their compressed
+ranks does the same with a smaller constant: \cc{order_of_key} is a prefix sum and \cc{find_by_order} a descent
+(Figure~\ref{fig:fendescent}).
+
+\begin{problem}{Josephus Problem II (CSES)}
+Children $1, \dots, n$ stand in a circle; repeatedly, $k$ children are skipped and the next one leaves the circle. Print the order
+in which they leave ($n \le 2 \cdot 10^5$, $0 \le k \le 10^9$).
+\solution The linked list that solved the case $k = 1$ (Figure~\ref{fig:josephus}) would walk $k$ steps per removal. Instead keep
+the remaining children in an ordered set, and the index, in the current circle, of the child where counting starts. Skipping $k$
+children moves the index by $k$ modulo the number of children left; \cc{find_by_order} finds the child to remove, and after it is
+erased the next child has the same index (Figure~\ref{fig:josephus2}). The simulation costs $\Oh{n \log n}$ and runs in 0.16\,s for
+$n = 2 \cdot 10^5$.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \foreach \cc/\ord [count=\ii from 0] in {1/6, 2/3, 3/1, 4/7, 5/5, 6/2, 7/4} {
+    \pgfmathsetmacro{\ang}{90 - 360/7*\ii}
+    \node[vtx, minimum size=7mm] (J\cc) at (\ang:1.6) {\cc};
+    \node[font=\sffamily\scriptsize\bfseries, text=fgverm] at (\ang:2.3) {\ord};
+  }
+  \node[notel, anchor=west, text width=7.4cm] at (3.0, 0) {$n = 7$, $k = 2$. The red numbers say when each child leaves:
+    the order is 3, 6, 2, 7, 5, 1, 4. The indices used are $(0 + 2) \bmod 7 = 2$ (child 3), then $(2 + 2) \bmod 6 = 4$ (child 6
+    among 1, 2, 4, 5, 6, 7), then $(4 + 2) \bmod 5 = 1$ (child 2), and so on. Each removal is one $\Oh{\log n}$ search, however
+    large $k$ is.};
+\end{tikzpicture}
+\caption{Josephus Problem II with $n = 7$ and $k = 2$: the index of the next child to leave, modulo the number of children left.}
+\label{fig:josephus2}
+\end{figure}
+
+\begin{code}
+void solve() {  // ordered_set (cposet) is pasted above solve()
+    int n, k;
+    cin >> n >> k;
+    ordered_set<int> s;
+    rep(i, 1, n + 1) s.insert(i);
+    vi out;
+    int pos = 0;  // the index, in the current circle, to start counting from
+    while (!s.empty()) {
+        pos = (pos + k) % sz(s);  // skip k children
+        auto it = s.find_by_order(pos);
+        out.push_back(*it);
+        s.erase(it);  // the next child now has the same index
+    }
+    print(out);
+}
+\end{code}
+
+\usetemplate{Ordered set (PBDS)}{Ctrl+Alt+T, Shift+O}{cposet}
+
+\paragraph{Multisets.} The tree is a set, so a value inserted twice is stored once. Store pairs \cc|{value, id}| with a unique id
+(the time of insertion, for example); then \cc|order_of_key({x, -1})| counts the elements $< x$, and \cc|order_of_key({x, INF})|
+those $\le x$.
+
+\begin{pitfall}[The \texttt{less\_equal} trick]
+A trick seen in many published solutions declares the tree with \cc{less_equal<T>} so that it keeps duplicates. That comparator is
+not a strict ordering, and the tree then misbehaves: \cc{find} never finds anything, so \cc{s.erase(x)} does nothing, and
+\cc{lower_bound} and \cc{upper_bound} swap their meanings. Use pairs.
+\end{pitfall}
+
+% ======================================================================================================================
+\section[Treaps]{Treaps \hfill \plat}\label{sec:treap}
+
+A \defn{treap} is a binary search tree in which every node also carries a random \emph{priority}, and which is also a heap by
+priority: every node's priority exceeds its children's. Draw each node at the point (position in sorted order, priority), as in
+Figure~\ref{fig:treap}. The search-tree property says that a node's left subtree lies to its left and its right subtree to its
+right; the heap property says that every node lies above its descendants. Given the keys and the priorities, these two rules
+determine the tree completely: the root must be the highest point, the left subtree is built from the points to its left, and the
+right subtree from the points to its right. Everything is done with two operations:
+\begin{itemize}
+  \item \textbf{split}$(t, k)$ cuts $t$ into a treap of its first $k$ elements and a treap of the rest. It walks down from the root
+        along the cut: a node whose left subtree holds at least $k$ elements goes to the right part, together with its right
+        subtree, and the walk continues to the left; otherwise the node goes to the left part with its left subtree, and the walk
+        continues to the right. Only the nodes on this path are relinked.
+  \item \textbf{merge}$(a, b)$ joins two treaps where every element of $a$ comes before every element of $b$. The higher of the two
+        roots becomes the root; if it is $a$'s root, its left subtree stays and its right subtree is merged with $b$, and
+        symmetrically.
+\end{itemize}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.8cm, y=0.4cm]
+  \tikzset{tn/.style={vtx, minimum size=6.2mm, font=\sffamily\small}}
+  \foreach \sx/\ttx in {0/{the treap}, 9/{split after five elements}} {
+    \draw[->, line width=0.6pt, fgink!70] (\sx - 0.7, 0) -- (\sx - 0.7, 10.8) node[above, lbl] {priority};
+    \foreach \yv in {0, 3, 6, 9} {
+      \draw[line width=0.5pt, fgink!70] (\sx - 0.77, \yv) -- (\sx - 0.63, \yv);
+      \node[lbl, anchor=east] at (\sx - 0.8, \yv) {\yv};
+    }
+    \draw[line width=0.6pt, fgink!70] (\sx - 0.7, 0) -- (\sx + 6.5, 0);
+    \foreach \px in {0, ..., 6} \node[lbl] at (\sx + \px, -1.0) {\px};
+    \node[lbl] at (\sx + 3, -2.3) {position in the sequence};
+    \node[title] at (\sx + 3, 12.6) {\ttx};
+    \draw[line width=1.3pt, draw=fgverm, dashed] (\sx + 4.5, -0.5) -- (\sx + 4.5, 10.6);
+    \foreach \nm/\px/\pr in {a/0/3, b/1/7, c/2/2, d/3/9, e/4/4, f/5/6, g/6/1} {
+      \draw[line width=0.5pt, draw=fgline, densely dotted] (\sx + \px, 0) -- (\sx + \px, \pr);
+      \node[tn] (N\sx\nm) at (\sx + \px, \pr) {\nm};
+    }
+  }
+  \draw[ed] (N0d) -- (N0b) (N0b) -- (N0a) (N0b) -- (N0c) (N0f) -- (N0g);
+  \draw[hed] (N0d) -- (N0f) (N0f) -- (N0e);
+  \draw[ed] (N9d) -- (N9b) (N9b) -- (N9a) (N9b) -- (N9c) (N9f) -- (N9g);
+  \draw[ged] (N9d) -- (N9e);
+\end{tikzpicture}
+\caption{A treap holding the sequence a, \dots, g, drawn at (position, priority): parents lie above their children, and the
+in-order walk reads the sequence from left to right. Splitting after five elements walks down the path d, f, e across the cut
+(the red edges) and relinks it: e becomes the right child of d (green), and f, with g, forms the second treap. Merging the two
+treaps gives back the first picture.}
+\label{fig:treap}
+\end{figure}
+
+The template stores the nodes in a vector (node 0 is the empty tree) and keeps in every node the size of its subtree, which is what
+lets split count elements. Both operations are short recursions:
+
+\begin{code}
+pair<int, int> split(int x, int k) {  // first k elements | the rest
+    if (!x) return {0, 0};
+    push(x);  // apply a pending lazy flag before looking at the children
+    if (t[t[x].l].size >= k) {
+        auto [a, b] = split(t[x].l, k);
+        t[x].l = b, pull(x);  // pull recomputes size and sum from the children
+        return {a, x};
+    }
+    auto [a, b] = split(t[x].r, k - t[t[x].l].size - 1);
+    t[x].r = a, pull(x);
+    return {x, b};
+}
+int merge(int a, int b) {  // every element of a comes before every element of b
+    if (!a || !b) return a ? a : b;
+    if (t[a].pri > t[b].pri) {  // the higher root stays on top
+        push(a);
+        t[a].r = merge(t[a].r, b), pull(a);
+        return a;
+    }
+    push(b);
+    t[b].l = merge(a, t[b].l), pull(b);
+    return b;
+}
+\end{code}
+
+Both functions spend $\Oh{1}$ per level of the treap that they walk, so their cost is bounded by its depth, and with random
+priorities the expected depth is logarithmic.
+
+\begin{fact}[Expected depth of a treap]
+Let $i$ and $j$ be two nodes, and consider the highest node among those from $i$ to $j$ in sorted order. The searches for $i$ and for
+$j$ from the root take the same turns until they reach that node, because both lie on the same side of every higher node. So $j$
+is an ancestor of $i$ exactly when $j$ itself is the highest node of the range; if a node strictly between them is higher, it
+separates them (in Figure~\ref{fig:treap}, d separates c from e). With independent random priorities, every node of the range is
+equally likely to be the highest, so the probability is $1/(|i - j| + 1)$, and the expected number of ancestors of $i$ is
+\[
+  \sum_{j < i} \frac{1}{i - j + 1} + \sum_{j > i} \frac{1}{j - i + 1} = (H_i - 1) + (H_{n - i + 1} - 1) \le 2 \ln n,
+\]
+where $H_m = 1 + \frac12 + \dots + \frac1m \le 1 + \ln m$. Measured with the template for $n = 2 \cdot 10^5$: the average depth is
+about 22, as the formula predicts, and the deepest node lies at depth 42 to 44, depending on the run.
+\end{fact}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[blbl, anchor=east] at (-0.2, 0) {sequence};
+  \arrs{S}{0}{0}{a/n, b/n, c/n, d/cool, e/cool, f/cool, g/n}
+  \idx{S}{7}
+  \draw[line width=1.6pt, draw=fgverm] ($(S-3.north east)+(0, 0.2)$) -- ($(S-3.south east)+(0, -0.2)$);
+  \draw[line width=1.6pt, draw=fgverm] ($(S-6.north east)+(0, 0.2)$) -- ($(S-6.south east)+(0, -0.2)$);
+  \node[blbl, anchor=east] at (-0.2, -1.5) {after};
+  \arrs{T}{0}{-1.5}{a/n, b/n, c/n, f/cool, e/cool, d/cool, g/n}
+  \node[notel, anchor=west, text width=8.0cm] at (5.5, -0.75) {Reversing positions $[3, 6)$: split off the first 3 elements,
+    split the next 3 from the rest, flip the \emph{reversed} flag of the middle piece's root, and merge the three pieces back.
+    Four $\Oh{\log n}$ operations, however long the range is.};
+\end{tikzpicture}
+\caption{A range reversal on an implicit treap: two splits, one flag, two merges.}
+\label{fig:treaprev}
+\end{figure}
+
+\paragraph{Implicit keys.} If no key is stored at all and a node's position is defined as \emph{the number of nodes before it} in the
+in-order walk, the treap represents a sequence, and split by count cuts it into a prefix and a suffix. Then every range operation is
+``split off the range, act on its root, merge back'' (Figure~\ref{fig:treaprev}): a range sum is the middle piece's aggregate, a
+cut-and-paste merges the three pieces in another order, and reversing a range sets a lazy \emph{reversed} flag on the middle piece's
+root. The flag is pushed down only when a later split or merge walks into that node: \cc{push} swaps the node's children and passes
+the flag on to them. Since the in-order walk visits the left subtree first, swapping the children of every node of a subtree reverses
+the subtree's sequence.
+
+\begin{problem}{Reversals and Sums (CSES)}
+An array of $n \le 2 \cdot 10^5$ numbers receives $m \le 2 \cdot 10^5$ operations: reverse a subarray, or report the sum of a
+subarray.
+\solution An implicit treap whose nodes store the sum of their subtree. The template's \cc{reverse_range} and \cc{range_sum} are the
+two splits and two merges of Figure~\ref{fig:treaprev}.
+\end{problem}
+
+\begin{code}
+void solve() {  // Treap (cptreap) is pasted above solve()
+    int n, m;
+    cin >> n >> m;
+    Treap tr;
+    rep(i, n) {
+        ll x;
+        cin >> x;
+        tr.insert(i, x);
+    }
+    while (m--) {
+        int type, a, b;
+        cin >> type >> a >> b;
+        if (type == 1) tr.reverse_range(a - 1, b);  // split, flag, merge
+        else print(tr.range_sum(a - 1, b));
+    }
+}
+\end{code}
+
+\usetemplate{Implicit treap}{Ctrl+Alt+Y, T}{cptreap}
+
+With $n = m = 2 \cdot 10^5$ the program takes 0.56\,s. A treap pays for its flexibility with a constant several times larger than a
+segment tree's: every operation walks about 22 levels of nodes scattered through memory, and does so four times. Substring Reversals
+and Cut and Paste are the same skeleton with characters, and a new kind of operation needs only a new aggregate in \cc{pull} and,
+for lazy changes, a new flag in \cc{push}.
+
+\begin{recognize}
+The array itself changes shape: ``move the segment $[l, r)$ to the front'', ``reverse a range'', ``insert an element at position
+$p$'', rope-like string editing. If only the values change, a segment tree is simpler and faster; if elements are only inserted and
+all operations are known in advance, processing them backwards with a Fenwick descent often avoids the treap altogether.
+\end{recognize}
+
+\subsection{Persistent treaps}\label{sec:ptreap}
+
+Split and merge change only the nodes on the paths they walk, so they can \emph{copy} those nodes instead of modifying them, exactly
+like path copying in a segment tree (Section~\ref{sec:persistent}). Every operation then returns a new root and leaves all old
+versions intact: a persistent sequence. Concatenating two versions shares all their nodes, so a copy and paste of a whole block costs
+$\Oh{\log n}$ new nodes, even when the text doubles in length with every paste.
+
+Stored priorities do not survive this. When a version is pasted into itself, the same nodes, with the same priorities, appear twice,
+so priorities are no longer independent, the depth analysis above no longer applies, and long chains of equal priorities can form.
+The template therefore stores no priorities at all: \cc{merge}$(a, b)$ puts $a$'s root on top with probability $|a| / (|a| + |b|)$.
+That is exactly the probability that the highest of $|a| + |b|$ independent priorities lies in $a$, so every merge makes the choice
+that a fresh random treap would make, whatever the history of the nodes.
+
+\begin{problem}{Versions of a list}
+Starting from an array (version 0), each operation creates a new version from an existing one, by inserting an element at a position
+or deleting one, or asks for the sum of a range of an existing version.
+\end{problem}
+
+\begin{code}
+void solve() {  // PTreap (cpptreap) is pasted above solve()
+    int n, q;
+    cin >> n >> q;
+    vi a(n);
+    for (ll& x : a) cin >> x;
+    PTreap t;
+    vi ver{t.build(a)};  // ver[k]: the root of version k; old roots stay valid
+    while (q--) {
+        int type, k;
+        cin >> type >> k;
+        if (type == 1) {  // version k with x inserted before position p
+            int p;
+            ll x;
+            cin >> p >> x;
+            ver.push_back(t.insert(ver[k], p, x));
+        } else if (type == 2) {  // version k without the element at p
+            int p;
+            cin >> p;
+            ver.push_back(t.erase(ver[k], p));
+        } else {  // the sum of positions [l, r) of version k
+            int l, r;
+            cin >> l >> r;
+            print(t.sum(ver[k], l, r));
+        }
+    }
+}
+\end{code}
+
+\usetemplate{Persistent treap}{Ctrl+Alt+U, R}{cpptreap}
+
+\begin{pitfall}[Memory]
+Nothing is ever freed. Measured on $2 \cdot 10^5$ random operations over a list of $2 \cdot 10^5$ elements, every update created 46
+new nodes of 32 bytes: 6.3 million nodes, 200\,MB. A vector that grows by doubling briefly holds both its old and its new buffer, so
+the peak was near 400\,MB. Reserve the expected size up front (\cc{t.t.reserve(n + 50 * q)}), and if old versions become
+unreachable, rebuild the live versions into a fresh pool every so often.
+\end{pitfall}
+
+% ======================================================================================================================
+\section[CDQ divide and conquer]{CDQ divide and conquer \hfill \ioi}\label{sec:cdq}
+
+Offline problems about points in three dimensions, such as ``for each point, count the points that are $\le$ it in all three
+coordinates'', have a standard reduction named after Chen Danqi. Sort the points by the first coordinate $a$, so that a point can only
+be dominated by points before it, and split the sorted list in half. A pair of points within one half is handled recursively. A pair
+with one point in each half satisfies the first coordinate automatically, left before right, so for these \emph{cross pairs} only the
+second and third coordinates remain: a two-dimensional dominance count, which is a sweep. Visit both halves in order of $b$; insert
+each left point's $c$ into a Fenwick tree, and for each right point count the inserted values $\le c$ (Figure~\ref{fig:cdq}). If the
+recursion returns each half sorted by $b$, the sweep is a merge, so each level of the recursion costs $\Oh{n \log n}$ and the whole
+algorithm $\Oh{n \log^2 n}$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.9cm, y=0.9cm]
+  \fill[fgsky!22] (0, 0) rectangle (4.0, 3.0);
+  \draw[line width=0.8pt, draw=fgblue, dashed] (4.0, 0) -- (4.0, 3.0) -- (0, 3.0);
+  \draw[->, line width=0.6pt, fgink!70] (0, 0) -- (6.4, 0) node[right, lbl] {$b$};
+  \draw[->, line width=0.6pt, fgink!70] (0, 0) -- (0, 4.4) node[above, lbl] {$c$};
+  \foreach \px/\py in {1/1, 2.5/2.2, 3.4/0.6, 5.2/1.4, 1.6/3.6}
+    \node[vtxs, cool] at (\px, \py) {};
+  \foreach \px/\py in {0.8/3.9, 5.6/2.4}
+    \node[vtxs, warn] at (\px, \py) {};
+  \node[vtxs, hot] (Q) at (4.0, 3.0) {};
+  \node[lbl, anchor=south west] at (Q.north east) {$(b_y, c_y)$};
+  \legendat{(7.0, 3.6)}{cool/left half (smaller $a$), warn/right half, hot/the right point $y$}
+  \node[notel, anchor=north west, text width=6.4cm] at (6.85, 2.3) {The cross pairs of $y$ are the left points in the shaded
+    quadrant: here 3. Sweeping $b$ upwards, with the left points' $c$ values in a Fenwick tree, counts them for every right point
+    in one pass.};
+\end{tikzpicture}
+\caption{The merge step of CDQ: between the two halves only two coordinates are left.}
+\label{fig:cdq}
+\end{figure}
+
+\begin{pseudo}{CDQ divide and conquer for dominance counting}
+\begin{algorithmic}[1]
+\State sort the points by $(a, b, c)$ and merge identical points into one item with a multiplicity
+\Procedure{CDQ}{$l, r$} \Comment{items $l, \dots, r - 1$; on return they are sorted by $(b, c)$}
+  \If{$r - l \le 1$} \State \Return \EndIf
+  \State $m \gets \lfloor (l + r) / 2 \rfloor$; \ \Call{CDQ}{$l, m$}; \ \Call{CDQ}{$m, r$}
+  \ForAll{items $y$ of the right half, in order of $(b, c)$}
+    \State add to the Fenwick tree the $c$ of the next left items with $(b, c) \le (b_y, c_y)$
+    \State $\mathit{ans}[y] \gets \mathit{ans}[y] + {}$the number of added values $\le c_y$
+  \EndFor
+  \State remove the added values again; merge the two halves by $(b, c)$
+\EndProcedure
+\end{algorithmic}
+\end{pseudo}
+
+\begin{problem}{Three-dimensional dominance}
+For each of $n \le 10^5$ points $(a, b, c)$, count the other points $(a', b', c')$ with $a' \le a$, $b' \le b$ and $c' \le c$.
+\solution CDQ as above. Identical points dominate each other, which a rule of ``left half before right half'' would count in only
+one direction, so the template first groups identical points into one item with a multiplicity: every copy is dominated by the other
+copies of its group plus everything that dominates the group. The program takes 0.32\,s for $10^5$ points.
+\end{problem}
+
+\begin{code}
+void solve() {  // cdq_dominance (cpcdq) is pasted above solve()
+    int n;
+    cin >> n;
+    vector<array<ll, 3>> pts(n);
+    for (auto& [a, b, c] : pts) cin >> a >> b >> c;
+    for (ll d : cdq_dominance(pts)) print(d);
+}
+\end{code}
+
+\usetemplate{CDQ divide and conquer (3D dominance)}{Ctrl+Alt+U, 3}{cpcdq}
+
+\begin{trick}[CDQ beyond counting]
+The ``first coordinate'' can be \emph{time}. With updates and queries interleaved, CDQ on the timeline lets every update of the left
+half act on the queries of the right half through a static sweep, which turns a dynamic problem into an offline static one: points
+added and rectangle sums asked in any order, for example. CDQ also speeds up DPs whose transition is a dominance condition, such as
+the longest chain of points increasing in three coordinates: recurse on the left half first, let its finished values update the right
+half, and only then recurse on the right half.
+\end{trick}
+
+% ======================================================================================================================
+\section[Wavelet trees]{Wavelet trees \hfill \ioi}\label{sec:wavelet}
+
+A wavelet tree answers questions about the \emph{values} in a range of positions, such as the $k$-th smallest element of $a[l, r)$ or
+the number of elements of $a[l, r)$ that are $\le x$, online and in $\Oh{\log n}$ each. The compact form used in contests, the
+\defn{wavelet matrix}, works on bits. Replace every value by its rank among the distinct values, a number of $\lceil \log_2 n \rceil$
+bits. The top level records, for every position, the highest bit of its rank, and then stably moves the elements whose bit is 0 in
+front of those whose bit is 1; the next level records the next bit in this new order and partitions again, down to the lowest bit
+(Figure~\ref{fig:wavelet}). Each level is a bit vector with prefix counts of ones, so ``how many ones are there among the first $i$
+elements of level $h$?'' takes $\Oh{1}$.
+
+To find the $k$-th smallest (0-based) of a range, look at the current bit of the elements of the range. If at least $k + 1$ of them
+have bit 0, the answer's bit is 0 and the range continues among the zeros of the next level; otherwise the answer's bit is 1, $k$
+decreases by the number of zeros, and the range continues among the ones. The stable partition keeps the elements of the range
+contiguous at every level, and both ends of the new range follow from two prefix counts, so a query costs $\Oh{1}$ per level.
+Counting the elements $\le x$ walks down the bits of $x$ in the same way, adding up the zeros that it passes where $x$ has a 1.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \foreach \yy/\ttx in {0/{bit 2}, -1.25/{bit 1}, -2.5/{bit 0}} \node[blbl, anchor=east] at (-0.2, \yy) {\ttx};
+  \arrs{W}{0}{0}{5/cool, 2/n, 6/cool, 1/n, 7/cool, 3/n, 0/n, 4/cool}
+  \arrs{X}{0}{-1.25}{2/cool, 1/n, 3/cool, 0/n, 5/n, 6/cool, 7/cool, 4/n}
+  \arrs{Y}{0}{-2.5}{1/cool, 0/n, 5/cool, 4/n, 2/n, 3/cool, 6/n, 7/cool}
+  \foreach \ii in {1, ..., 8} {
+    \pgfmathtruncatemacro{\jj}{\ii - 1}
+    \node[lbl] at ($(W-\ii.north)+(0, 0.24)$) {\jj};
+  }
+  \cellframe{W-2}{W-6}{fgverm}
+  \cellframe{X-1}{X-3}{fgverm}
+  \cellframe{Y-5}{Y-6}{fgverm}
+  \node[notel, anchor=west, text width=8.0cm] at (6.0, -1.25) {Ranks $5, 2, 6, 1, 7, 3, 0, 4$ at positions 0 to 7. Blue cells
+    have a 1 in the bit of their level, and each level puts the elements with a 0 first. The 3rd smallest ($k = 2$) of positions
+    $[1, 6)$: at bit 2 the range has three 0s and $k < 3$, so the bit is 0 and the range becomes $[0, 3)$; at bit 1 it has one 0,
+    so the bit is 1, $k$ becomes 1 and the range $[4, 6)$; at bit 0 there is one 0 again, so the bit is 1. The answer is rank
+    $011_2 = 3$.};
+\end{tikzpicture}
+\caption{A wavelet matrix over eight ranks: one bit per level, stably partitioned, with the range of a query followed down.}
+\label{fig:wavelet}
+\end{figure}
+
+\begin{problem}{$k$-th smallest in a range}
+Answer $q$ online queries ``the $k$-th smallest value among $a_l, \dots, a_r$'' for an array of $n$ numbers ($n, q \le 2 \cdot 10^5$,
+values up to $10^9$).
+\end{problem}
+
+\begin{code}
+void solve() {  // Wavelet (cpwavelet) is pasted above solve()
+    int n, q;
+    cin >> n >> q;
+    vi a(n);
+    for (ll& x : a) cin >> x;
+    Wavelet wt(a);  // compresses the values: log2(n) levels, not log2(1e9)
+    while (q--) {
+        int l, r, k;
+        cin >> l >> r >> k;
+        print(wt.kth(l - 1, r, k - 1));  // the k-th smallest of a[l..r]
+    }
+}
+\end{code}
+
+\usetemplate{Wavelet tree}{Ctrl+Alt+Y, W}{cpwavelet}
+
+The template packs each level into 64-bit words with a prefix count per word, so a rank query is one table lookup plus one
+\cc{__builtin_popcountll}, and the 18 levels for $n = 2 \cdot 10^5$ take about 0.7\,MB, small enough to stay in the cache. The program
+answers $2 \cdot 10^5$ queries in 0.28\,s; an earlier version of the template that stored a full integer count for every element and
+level, 14\,MB, took 0.72\,s on the same input. Table~\ref{tab:kthrange} compares the structures that answer these queries.
+
+\begin{table}[htbp]
+\centering\small
+\begin{tabular}{@{}lccl@{}}
+\toprule
+structure & $k$-th smallest & count $\le x$ & memory for $n = 2 \cdot 10^5$ \\
+\midrule
+merge sort tree (sorted lists in segment tree nodes) & $\Oh{\log^3 n}$ & $\Oh{\log^2 n}$ & 3.6 million numbers \\
+persistent segment tree over the values & $\Oh{\log n}$ & $\Oh{\log n}$ & 3.8 million nodes, 61\,MB \\
+wavelet matrix & $\Oh{\log n}$ & $\Oh{\log n}$ & 3.6 million bits, 0.7\,MB \\
+offline: sorted queries, sweep and Fenwick tree & --- & $\Oh{\log n}$ & $\Oh{n}$ \\
+\bottomrule
+\end{tabular}
+\caption{Online range questions about values, none of which allow updates. The persistent segment tree is
+Section~\ref{sec:persistent}; when all queries are known in advance, counting needs only a sweep (Section~\ref{sec:sweepqueries}).}
+\label{tab:kthrange}
+\end{table}
+
+% ======================================================================================================================
+\section[Hash maps and hashing sets]{Hash maps and hashing sets \hfill \gold}\label{sec:hashmaps-adv}
+
+\cc{unordered_map} offers expected $\Oh{1}$ operations, but as Chapter~\ref{ch:cpp} showed (Figure~\ref{fig:hashattack}), its default
+hash for integers is the identity, and a test built against it makes every key collide. The seeded \cc{custom_hash} of the library
+fixes that. How much faster than a \cc{map} is a hash table, and is \cc{unordered_map} the fastest one? Table~\ref{tab:dicts} gives
+measured answers.
+
+\begin{table}[htbp]
+\centering\small
+\begin{tabular}{@{}lrr@{}}
+\toprule
+container ($10^6$ insertions, then $10^6$ lookups) & random 64-bit keys & keys below $10^6$ \\
+\midrule
+\texttt{map<ll, int>} & 1.15\,s & 0.95\,s \\
+\texttt{unordered\_map<ll, int>} (identity hash, attackable) & 0.29\,s & 0.12\,s \\
+\texttt{unordered\_map<ll, int, custom\_hash>} & 0.37\,s & 0.22\,s \\
+\quad the same after \texttt{reserve(1000000)} & 0.27\,s & 0.18\,s \\
+\texttt{gp\_hash\_table<ll, int, custom\_hash>} & 0.08\,s & 0.08\,s \\
+sort the keys once, then \texttt{lower\_bound} (offline) & 0.27\,s & 0.24\,s \\
+\texttt{vector<int>} indexed by the key & --- & 0.003\,s \\
+\bottomrule
+\end{tabular}
+\caption{Measured costs (g++ -O2, best of three runs). Every insertion is \texttt{m[key]++}; half of the lookups hit.}
+\label{tab:dicts}
+\end{table}
+
+Three conclusions follow. A tree costs four to ten times as much as a hash table, so use \cc{map} only when the order matters. The
+policy-based \cc{gp_hash_table}, an open-addressing table, is three to four times faster than \cc{unordered_map} with the same hash;
+it needs a good hash even more, since its probing breaks down on structured keys, so always pair it with \cc{custom_hash}. And when the
+keys are small integers, an array beats every hash table by more than an order of magnitude.
+
+\begin{code}
+#pragma push_macro("int")  // as in cposet: PBDS breaks under #define int
+#undef int
+#include <ext/pb_ds/assoc_container.hpp>
+#pragma pop_macro("int")
+__gnu_pbds::gp_hash_table<ll, int, custom_hash> cnt;  // custom_hash: cphash
+\end{code}
+
+\usetemplate{Anti-hack hash}{Ctrl+Alt+T, Shift+H}{cphash}
+
+\subsection{Hashing sets and multisets}\label{sec:xorhash}
+
+Hashing can also compare whole collections. Give every possible value $v$ an independent random 64-bit label $h(v)$, and represent a
+set by the XOR of its elements' labels. Adding or removing an element is one XOR, and two different sets get the same hash with
+probability $2^{-64}$: their symmetric difference is a non-empty set of independent uniform labels, whose XOR is again uniform. The
+XOR of a \emph{multiset} sees only the parity of every value's count, which is exactly what ``does every value occur an even number
+of times?'' needs; to compare multisets themselves, add the labels instead, modulo $2^{64}$.
+
+The power of the idea is that the hash of a range of an array is a difference of two prefix hashes, so questions about the
+\emph{contents} of subarrays become comparisons of numbers.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{pa/.style={vtxs, cool}, pb/.style={vtxs, warn}, pc/.style={vtxs, dim}}
+  \node[blbl, anchor=east] at (-0.45, 0) {$a$};
+  \arrs{A}{0}{0}{1/n, 2/n, 2/n, 1/n, 3/n, 3/n, 1/n, 1/n}
+  \spanabove{A-2}{A-3}{$p_1 = p_3$}
+  \spanabove{A-4}{A-7}{$p_3 = p_7$}
+  \node[blbl, anchor=east] at (-0.45, -1.05) {prefix};
+  \foreach \cls/\pst [count=\kk from 0] in {A/pa, B/pb, C/pc, B/pb, A/pa, D/pc, A/pa, B/pb, A/pa} {
+    \node[\pst] at (0.7*\kk, -1.05) {\cls};
+    \node[lbl] at (0.7*\kk, -1.6) {$p_{\kk}$};
+  }
+  \node[notel, anchor=west, text width=7.0cm] at (6.5, -0.55) {Class A: no value occurs an odd number of times, so $p = 0$ (4
+    prefixes, 6 pairs). Class B: only 1 is odd, $p = h(1)$ (3 prefixes, 3 pairs). C: 1 and 2 odd, $p = h(1) \oplus h(2)$; D: only
+    3 odd, $p = h(3)$. Every pair of equal prefixes bounds an even subarray: $6 + 3 = 9$ of them.};
+\end{tikzpicture}
+\caption{Prefix XOR hashes of $a = 1, 2, 2, 1, 3, 3, 1, 1$. Prefix $p_k$ sits at the boundary after the first $k$ elements; prefixes
+of the same class have equal hashes.}
+\label{fig:xorhash}
+\end{figure}
+
+\begin{problem}{Even subarrays}
+Count the subarrays of $a_1, \dots, a_n$ in which every value occurs an even number of times ($n \le 2 \cdot 10^5$, values up to
+$10^9$).
+\solution Let $p_i$ be the XOR of the labels of $a_1, \dots, a_i$, with $p_0 = 0$. The subarray $a_{l+1}, \dots, a_r$ qualifies
+exactly when every value occurs an even number of times in it, that is, barring a false match, when $p_l = p_r$. So the answer is the
+number of pairs of equal prefix hashes (Figure~\ref{fig:xorhash}): sort the $n + 1$ prefixes and add $\binom{c}{2}$ for every run of
+$c$ equal values.
+\end{problem}
+
+\begin{code}
+void solve() {  // RandHash (cpxorhash) is pasted above solve()
+    int n;
+    cin >> n;
+    RandHash h;
+    vector<uint64_t> px(n + 1, 0);  // px[i]: the XOR of the labels of a[0..i)
+    rep(i, n) {
+        ll x;
+        cin >> x;
+        px[i + 1] = px[i] ^ h(x);  // a value seen twice cancels out
+    }
+    sort(all(px));  // equal prefixes now sit next to each other
+    ll ans = 0;
+    for (int i = 0, j = 0; i <= n; i = j) {
+        while (j <= n && px[j] == px[i]) j++;
+        ans += (j - i) * (j - i - 1) / 2;  // pairs among j - i equal prefixes
+    }
+    print(ans);
+}
+\end{code}
+
+\usetemplate{Random hashing of sets and multisets (XOR / sum hashing)}{Ctrl+Alt+U, X}{cpxorhash}
+
+\begin{tip}[How likely is a false match?]
+A program that compares $m$ pairs of hashes errs with probability at most $m / 2^{64}$. When it looks for \emph{any} equal pair among
+$N$ hashes, as above, about $N^2 / 2$ pairs are compared implicitly, and the bound becomes $N^2 / 2^{65}$: about $10^{-9}$ for $N = 2
+\cdot 10^5$. With 32-bit labels the expected number of false matches would be $N^2 / 2^{33} \approx 4.7$, so the program would almost
+surely fail. Sums of labels are slightly weaker: if every difference between the two multisets' counts is divisible by $2^t$, the
+bound is $2^{t - 64}$, which is still below $2^{-46}$ when the counts are below $2^{18}$.
+\end{tip}
+
+The same labels answer many other questions in $\Oh{1}$ after a linear precomputation. Is $a[l, r)$ a permutation of $1, \dots, r - l$?
+Compare its sum of labels with the precomputed sum of the labels of $1, \dots, r - l$. Are two subarrays rearrangements of each other?
+Compare their sums of labels. Do $u$ and $v$ have the same set of neighbours? Compare the XORs of their neighbours' labels. Each
+question costs one comparison instead of a sort.
+
+\begin{summary}[Chapter summary]
+\begin{itemize}
+  \item Sorted containers answer neighbour and extremum questions in $\Oh{\log n}$; pairing two of them, like positions and gaps,
+        handles events that split or merge. Erase one copy from a multiset through \cc{find}, and break comparator ties with an id.
+  \item The policy-based tree adds $k$-th element and rank queries; a Fenwick tree with descent does the same when the values are
+        known in advance. Store pairs for multisets, never \cc{less_equal}.
+  \item Treaps keyed by position implement sequences with insertions, deletions, reversals and block moves through split and merge;
+        a node's ancestors are the highest nodes of the ranges around it, so the expected depth is at most $2 \ln n$.
+  \item Copying the nodes on the walked paths makes a treap persistent; merging by subtree sizes keeps it balanced even when versions
+        share nodes. Budget about 46 new nodes per update.
+  \item CDQ divide and conquer reduces offline three-dimensional problems, including ones over time, to sweeps with a Fenwick tree,
+        in $\Oh{n \log^2 n}$.
+  \item A wavelet matrix answers $k$-th smallest and counting queries on ranges online in $\Oh{\log n}$ with one bit per element and
+        level.
+  \item Hash tables need a randomised hash, \cc{gp_hash_table} is the fastest of them, and arrays beat them all; random 64-bit labels
+        hash whole sets (XOR) and multisets (sums).
+\end{itemize}
+\end{summary}
+
+\begin{practice}
+\ppgroup{Sets and order statistics}
+\begin{pplist}
+  \item Concert Tickets
+  \item Towers
+  \item Room Allocation
+  \item Traffic Lights
+  \item Josephus Problem I
+  \item Josephus Problem II
+  \item Sliding Window Median
+  \item Sliding Window Cost
+  \item Nested Ranges Count
+  \item Salary Queries
+  \item List Removals
+\end{pplist}
+\ppgroup{Treaps, values in ranges and hashing}
+\begin{pplist}
+  \item Substring Reversals
+  \item Reversals and Sums
+  \item Cut and Paste
+  \item Distinct Values Queries
+  \item Subarray Sums II
+  \item Sum of Four Values
+\end{pplist}
+\end{practice}

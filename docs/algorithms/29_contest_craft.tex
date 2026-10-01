@@ -1,0 +1,164 @@
+\chapter{Contest Craft}\label{ch:craft}
+
+Knowing algorithms wins only if you can apply them under time pressure. This chapter collects the practical knowledge that
+turns knowledge into accepted solutions: how to spend contest time, how to debug, and a large table for recognising which
+technique a problem wants.
+
+\section[During a contest]{During a contest \hfill \bronze}
+
+\begin{itemize}
+  \item \textbf{Read all problems early} (or at least the first few). Problems are not always sorted by difficulty for you.
+  \item \textbf{Solve on paper first.} Code only when you can state the algorithm and its complexity.
+  \item \textbf{Test before submitting}: samples, the smallest input, the largest input (generate one and time it), and the edge
+        cases you listed while reading.
+  \item \textbf{Timebox.} If you have been stuck for 20--30 minutes without a new idea, switch problems and come back.
+  \item \textbf{Penalty matters.} On Codeforces and ICPC wrong submissions cost time; a two-minute local stress test is cheaper
+        than a wrong attempt.
+  \item \textbf{After the contest, upsolve}: read the editorial for every problem you could not solve and implement it. This is
+        where most improvement happens.
+\end{itemize}
+
+\section[Debugging]{Debugging \hfill \bronze}
+
+\begin{enumerate}
+  \item \textbf{Re-read the statement.} Most wrong answers are misreadings: 1-indexed vs 0-indexed, ``at most'' vs ``exactly'',
+        the output format, multiple test cases.
+  \item \textbf{Check the extremes}: $n = 1$, all elements equal, the maximum values (overflow), negative numbers, empty answers.
+  \item \textbf{Print intermediate values} with \cc{dbg} and compare with a hand computation on the sample.
+  \item \textbf{Stress test} against a brute force (GUIDE.pdf, Section~4.4). This finds the bug in almost every case where the
+        samples pass.
+  \item \textbf{Read your code as if someone else wrote it}, line by line, asking what each variable holds.
+\end{enumerate}
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{p{2.3cm}L}
+\toprule
+\thd{Verdict} & \thd{Usual causes} \\
+\midrule
+Wrong answer & overflow (\texttt{int} products, \texttt{1 \textless\textless{} 40}); uninitialised or unreset variables; off-by-one
+  ranges; \texttt{-1 \% m} is negative; comparing doubles with \texttt{==}; wrong output format (YES/Yes, missing newline between
+  tests); a greedy that is not correct; reading input in the wrong order \\
+Time limit & wrong complexity; \texttt{endl} or slow I/O; \texttt{map} where an array works; copying vectors into functions;
+  clearing big arrays per test; a stray $\Oh{n}$ operation inside a loop (\texttt{v.erase(v.begin())}, \texttt{s = s + c},
+  \texttt{count} on a vector); anti-hash tests on \texttt{unordered\_map}; an infinite loop (a binary search that does not shrink) \\
+Runtime error & out of bounds (the checked STL tells you where); stack overflow (deep recursion, big local arrays); division by
+  zero; dereferencing \texttt{end()} or \texttt{begin()} of an empty set; an invalid comparator in \texttt{sort} \\
+Memory limit & \texttt{long long} everywhere (your template); \texttt{vector\textless vector\textless\ldots\textgreater\textgreater}
+  with millions of small rows; storing all states of a DP when only the last layer is needed; memoization in a \texttt{map} \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section[Recognising the technique]{Recognising the technique \hfill \silver}
+
+The table below maps signals in a statement to the techniques that usually solve them. It is a starting point for the ``when
+you are stuck'' checklist of Chapter~\ref{ch:approach}, not a rule.
+
+\begin{small}
+\begin{longtable}{>{\raggedright\arraybackslash}p{6.4cm}>{\raggedright\arraybackslash}p{6.3cm}r}
+\toprule
+\thd{If you see\ldots} & \thd{Think of\ldots} & \thd{Ch.} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+$n \le 20$; choose a subset & bitmask brute force or bitmask DP & \ref{ch:search}, \ref{ch:dppatterns} \\
+$n \le 40$; subset sums & meet in the middle & \ref{ch:search} \\
+$n \le 500$ & $\Oh{n^3}$: Floyd--Warshall, interval DP & \ref{ch:shortest}, \ref{ch:dppatterns} \\
+$n \le 5000$ & $\Oh{n^2}$ DP over pairs & \ref{ch:dp} \\
+$n \le 2\cdot 10^5$ & sort, binary search, heap, segment tree & \ref{ch:sorting}--\ref{ch:segtree} \\
+values up to $10^{18}$ & math, fast exponentiation, digit DP, $\Oh{\log}$ search & \ref{ch:numbertheory}, \ref{ch:dppatterns} \\
+``minimise the maximum'', ``maximise the minimum'' & binary search on the answer & \ref{ch:binsearch} \\
+``the $k$-th smallest'' of something implicit & binary search on the value, count $\le$ it & \ref{ch:binsearch} \\
+function rises then falls; convex cost & ternary search, convexity & \ref{ch:binsearch} \\
+sum or count over subarrays & prefix sums (+ hash map) & \ref{ch:prefix} \\
+many range additions, read once at the end & difference array & \ref{ch:prefix} \\
+longest/shortest subarray with a monotone condition & two pointers & \ref{ch:prefix} \\
+window minimum/maximum & monotonic deque & \ref{ch:prefix} \\
+``next greater'', ``nearest smaller'', histograms & monotonic stack & \ref{ch:prefix} \\
+sum over all subarrays of min/max & contribution technique + monotonic stack & \ref{ch:prefix} \\
+XOR of pairs / subarrays & per-bit counting, prefix XOR, binary trie & \ref{ch:bits} \\
+maximum XOR of a subset & XOR basis & \ref{ch:linalg} \\
+grid with walls, ``fewest moves'' & BFS on cells (0-1 BFS if some moves are free) & \ref{ch:graphs}, \ref{ch:shortest} \\
+connected regions in a grid & flood fill & \ref{ch:graphs} \\
+weighted shortest path, non-negative & Dijkstra & \ref{ch:shortest} \\
+negative weights, ``arbitrarily small'' & Bellman--Ford & \ref{ch:shortest} \\
+all pairs, $n \le 500$ & Floyd--Warshall & \ref{ch:shortest} \\
+merging groups, ``are $a$ and $b$ connected'' & DSU & \ref{ch:dsu} \\
+connect everything at minimum cost & MST (Kruskal) & \ref{ch:dsu} \\
+dependencies, ``order consistent with'' & topological sort, DP on DAG & \ref{ch:dsu} \\
+every vertex has one outgoing edge & functional graph, cycle + tails, binary lifting & \ref{ch:graphs} \\
+mutual reachability, cycles in a directed graph & SCC, condensation & \ref{ch:connectivity} \\
+two options per item with pairwise constraints & 2-SAT & \ref{ch:connectivity} \\
+edges/vertices whose removal disconnects & bridges, articulation points & \ref{ch:connectivity} \\
+use every edge exactly once & Euler path (Hierholzer) & \ref{ch:connectivity} \\
+edge insertions and deletions, offline & segment tree on time + DSU rollback & \ref{ch:connectivity} \\
+pairing two groups; disjoint paths; minimum cut & matching, max flow & \ref{ch:flows} \\
+profits with prerequisites & project selection (min cut) & \ref{ch:flows} \\
+tree, ``for every vertex'' answer & rerooting DP & \ref{ch:trees} \\
+tree, path between $u$ and $v$ & LCA, binary lifting & \ref{ch:trees} \\
+subtree queries & Euler tour + Fenwick/segment tree & \ref{ch:trees} \\
+path queries with updates & HLD & \ref{ch:treedecomp} \\
+count paths with a property in a tree & centroid decomposition & \ref{ch:treedecomp} \\
+many queries on small vertex subsets & virtual tree & \ref{ch:treedecomp} \\
+distinct values per subtree & small-to-large merging & \ref{ch:trees} \\
+range sums with point updates & Fenwick tree & \ref{ch:segtree} \\
+range min / max with updates & segment tree & \ref{ch:segtree} \\
+range updates and range queries & lazy segment tree & \ref{ch:segtree} \\
+static range min, gcd & sparse table & \ref{ch:static} \\
+offline range statistics (distinct, mode) & Mo's algorithm, sweep + Fenwick & \ref{ch:static}, \ref{ch:segtree} \\
+$k$-th smallest in a range & persistent segment tree, wavelet tree & \ref{ch:segtree}, \ref{ch:advds} \\
+insert/delete/reverse in the middle of a sequence & implicit treap & \ref{ch:advds} \\
+counting ways modulo a prime & combinatorics, DP with \texttt{mint} & \ref{ch:combinatorics}, \ref{ch:dp} \\
+``at least one'', forbidden conditions & inclusion--exclusion & \ref{ch:combinatorics} \\
+coprime pairs, gcd conditions & M\"obius inversion, totient & \ref{ch:numbertheory} \\
+$\sum f(i)\lfloor n/i\rfloor$, $n$ up to $10^{12}$ & floor-division blocks & \ref{ch:numbertheory} \\
+two players, perfect information & W/L DP, Grundy numbers, Nim & \ref{ch:combinatorics} \\
+linear recurrence, $n$ up to $10^{18}$ & matrix exponentiation & \ref{ch:dppatterns} \\
+counting pairs with a given sum, many values & FFT / NTT convolution & \ref{ch:linalg} \\
+equal substrings, palindromes & hashing, Manacher & \ref{ch:strings} \\
+pattern occurrences & KMP, Z-function; many patterns: Aho--Corasick & \ref{ch:strings} \\
+distinct substrings, suffix comparisons & suffix array, suffix automaton & \ref{ch:strings} \\
+points, polygons, turns & cross product, convex hull & \ref{ch:geometry} \\
+overlapping intervals / rectangles & sweep line & \ref{ch:geometry} \\
+$dp_i = \min_j (a_j x_i + b_j)$ & convex hull trick & \ref{ch:dpopt} \\
+split into $k$ groups, cost satisfies quadrangle inequality & divide \& conquer / Knuth optimization & \ref{ch:dpopt} \\
+``exactly $k$'' with concave answer & Aliens trick & \ref{ch:dpopt} \\
+answer shared by at least half the input & randomized sampling & \ref{ch:special} \\
+\end{longtable}
+\end{small}
+
+\section[Numbers worth remembering]{Numbers worth remembering \hfill \bronze}
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+\thd{Quantity} & \thd{Value} \\
+\midrule
+\texttt{int} max / \texttt{long long} max & $2\,147\,483\,647 \approx 2.1\cdot 10^9$ / $9.22\cdot 10^{18}$ \\
+$2^{10}, 2^{20}, 2^{30}, 2^{60}$ & $\approx 10^3, 10^6, 10^9, 10^{18}$ \\
+$10!$, $12!$, $13!$, $20!$ & $3.6\cdot 10^6$, $4.8\cdot 10^8$, $6.2\cdot 10^9$, $2.4\cdot 10^{18}$ \\
+$\binom{20}{10}$, $\binom{30}{15}$, $\binom{60}{30}$ & $184\,756$, $1.55\cdot 10^8$, $1.18\cdot 10^{17}$ \\
+max divisors for $n \le 10^6 / 10^9 / 10^{18}$ & 240 / 1\,344 / 103\,680 \\
+primes below $10^6$ / $10^7$ & 78\,498 / 664\,579 \\
+$\sum_{i=1}^n\frac ni$ & $\approx n\ln n$ ($\approx 1.4\cdot 10^7$ for $n = 10^6$) \\
+Catalan $C_{10}, C_{15}, C_{19}$ & $16\,796$, $9\,694\,845$, $1\,767\,263\,190$ \\
+operations per second & $\approx 10^8$--$5\cdot 10^8$ simple operations \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section[How to practise]{How to practise \hfill \bronze}
+
+\begin{itemize}
+  \item \textbf{Train slightly above your level.} Problems you solve in 5 minutes teach little; problems you cannot solve after an
+        hour, with the editorial, teach the most.
+  \item \textbf{Go topic by topic, then mix.} Learn a technique with a focused set (the USACO Guide modules, CSES problem set
+        sections), then do mixed contests so you learn to \emph{recognise} it without being told.
+  \item \textbf{Do virtual contests} with a timer; the pressure is part of what you are training.
+  \item \textbf{Keep a log} of every bug that cost you a submission and every idea you learned from an editorial. Re-read it before
+        contests: the same mistakes repeat.
+  \item \textbf{Implement from memory.} After a template is understood, write it once without looking; knowing why it works is what
+        lets you adapt it when a problem needs a variation.
+\end{itemize}

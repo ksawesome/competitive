@@ -1,0 +1,166 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\@writefile{toc}{\contentsline {chapter}{\numberline {11}Graph Fundamentals}{133}{chapter.11}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{ch:graphs}{{11}{133}{Graph Fundamentals}{chapter.11}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {11.1}Vocabulary}{133}{section.11.1}\protected@file@percent }
+\newlabel{sec:graph-vocab}{{11.1}{133}{Vocabulary}{section.11.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {11.1}{\ignorespaces An undirected graph, a directed graph and a weighted graph.}}{133}{figure.caption.173}\protected@file@percent }
+\newlabel{fig:graphkinds}{{11.1}{133}{An undirected graph, a directed graph and a weighted graph}{figure.caption.173}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {11.2}Representing a graph}{134}{section.11.2}\protected@file@percent }
+\newlabel{sec:graph-rep}{{11.2}{134}{Representing a graph}{section.11.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {11.2}{\ignorespaces One undirected graph in the three standard representations. The adjacency list has one entry per edge end ($2m$ in total), the matrix has $n^2$ entries whatever the number of edges, and the edge list has $m$ entries.}}{134}{figure.caption.174}\protected@file@percent }
+\newlabel{fig:graphrep}{{11.2}{134}{One undirected graph in the three standard representations. The adjacency list has one entry per edge end ($2m$ in total), the matrix has $n^2$ entries whatever the number of edges, and the edge list has $m$ entries}{figure.caption.174}{}}
+\newlabel{tpl:cpgraph}{{11.2}{135}{Representing a graph}{section*.175}{}}
+\newlabel{tpl:cpgraphw}{{11.2}{135}{Representing a graph}{section*.176}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {11.3}Depth-first search}{135}{section.11.3}\protected@file@percent }
+\newlabel{sec:dfs}{{11.3}{135}{Depth-first search}{section.11.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {11.3}{\ignorespaces DFS from vertex 0 on a directed graph and the classification of its edges. The back edges $2 \to 0$ and $5 \to 3$ each close a cycle. The intervals from discovery to finishing time (table) nest exactly as the tree does: $[2, 5]$ and $[6, 11]$ lie inside $[1, 12]$ and are disjoint from each other.}}{136}{figure.caption.177}\protected@file@percent }
+\newlabel{fig:dfsclasses}{{11.3}{136}{DFS from vertex 0 on a directed graph and the classification of its edges. The back edges $2 \to 0$ and $5 \to 3$ each close a cycle. The intervals from discovery to finishing time (table) nest exactly as the tree does: $[2, 5]$ and $[6, 11]$ lie inside $[1, 12]$ and are disjoint from each other}{figure.caption.177}{}}
+\newlabel{tpl:cpdfs}{{11.3}{137}{Depth-first search}{section*.178}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {11.4}Breadth-first search}{137}{section.11.4}\protected@file@percent }
+\newlabel{sec:bfs}{{11.4}{137}{Breadth-first search}{section.11.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {11.4}{\ignorespaces BFS explores layer by layer. The queue holds at most two consecutive layers at a time, so the first discovery of a vertex is along a shortest path.}}{137}{figure.caption.179}\protected@file@percent }
+\newlabel{fig:bfslayers}{{11.4}{137}{BFS explores layer by layer. The queue holds at most two consecutive layers at a time, so the first discovery of a vertex is along a shortest path}{figure.caption.179}{}}
+\newlabel{tpl:cpbfs}{{11.4}{137}{Breadth-first search}{section*.180}{}}
+\newlabel{tpl:cpgridbfs}{{11.4}{138}{Breadth-first search}{section*.181}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {11.4.1}Several sources at once}{139}{subsection.11.4.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {11.5}{\ignorespaces Monsters as two BFS runs. You may enter a cell only if you get there strictly before any monster; the escape path (thick green line) goes through such cells to the bottom border.}}{139}{figure.caption.182}\protected@file@percent }
+\newlabel{fig:monsters}{{11.5}{139}{Monsters as two BFS runs. You may enter a cell only if you get there strictly before any monster; the escape path (thick green line) goes through such cells to the bottom border}{figure.caption.182}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {11.5}Grids and flood fill}{140}{section.11.5}\protected@file@percent }
+\newlabel{sec:grids}{{11.5}{140}{Grids and flood fill}{section.11.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {11.6}{\ignorespaces Flood fill on a grid: dark cells are walls, and each colour is one connected region of free cells.}}{141}{figure.caption.183}\protected@file@percent }
+\newlabel{fig:floodfill}{{11.6}{141}{Flood fill on a grid: dark cells are walls, and each colour is one connected region of free cells}{figure.caption.183}{}}
+\newlabel{tpl:cpflood}{{11.5}{141}{Grids and flood fill}{section*.184}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {11.6}Bipartite graphs}{142}{section.11.6}\protected@file@percent }
+\newlabel{sec:bipartite}{{11.6}{142}{Bipartite graphs}{section.11.6}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {11.7}{\ignorespaces Two-colouring by BFS parity. In (a) the colouring succeeds. In (b), a 5-cycle, some edge must join equal colours: graphs with an odd cycle are exactly the graphs that are not bipartite.}}{142}{figure.caption.185}\protected@file@percent }
+\newlabel{fig:bipartite}{{11.7}{142}{Two-colouring by BFS parity. In (a) the colouring succeeds. In (b), a 5-cycle, some edge must join equal colours: graphs with an odd cycle are exactly the graphs that are not bipartite}{figure.caption.185}{}}
+\newlabel{tpl:cpbipartite}{{11.6}{143}{Bipartite graphs}{section*.186}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {11.7}Finding cycles}{143}{section.11.7}\protected@file@percent }
+\newlabel{sec:cycles}{{11.7}{143}{Finding cycles}{section.11.7}{}}
+\@writefile{toc}{\contentsline {paragraph}{Undirected graphs.}{143}{paragraph*.187}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Directed graphs.}{144}{paragraph*.188}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {11.8}{\ignorespaces Three colours in a directed DFS. The search is at vertex 4 with the path $1 \to 2 \to 3 \to 4$ open. The edge $3 \to 5$ led to a finished vertex (no cycle there), but the edge $4 \to 2$ enters an open vertex and closes a cycle.}}{145}{figure.caption.189}\protected@file@percent }
+\newlabel{fig:dircycle}{{11.8}{145}{Three colours in a directed DFS. The search is at vertex 4 with the path $1 \to 2 \to 3 \to 4$ open. The edge $3 \to 5$ led to a finished vertex (no cycle there), but the edge $4 \to 2$ enters an open vertex and closes a cycle}{figure.caption.189}{}}
+\newlabel{tpl:cpcycle}{{11.7}{146}{Directed graphs}{section*.190}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {11.8}Functional graphs}{146}{section.11.8}\protected@file@percent }
+\newlabel{sec:functional}{{11.8}{146}{Functional graphs}{section.11.8}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {11.9}{\ignorespaces A component of a functional graph: exactly one cycle, with in-trees attached to its vertices.}}{146}{figure.caption.191}\protected@file@percent }
+\newlabel{fig:functional}{{11.9}{146}{A component of a functional graph: exactly one cycle, with in-trees attached to its vertices}{figure.caption.191}{}}
+\newlabel{tpl:cpfuncgraph}{{11.8}{146}{Functional graphs}{section*.192}{}}
+\newlabel{tpl:cpjump}{{11.8}{146}{Functional graphs}{section*.193}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {11.8.1}Cycle finding with constant memory}{146}{subsection.11.8.1}\protected@file@percent }
+\newlabel{tpl:cpcyclefind}{{11.8.1}{147}{Cycle finding with constant memory}{section*.194}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {11.9}Bidirectional search and A*}{147}{section.11.9}\protected@file@percent }
+\newlabel{sec:bibfs}{{11.9}{147}{Bidirectional search and A*}{section.11.9}{}}
+\@writefile{toc}{\contentsline {paragraph}{Bidirectional BFS.}{147}{paragraph*.195}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {11.10}{\ignorespaces Why bidirectional search wins: in a graph where the number of states within distance $r$ grows like $b^r$, two balls of radius $d/2$ contain far fewer states than one ball of radius $d$.}}{147}{figure.caption.196}\protected@file@percent }
+\newlabel{fig:bibfs}{{11.10}{147}{Why bidirectional search wins: in a graph where the number of states within distance $r$ grows like $b^r$, two balls of radius $d/2$ contain far fewer states than one ball of radius $d$}{figure.caption.196}{}}
+\newlabel{tpl:cpbibfs}{{11.9}{148}{Bidirectional BFS}{section*.198}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {11.11}{\ignorespaces Swap Game: the number of states that each search explores in the worst case, computed from the exact distance distribution of all $9!$ states. At distance 10 bidirectional search explores 16 times fewer states; near the maximum distance 16 the gain shrinks, because a plain BFS cannot explore more than the $9!$ states that exist.}}{149}{figure.caption.197}\protected@file@percent }
+\newlabel{fig:swapstates}{{11.11}{149}{Swap Game: the number of states that each search explores in the worst case, computed from the exact distance distribution of all $9!$ states. At distance 10 bidirectional search explores 16 times fewer states; near the maximum distance 16 the gain shrinks, because a plain BFS cannot explore more than the $9!$ states that exist}{figure.caption.197}{}}
+\@writefile{toc}{\contentsline {paragraph}{A*.}{149}{paragraph*.199}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {11.12}{\ignorespaces BFS versus A* from the green start to the red target around a wall (dark). Blue cells were expanded before the target; both searches find a shortest path of length 20 (red), but A* with the Manhattan distance as its bound expands half as many cells.}}{149}{figure.caption.200}\protected@file@percent }
+\newlabel{fig:astar}{{11.12}{149}{BFS versus A* from the green start to the red target around a wall (dark). Blue cells were expanded before the target; both searches find a shortest path of length 20 (red), but A* with the Manhattan distance as its bound expands half as many cells}{figure.caption.200}{}}
+\@setckpt{algorithms/10_graph_basics}{
+\setcounter{page}{151}
+\setcounter{equation}{0}
+\setcounter{enumi}{2}
+\setcounter{enumii}{0}
+\setcounter{enumiii}{0}
+\setcounter{enumiv}{0}
+\setcounter{footnote}{0}
+\setcounter{mpfootnote}{0}
+\setcounter{part}{3}
+\setcounter{chapter}{11}
+\setcounter{section}{9}
+\setcounter{subsection}{0}
+\setcounter{subsubsection}{0}
+\setcounter{paragraph}{0}
+\setcounter{subparagraph}{0}
+\setcounter{figure}{12}
+\setcounter{table}{0}
+\setcounter{parentequation}{0}
+\setcounter{lstnumber}{52}
+\setcounter{tcbbreakpart}{1}
+\setcounter{tcblayer}{0}
+\setcounter{tcolorbox@number}{443}
+\setcounter{tcblisting}{88}
+\setcounter{tcbrastercolumn}{1}
+\setcounter{tcbrasterrow}{1}
+\setcounter{tcbrasternum}{1}
+\setcounter{tcbraster}{1}
+\setcounter{cpsegfig}{0}
+\setcounter{LT@tables}{0}
+\setcounter{LT@chunks}{0}
+\setcounter{nlinenum}{0}
+\setcounter{ALG@line}{6}
+\setcounter{ALG@rem}{0}
+\setcounter{ALG@nested}{0}
+\setcounter{ALG@Lnr}{2}
+\setcounter{ALG@blocknr}{15}
+\setcounter{ALG@storecount}{0}
+\setcounter{ALG@tmpcounter}{0}
+\setcounter{algpx@codeBoxCount}{0}
+\setcounter{algpx@nestedCBoxCount}{0}
+\setcounter{algpx@startedBoxesCount}{0}
+\setcounter{algpx@endedBoxesCount}{0}
+\setcounter{algpx@nestedBoxedStringCount}{0}
+\setcounter{algpx@nestedBoxedStringMaxCount}{0}
+\setcounter{algpx@indentCount}{10}
+\setcounter{algpx@lastIndentEnded}{7}
+\setcounter{algpx@pageCount}{0}
+\setcounter{algpx@tmpCount}{0}
+\setcounter{caption@flags}{2}
+\setcounter{continuedfloat}{0}
+\setcounter{float@type}{16}
+\setcounter{section@level}{0}
+\setcounter{Item}{8}
+\setcounter{Hfootnote}{0}
+\setcounter{bookmark@seq@number}{0}
+\setcounter{algpx@indentEndPage-0@totc}{0}
+\setcounter{algpx@indentEndPage-1@totc}{0}
+\setcounter{algpx@indentEndPage-2@totc}{0}
+\setcounter{algpx@indentEndPage-3@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-2@totc}{3}
+\setcounter{algpx@indentEndCoordIndex-0@totc}{3}
+\setcounter{algpx@indentEndPage-4@totc}{0}
+\setcounter{algpx@indentEndPage-5@totc}{0}
+\setcounter{algpx@indentEndPage-6@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-4@totc}{6}
+\setcounter{algpx@indentEndPage-7@totc}{0}
+\setcounter{algpx@indentEndPage-8@totc}{0}
+\setcounter{algpx@indentEndPage-9@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-8@totc}{9}
+\setcounter{algpx@indentEndPage-10@totc}{0}
+\setcounter{algpx@indentEndPage-11@totc}{0}
+\setcounter{algpx@indentEndPage-12@totc}{0}
+\setcounter{algpx@indentEndPage-13@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-12@totc}{13}
+\setcounter{algpx@indentEndCoordIndex-10@totc}{13}
+\setcounter{algpx@indentEndPage-14@totc}{0}
+\setcounter{algpx@indentEndPage-15@totc}{0}
+\setcounter{algpx@indentEndPage-16@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-15@totc}{16}
+\setcounter{algpx@indentEndPage-17@totc}{0}
+\setcounter{algpx@indentEndPage-18@totc}{1}
+\setcounter{algpx@indentEndPage-19@totc}{1}
+\setcounter{algpx@indentEndCoordIndex-18@totc}{19}
+\setcounter{lstlisting}{0}
+\setcounter{algpx@indentEndPage-0}{0}
+\setcounter{algpx@indentEndPage-1}{0}
+\setcounter{algpx@indentEndPage-2}{0}
+\setcounter{algpx@indentEndPage-3}{0}
+\setcounter{algpx@indentEndCoordIndex-2}{3}
+\setcounter{algpx@indentEndCoordIndex-0}{3}
+\setcounter{algpx@indentEndPage-4}{0}
+\setcounter{algpx@indentEndPage-5}{0}
+\setcounter{algpx@indentEndPage-6}{0}
+\setcounter{algpx@indentEndCoordIndex-4}{6}
+\setcounter{algpx@indentEndPage-7}{0}
+\setcounter{algpx@indentEndPage-8}{0}
+\setcounter{algpx@indentEndPage-9}{0}
+\setcounter{algpx@indentEndCoordIndex-8}{9}
+}

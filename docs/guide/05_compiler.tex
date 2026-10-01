@@ -1,0 +1,84 @@
+\chapter{Compiler Flags and Speed}\label{ch:compiler}
+
+Every local build (CPH, F5, Ctrl+F5, the stress tester, Code Runner) uses the same flags, defined once in
+\file{tools/cp.py} and copied into CPH's settings by \emph{CP: Setup}:
+
+\begin{shell}
+-std=c++17 -O2 -DLOCAL -Wall -Wextra -Wshadow -D_GLIBCXX_DEBUG
+-IC:/Users/kshit/Desktop/competitive/include -static -Wl,--stack,268435456
+\end{shell}
+
+\section{What each flag does}
+
+\begin{center}
+\begin{tabularx}{\linewidth}{>{\ttfamily\raggedright\arraybackslash}p{4.3cm}L}
+\toprule
+\thd{Flag} & \thd{Why it is there} \\
+\midrule
+-std=c++17 & The language standard you asked for. IntelliSense uses it too, so C++20 features are flagged while you type. \\
+-O2 & The optimisation level judges use; timings are meaningful. \\
+-DLOCAL & Defines \cc{LOCAL}: turns on \cc{dbg} and turns off USACO file I/O locally. \\
+-Wall -Wextra -Wshadow & Warnings for common bugs: unused variables, sign comparisons, a local that hides another. \\
+-D\_GLIBCXX\_DEBUG & The checked STL: out-of-range indexing, invalid comparators and bad iterators abort with a message. \\
+-I\ldots/include & Where \file{debug.h} and the precompiled \file{bits/stdc++.h} live. \\
+-static & The program carries its own C++ runtime. Other MinGW installs on your PATH (Git's, cpeditor's) can no longer
+  make it load the wrong DLL and die silently. \\
+-Wl,-{}-stack,268435456 & A 256\,MB stack, like Codeforces. Windows' default 2\,MB stack crashes a recursive DFS on a
+  200\,000-vertex path; this was measured before and after. \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+CPH additionally passes \texttt{-D DEBUG -D CPH}, so \cc{#ifdef CPH} works if you ever want CPH-only code.
+
+\section{The precompiled header}
+
+Every compile used to spend most of its time parsing \file{bits/stdc++.h}, which pulls in the entire standard library.
+\file{include/bits/} now holds a copy of that header plus \file{stdc++.h.gch}, the same header pre-parsed with exactly
+the flags above. Because \texttt{-I} puts \file{include/} first in the search path, GCC finds the \texttt{.gch} and loads
+it in a fraction of the time.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[xbar, width=12.5cm, height=4.6cm, bar width=9pt, xmin=0, xmax=1.7, enlarge y limits=0.45,
+  xlabel={seconds per compile (warm cache)}, symbolic y coords={A\_Graph.cpp,empty template},
+  ytick=data, y tick label style={font=\sffamily\small}, x tick label style={font=\sffamily\scriptsize},
+  xlabel style={font=\sffamily\small}, legend style={font=\sffamily\scriptsize, at={(0.98,0.05)}, anchor=south east},
+  nodes near coords, nodes near coords style={font=\sffamily\scriptsize}, every axis plot/.append style={draw=none}]
+  \addplot[fill=cpgray!45] coordinates {(1.42,A\_Graph.cpp) (0.95,empty template)};
+  \addplot[fill=cpteal] coordinates {(0.91,A\_Graph.cpp) (0.42,empty template)};
+  \legend{old flags, new flags + precompiled header}
+\end{axis}
+\end{tikzpicture}
+\caption{Measured CPH compile times. A cold cache (first compile after a reboot) went from about 3.5\,s to under 1\,s.}
+\end{figure}
+
+\begin{pitfall}[Keep CPH's flags in sync]
+A precompiled header is only valid for the flags it was built with, and GCC does not always reject a mismatched one:
+during setup a mismatch made GCC crash with an internal error instead of falling back. So never edit CPH's
+\emph{Args} by hand. Change \texttt{COMPILE\_FLAGS} in \file{tools/cp.py} and run \emph{CP: Setup}; it rebuilds the
+header and rewrites CPH's setting together. F5 and the stress tester also rebuild the header automatically whenever
+the compiler or the flags change.
+\end{pitfall}
+
+\section{The optional UB trap}\label{sec:ubtrap}
+
+\file{tools/cp.py} has a switch:
+
+\begin{code}
+UB_TRAP = False
+\end{code}
+
+Set to \cc{True}, it adds \texttt{-fsanitize=undefined -fsanitize-undefined-trap-on-error}: signed overflow,
+out-of-bounds C-array indexing and invalid shifts crash with exit code \texttt{0xC000001D} instead of silently
+producing a wrong answer. It was tested and works with static linking, but costs about 0.35\,s per compile, which
+cancels most of the precompiled header's gain, so it is off by default. With \cc{#define int long long} and the
+checked STL most of what it catches is already covered. Turn it on (then run \emph{CP: Setup}) when you suspect
+overflow.
+
+\section{Time limits and the checked STL}
+
+The checked STL verifies every vector access, which can make STL-heavy code several times slower locally than on
+the judge. If CPH or F5 reports a time close to the limit, that is usually not a real TLE. To measure true speed,
+temporarily remove \texttt{-D\_GLIBCXX\_DEBUG} from \texttt{COMPILE\_FLAGS} and run \emph{CP: Setup}; put it back afterwards.

@@ -1,0 +1,284 @@
+\begin{theindex}
+\par\medskip{\sffamily\bfseries\color{cpblue}Symbols}\par\nopagebreak\smallskip
+
+  \item $\mathcal  {O}(f(n))$\dotfill \hyperpage{30}
+  \item 0--1 BFS\dotfill \hyperpage{140}
+  \item 0/1 knapsack\dotfill \hyperpage{350}
+  \item 2-SAT\dotfill \hyperpage{181}
+  \item 2-edge-connected components\dotfill \hyperpage{185}
+
+  \indexspace
+\par\medskip{\sffamily\bfseries\color{cpblue}A}\par\nopagebreak\smallskip
+
+  \item A*\dotfill \hyperpage{149}
+  \item adjacency list\dotfill \hyperpage{134}
+  \item adjacency matrix\dotfill \hyperpage{134}
+  \item AHU algorithm\dotfill \hyperpage{225}
+  \item alternating path\dotfill \hyperpage{198}
+  \item arc\dotfill \hyperpage{133}
+  \item argsort\dotfill \hyperpage{81}
+  \item articulation point\dotfill \hyperpage{183}
+  \item assignment problem\dotfill \hyperpage{201}
+  \item augmentation\dotfill \hyperpage{57}
+  \item augmenting path\dotfill \hyperpage{193}
+
+  \indexspace
+\par\medskip{\sffamily\bfseries\color{cpblue}B}\par\nopagebreak\smallskip
+
+  \item Backtracking\dotfill \hyperpage{69}
+  \item Bellman--Ford\dotfill \hyperpage{157}
+  \item Berge's lemma\dotfill \hyperpage{198}
+  \item BFS\dotfill \hyperpage{345}
+  \item Biconnected components\dotfill \hyperpage{185}
+  \item binary heap\dotfill \hyperpage{44}
+  \item Binary lifting\dotfill \hyperpage{213}
+  \item binary lifting\dotfill \hyperpage{358}
+  \item binary search on the answer\dotfill \hyperpage{341}
+  \item binary trie\dotfill \hyperpage{124}
+  \item bipartite\dotfill \hyperpage{134}, \hyperpage{142}
+  \item bitmask\dotfill \hyperpage{66}
+  \item block-cut tree\dotfill \hyperpage{185}
+  \item branch and bound\dotfill \hyperpage{73}
+  \item Breadth-first search\dotfill \hyperpage{137}
+  \item Brent's algorithm\dotfill \hyperpage{146}
+  \item bridge\dotfill \hyperpage{183}
+  \item bridge tree\dotfill \hyperpage{185}
+
+  \indexspace
+\par\medskip{\sffamily\bfseries\color{cpblue}C}\par\nopagebreak\smallskip
+
+  \item center\dotfill \hyperpage{210}
+  \item centroid\dotfill \hyperpage{210}, \hyperpage{234}
+  \item centroid tree\dotfill \hyperpage{234}
+  \item children\dotfill \hyperpage{207}
+  \item complete search\dotfill \hyperpage{64}
+  \item condensation\dotfill \hyperpage{177}
+  \item connected\dotfill \hyperpage{134}
+  \item connected component\dotfill \hyperpage{343}
+  \item connected components\dotfill \hyperpage{134}
+  \item contribution technique\dotfill \hyperpage{14}
+  \item convolution\dotfill \hyperpage{315}
+  \item coordinate compression\dotfill \hyperpage{84}
+  \item cut\dotfill \hyperpage{195}
+  \item cycle\dotfill \hyperpage{134}
+  \item cycle detection\dotfill \hyperpage{63}
+
+  \indexspace
+\par\medskip{\sffamily\bfseries\color{cpblue}D}\par\nopagebreak\smallskip
+
+  \item DAG\dotfill \hyperpage{134}
+  \item data structure\dotfill \hyperpage{50}
+  \item de Bruijn sequence\dotfill \hyperpage{128}
+  \item degree\dotfill \hyperpage{134}
+  \item depth\dotfill \hyperpage{207}
+  \item Depth-first search\dotfill \hyperpage{135}
+  \item deque\dotfill \hyperpage{53}
+  \item DFS tree\dotfill \hyperpage{135}
+  \item diameter\dotfill \hyperpage{209}
+  \item difference array\dotfill \hyperpage{108}
+  \item Dijkstra\dotfill \hyperpage{346}
+  \item Dijkstra's algorithm\dotfill \hyperpage{152}
+  \item Dilworth's theorem\dotfill \hyperpage{201}
+  \item Dinkelbach's method\dotfill \hyperpage{101}
+  \item disjoint set union\dotfill \hyperpage{165}, \hyperpage{348}
+  \item dominates\dotfill \hyperpage{191}
+  \item dominator tree\dotfill \hyperpage{191}
+  \item DSU on tree\dotfill \hyperpage{238}
+  \item DSU with rollback\dotfill \hyperpage{188}
+
+  \indexspace
+\par\medskip{\sffamily\bfseries\color{cpblue}E}\par\nopagebreak\smallskip
+
+  \item edge list\dotfill \hyperpage{134}
+  \item edges\dotfill \hyperpage{133}
+  \item Edmonds' blossom algorithm\dotfill \hyperpage{203}
+  \item Euler tour\dotfill \hyperpage{208}
+  \item Euler tour technique\dotfill \hyperpage{210}
+  \item Euler tour tree\dotfill \hyperpage{245}
+  \item Euler's formula\dotfill \hyperpage{190}
+  \item Eulerian circuit\dotfill \hyperpage{186}
+  \item Eulerian path\dotfill \hyperpage{186}
+
+  \indexspace
+\par\medskip{\sffamily\bfseries\color{cpblue}F}\par\nopagebreak\smallskip
+
+  \item factorial number system\dotfill \hyperpage{69}
+  \item Fenwick tree\dotfill \hyperpage{356}
+  \item Flood fill\dotfill \hyperpage{140}
+  \item flood fill\dotfill \hyperpage{343}
+  \item flow\dotfill \hyperpage{193}
+  \item flow network\dotfill \hyperpage{193}
+  \item Floyd's cycle-finding algorithm\dotfill \hyperpage{146}
+  \item Floyd--Warshall\dotfill \hyperpage{161}
+  \item forest\dotfill \hyperpage{134}
+  \item fractional programming\dotfill \hyperpage{101}
+  \item Fracturing search\dotfill \hyperpage{75}
+  \item functional graph\dotfill \hyperpage{146}, \hyperpage{358}
+
+  \indexspace
+\par\medskip{\sffamily\bfseries\color{cpblue}G}\par\nopagebreak\smallskip
+
+  \item Gomory--Hu tree\dotfill \hyperpage{204}
+  \item Gosper's hack\dotfill \hyperpage{68}
+  \item graph\dotfill \hyperpage{133}
+  \item Gray code\dotfill \hyperpage{67}, \hyperpage{127}
+  \item greedy algorithm\dotfill \hyperpage{85}
+  \item Grundy number\dotfill \hyperpage{312}
+
+  \indexspace
+\par\medskip{\sffamily\bfseries\color{cpblue}H}\par\nopagebreak\smallskip
+
+  \item half-open range\dotfill \hyperpage{43}
+  \item heap\dotfill \hyperpage{54}
+  \item heavy child\dotfill \hyperpage{230}
+  \item heavy paths\dotfill \hyperpage{230}
+  \item Heavy-light decomposition\dotfill \hyperpage{230}
+  \item height\dotfill \hyperpage{241}
+  \item Hierholzer's algorithm\dotfill \hyperpage{186}
+  \item Hopcroft--Karp\dotfill \hyperpage{198}
+  \item Huffman's algorithm\dotfill \hyperpage{88}
+  \item Hungarian algorithm\dotfill \hyperpage{201}
+
+  \indexspace
+\par\medskip{\sffamily\bfseries\color{cpblue}I}\par\nopagebreak\smallskip
+
+  \item implication graph\dotfill \hyperpage{181}
+  \item inclusion--exclusion\dotfill \hyperpage{17}
+  \item invariant\dotfill \hyperpage{20}
+
+  \indexspace
+\par\medskip{\sffamily\bfseries\color{cpblue}K}\par\nopagebreak\smallskip
+
+  \item Kadane's algorithm\dotfill \hyperpage{337}
+  \item Kahn's algorithm\dotfill \hyperpage{174}
+  \item Kosaraju's algorithm\dotfill \hyperpage{179}
+  \item Kruskal reconstruction tree\dotfill \hyperpage{171}
+  \item Kruskal's algorithm\dotfill \hyperpage{169}
+  \item Kuhn's algorithm\dotfill \hyperpage{198}
+
+  \indexspace
+\par\medskip{\sffamily\bfseries\color{cpblue}L}\par\nopagebreak\smallskip
+
+  \item LCP array\dotfill \hyperpage{320}
+  \item Lehmer code\dotfill \hyperpage{69}
+  \item linear basis\dotfill \hyperpage{314}
+  \item link-cut tree\dotfill \hyperpage{191}, \hyperpage{246}
+  \item long paths\dotfill \hyperpage{241}
+  \item longest increasing subsequence\dotfill \hyperpage{258}
+  \item losing\dotfill \hyperpage{278}
+  \item low-link\dotfill \hyperpage{177}
+  \item lowest common ancestor\dotfill \hyperpage{213}
+
+  \indexspace
+\par\medskip{\sffamily\bfseries\color{cpblue}M}\par\nopagebreak\smallskip
+
+  \item master theorem\dotfill \hyperpage{34}
+  \item matching\dotfill \hyperpage{198}
+  \item matroid\dotfill \hyperpage{328}
+  \item Meet in the middle\dotfill \hyperpage{73}
+  \item Memoization\dotfill \hyperpage{252}
+  \item Menger's theorem\dotfill \hyperpage{197}
+  \item minimum spanning tree\dotfill \hyperpage{168}
+  \item minimum-cost flow\dotfill \hyperpage{202}
+  \item monotone predicate\dotfill \hyperpage{96}
+  \item monovariant\dotfill \hyperpage{21}
+  \item multi-source BFS\dotfill \hyperpage{139}
+
+  \indexspace
+\par\medskip{\sffamily\bfseries\color{cpblue}N}\par\nopagebreak\smallskip
+
+  \item number theoretic transform\dotfill \hyperpage{315}
+
+  \indexspace
+\par\medskip{\sffamily\bfseries\color{cpblue}O}\par\nopagebreak\smallskip
+
+  \item Offline processing\dotfill \hyperpage{19}
+
+  \indexspace
+\par\medskip{\sffamily\bfseries\color{cpblue}P}\par\nopagebreak\smallskip
+
+  \item Parallel binary search\dotfill \hyperpage{104}
+  \item parent\dotfill \hyperpage{207}
+  \item path\dotfill \hyperpage{134}
+  \item path cover\dotfill \hyperpage{200}
+  \item pigeonhole principle\dotfill \hyperpage{22}
+  \item postorder\dotfill \hyperpage{208}
+  \item potential\dotfill \hyperpage{33}
+  \item prefix function\dotfill \hyperpage{318}, \hyperpage{357}
+  \item preorder\dotfill \hyperpage{208}
+  \item Prim's algorithm\dotfill \hyperpage{170}
+  \item pruning\dotfill \hyperpage{69}
+  \item Prüfer code\dotfill \hyperpage{172}
+
+  \indexspace
+\par\medskip{\sffamily\bfseries\color{cpblue}Q}\par\nopagebreak\smallskip
+
+  \item queue\dotfill \hyperpage{53}
+
+  \indexspace
+\par\medskip{\sffamily\bfseries\color{cpblue}R}\par\nopagebreak\smallskip
+
+  \item radix sort\dotfill \hyperpage{81}
+  \item range query\dotfill \hyperpage{295}
+  \item recursion tree\dotfill \hyperpage{34}
+  \item reflection principle\dotfill \hyperpage{23}
+  \item Regret greedy\dotfill \hyperpage{91}
+  \item relaxation\dotfill \hyperpage{152}
+  \item Rerooting\dotfill \hyperpage{220}
+  \item residual graph\dotfill \hyperpage{193}
+
+  \indexspace
+\par\medskip{\sffamily\bfseries\color{cpblue}S}\par\nopagebreak\smallskip
+
+  \item shortest-path tree\dotfill \hyperpage{152}
+  \item SMAWK\dotfill \hyperpage{285}
+  \item Smith's rule\dotfill \hyperpage{83}
+  \item spanning tree\dotfill \hyperpage{168}
+  \item stack\dotfill \hyperpage{51}
+  \item STL\dotfill \hyperpage{39}
+  \item Stoer--Wagner algorithm\dotfill \hyperpage{204}
+  \item stress test\dotfill \hyperpage{11}
+  \item strict weak ordering\dotfill \hyperpage{84}
+  \item strongly connected\dotfill \hyperpage{177}
+  \item strongly connected components\dotfill \hyperpage{177}
+  \item submask\dotfill \hyperpage{67}
+  \item subtree\dotfill \hyperpage{207}
+  \item suffix array\dotfill \hyperpage{320}
+  \item suffix automaton\dotfill \hyperpage{321}
+  \item suffix links\dotfill \hyperpage{320}
+  \item sum over subsets\dotfill \hyperpage{272}
+  \item sweep\dotfill \hyperpage{19}
+  \item system of difference constraints\dotfill \hyperpage{159}
+
+  \indexspace
+\par\medskip{\sffamily\bfseries\color{cpblue}T}\par\nopagebreak\smallskip
+
+  \item Tabulation\dotfill \hyperpage{252}
+  \item Top trees\dotfill \hyperpage{247}
+  \item topological order\dotfill \hyperpage{174}
+  \item treap\dotfill \hyperpage{303}
+  \item tree\dotfill \hyperpage{134}
+  \item tree DP\dotfill \hyperpage{353}
+  \item trie\dotfill \hyperpage{319}
+  \item two pointers\dotfill \hyperpage{338}
+  \item two's complement\dotfill \hyperpage{120}
+
+  \indexspace
+\par\medskip{\sffamily\bfseries\color{cpblue}U}\par\nopagebreak\smallskip
+
+  \item undefined behaviour\dotfill \hyperpage{48}
+  \item unimodal\dotfill \hyperpage{102}
+
+  \indexspace
+\par\medskip{\sffamily\bfseries\color{cpblue}V}\par\nopagebreak\smallskip
+
+  \item vertices\dotfill \hyperpage{133}
+  \item virtual tree\dotfill \hyperpage{243}
+
+  \indexspace
+\par\medskip{\sffamily\bfseries\color{cpblue}W}\par\nopagebreak\smallskip
+
+  \item weighted DSU\dotfill \hyperpage{167}
+  \item winning\dotfill \hyperpage{278}
+
+\end{theindex}

@@ -1,0 +1,8 @@
+void solve() {  // min_enclosing_circle (cpmincircle) is pasted above solve()
+    int n;
+    cin >> n;
+    vector<pair<ld, ld>> p(n);
+    for (auto& [x, y] : p) cin >> x >> y;
+    auto [cx, cy, r] = min_enclosing_circle(p);  // expected O(n), shuffled
+    cout << fixed << setprecision(6) << cx << ' ' << cy << ' ' << r << '\n';
+}

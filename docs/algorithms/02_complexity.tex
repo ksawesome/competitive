@@ -1,0 +1,564 @@
+\chapter{Complexity and Constraints}\label{ch:complexity}
+
+A correct solution that is too slow scores exactly the same as no solution at all. Complexity analysis tells you, before
+you write a line, whether an idea can pass; it is the tool you use in step 2 of the problem-solving loop to throw away
+hopeless ideas and to recognise which technique the problem setter had in mind. This chapter teaches you to estimate the
+running time and memory of an algorithm quickly and reliably, and it gives you real measured costs of the operations you
+will use every day, so that ``fast enough'' stops being a guess.
+
+\begin{chapterintro}{\bronze\ \silver\ \gold}{Chapter~\ref{ch:approach}.}
+  \item count operations and express them in $\mathcal{O}$-notation;
+  \item read a problem's limits and deduce the complexity it expects;
+  \item analyse loops, including harmonic sums, square-root loops and amortized costs;
+  \item solve recurrences with recursion trees and the master theorem;
+  \item budget memory, and know what each C++ operation really costs, measured.
+\end{chapterintro}
+
+% ======================================================================================================================
+\section[Counting operations]{Counting operations \hfill \bronze}\label{sec:counting-ops}
+
+A modern judge executes on the order of $10^8$ to $10^9$ \emph{simple operations} per second: additions, comparisons,
+array accesses, branches. The exact number depends on the machine and on what the operations are (Section~\ref{sec:measured}
+measures them), but for planning purposes one rule is enough:
+
+\begin{fact}[The budget]
+Plan for about $10^8$ simple operations per second of time limit. Below $10^7$ you are safe by a wide margin; around
+$10^8$ you are fine if the inner loop is simple; above $10^9$ you will not pass without a very special trick.
+\end{fact}
+
+So the question ``will it pass?'' becomes ``how many operations does it do on the largest input?''. For loops that is
+mostly multiplication. The code below does work once for every pair $i < j$:
+
+\begin{code}
+for (int i = 0; i < n; i++)          // n iterations
+    for (int j = i + 1; j < n; j++)  // n-1, n-2, ..., 1, 0 iterations
+        work(i, j);                  // in total n(n-1)/2 calls
+\end{code}
+
+For $n = 5000$ that is $1.25 \cdot 10^7$ calls: instant. For $n = 2\cdot10^5$ it is $2 \cdot 10^{10}$: over a minute on any
+judge. The same idea is fine or hopeless depending on a single number in the statement, which is why you always compute
+the count \emph{with the real limit plugged in}.
+
+Counting is rarely exact, and it does not need to be: you only need the order of magnitude. Three habits make it quick.
+First, count the innermost operation and multiply by the number of times each enclosing loop runs. Second, round
+generously: $\log_2(2\cdot10^5) \approx 18$, $\sqrt{2\cdot10^5} \approx 450$, $2^{20} \approx 10^6$. Third, remember that a
+``simple operation'' inside a library call may itself be a loop: \cc{s.count(x)} on a \cc{vector} is $n$ operations, not one.
+
+% ======================================================================================================================
+\section[Big-O notation]{Big-O notation \hfill \bronze}\label{sec:bigo}
+
+Counting exactly is tedious and machine-dependent, so we describe how the count \emph{grows} with the input size and ignore
+the rest. We say that an algorithm runs in time \defn{$\mathcal{O}(f(n))$} if, for all large enough $n$, it performs at
+most $c \cdot f(n)$ operations for some fixed constant $c$. Two companions complete the vocabulary: $\Omega(f(n))$ means ``at
+least $c\cdot f(n)$'', and $\Theta(f(n))$ means both, i.e.\ exactly this order of growth. In contests people say
+$\mathcal{O}$ even when they mean $\Theta$; the meaning is usually clear.
+
+The rules follow from the definition. Constant factors disappear: $5n$ and $n / 3$ are both $\Oh{n}$. Lower-order terms
+disappear: $3n^2 + 10n + 7$ is $\Oh{n^2}$, because for large $n$ the $n^2$ term dominates everything else. Logarithm bases
+disappear too, since $\log_2 n = \log_2 10 \cdot \log_{10} n$ differs by a constant factor. With several inputs you keep
+each of them: BFS on a graph is $\Oh{n + m}$, and neither term may be dropped, because either can be the larger one.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\begin{loglogaxis}[cpplot, width=11.8cm, height=7.2cm, xmin=1, xmax=1e7, ymin=1, ymax=1e13, xlabel={input size $n$},
+    ylabel={operations}, legend pos=outer north east, samples=120]
+  % parametric in t = log10(n), so that the samples are spread evenly on the logarithmic axis
+  \addplot[fgverm, dashed, line width=0.9pt, domain=0:7, forget plot] ({10^x}, {1e8});
+  \addplot+[mark=none, domain=0.302:7] ({10^x}, {x*ln(10)/ln(2)}); \addlegendentry{$\log n$}
+  \addplot+[mark=none, domain=0:7] ({10^x}, {10^x}); \addlegendentry{$n$}
+  \addplot+[mark=none, domain=0.302:7] ({10^x}, {10^x*x*ln(10)/ln(2)}); \addlegendentry{$n \log n$}
+  \addplot+[mark=none, domain=0:6.5] ({10^x}, {10^(2*x)}); \addlegendentry{$n^2$}
+  \addplot+[mark=none, domain=0:4.33] ({10^x}, {10^(3*x)}); \addlegendentry{$n^3$}
+  \addplot+[mark=none, domain=0:1.63] ({10^x}, {2^(10^x)}); \addlegendentry{$2^n$}
+  \addplot+[mark=none] coordinates {(1,1) (2,2) (3,6) (4,24) (5,120) (6,720) (7,5040) (8,40320) (9,362880)
+    (10,3628800) (11,39916800) (12,479001600) (13,6227020800) (14,87178291200) (15,1307674368000)}; \addlegendentry{$n!$}
+  \node[font=\sffamily\scriptsize\bfseries, text=fgverm, anchor=south east] at (axis cs:1e7, 1e8) {$10^8$: one second};
+\end{loglogaxis}
+\end{tikzpicture}
+\caption{How fast common complexities grow (both axes logarithmic). Each curve crosses the one-second budget (dashed) at the
+largest $n$ it can handle: $n!$ near 11, $2^n$ near 27, $n^3$ near 460, $n^2$ near $10^4$, $n\log n$ near $4.5\cdot10^6$.
+Polynomials are straight lines in this view; exponentials bend upwards and escape almost immediately.}
+\label{fig:growth}
+\end{figure}
+
+\begin{pitfall}[Big-O hides constants, and constants can be big]
+$\Oh{n}$ with a constant of 100 is slower than $\Oh{n \log n}$ with a constant of 1 for every $n$ you will meet. Big-O tells
+you which of two ideas \emph{scales} better, not which is faster on today's input. When two ideas have the same complexity,
+the constant factor (Section~\ref{sec:measured}) decides.
+\end{pitfall}
+
+\paragraph{Worst case, average case, amortized.} Unless stated otherwise, complexity means the \emph{worst case}: the most
+operations over all inputs of size $n$. That is what matters in contests, because the tests are chosen by someone trying to
+break you. \emph{Expected} (average) complexity appears with randomised algorithms: quicksort with a random pivot, hash
+tables, treaps. \emph{Amortized} complexity bounds the total cost of a sequence of operations even when single operations
+are occasionally expensive (Section~\ref{sec:amortized}).
+
+% ======================================================================================================================
+\section[What the limits tell you]{What the limits tell you \hfill \bronze}\label{sec:constraints}
+
+Problem setters choose limits to allow the intended solution and to kill slower ones. Reading their intention from the
+limits is the single most useful skill in this chapter: find the largest input parameter in the statement, look it up in
+Table~\ref{tab:constraints}, and you know the target complexity and a short list of techniques before you have had a
+single idea. Figure~\ref{fig:maxn} shows where each complexity runs out of budget.
+
+\begin{table}[htbp]
+\centering
+\caption{Limits and the complexities that fit in about one second.}\label{tab:constraints}
+\small
+\begin{tabularx}{\linewidth}{>{\bfseries}p{2.3cm}p{4.3cm}L}
+\toprule
+\thd{Largest $n$} & \thd{Complexity} & \thd{Typical techniques} \\
+\midrule
+$n \le 10$ & $\Oh{n!}$, $\Oh{n^6}$ & all permutations, brute force over everything \\
+$n \le 20$ & $\Oh{2^n \cdot n}$ & all subsets, bitmask DP (Chapter~\ref{ch:dppatterns}) \\
+$n \le 40$ & $\Oh{2^{n/2} \cdot n}$ & meet in the middle (Chapter~\ref{ch:search}) \\
+$n \le 100$ & $\Oh{n^4}$ & DP with four nested indices \\
+$n \le 500$ & $\Oh{n^3}$ & Floyd--Warshall, interval DP, Gaussian elimination \\
+$n \le 5000$ & $\Oh{n^2}$ & all pairs, two-dimensional DP, LCS \\
+$n \le 10^5$ & $\Oh{n \sqrt n}$ & square-root decomposition, Mo's algorithm \\
+$n \le 2 \cdot 10^5$ & $\Oh{n \log n}$, $\Oh{n \log^2 n}$ & sorting, binary search, heaps, segment trees, Dijkstra \\
+$n \le 10^6$ & $\Oh{n}$, or $\Oh{n \log n}$ if simple & linear scans, two pointers, prefix sums, sieves \\
+$n \le 10^9$ & $\Oh{\sqrt n}$, $\Oh{\log n}$ & trial division, formulas, binary search \\
+$n \le 10^{18}$ & $\Oh{\log n}$, $\Oh{\log^2 n}$, $\Oh{1}$ & fast exponentiation, matrix power, digit DP, formulas \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=1.25cm]
+  % bar length = log10 of the largest n with f(n) <= 1e8
+  \foreach \lab/\v/\txt [count=\k] in {{$n!$}/1.04/{$n \le 11$}, {$2^n\,n$}/1.34/{$n \le 22$}, {$n^4$}/2.0/{$n \le 100$},
+      {$n^3$}/2.67/{$n \le 464$}, {$n^2$}/4.0/{$n \le 10^4$}, {$n\sqrt n$}/5.33/{$n \le 2\cdot10^5$},
+      {$n \log n$}/6.65/{$n \le 4.5\cdot10^6$}, {$n$}/8.0/{$n \le 10^8$}} {
+    \pgfmathsetmacro{\y}{-0.55*\k}
+    \node[font=\small, anchor=east] at (-0.1, \y) {\lab};
+    \fill[fgblue!35, draw=fgblue, line width=0.5pt] (0, \y-0.19) rectangle (\v, \y+0.19);
+    \node[font=\sffamily\scriptsize, anchor=west] at (\v+0.05, \y) {\txt};
+  }
+  \draw[line width=0.6pt, fgink!70] (0, -0.2) -- (0, -4.7);
+  \foreach \e in {0,...,8} {
+    \draw[line width=0.4pt, fgink!70] (\e, -4.7) -- (\e, -4.78) node[below, lbl] {$10^{\e}$};
+    \draw[line width=0.3pt, fgline!40] (\e, -0.2) -- (\e, -4.7);
+  }
+  \node[lbl] at (4, -5.45) {largest $n$ that fits in $10^8$ operations (logarithmic scale)};
+\end{tikzpicture}
+\caption{The largest input each complexity can process with about $10^8$ operations. Moving one row up the table costs
+orders of magnitude of input size; this is why the limits reveal the intended complexity so reliably.}
+\label{fig:maxn}
+\end{figure}
+
+\paragraph{Several parameters.} Statements often have more than one limit: $n$ vertices and $m$ edges, $n$ elements and $q$
+queries, a grid of $r \times c$ cells. Multiply out the candidate complexity with all of them: $\Oh{(n + q) \log n}$ with
+$n = q = 2 \cdot 10^5$ is about $7 \cdot 10^6$; $\Oh{nq}$ is $4\cdot 10^{10}$. The two limits that look alike often play
+different roles: a grid with $r \cdot c \le 10^6$ but $r$ up to $10^6$ is a hint that the solution must not assume a square.
+
+\paragraph{The small limit is the hint.} When one limit is suspiciously small (values up to 100, at most 20 special
+vertices, an alphabet of size 3, $k \le 10$), the intended solution almost certainly iterates over it. ``$n \le 2\cdot10^5$,
+$k \le 20$'' strongly suggests $\Oh{nk}$ or $\Oh{n \cdot 2^k}$, never something independent of $k$.
+
+\paragraph{Sums over test cases.} ``The sum of $n$ over all test cases does not exceed $2\cdot10^5$'' allows
+$\Oh{n\log n}$ \emph{per test}. It does not allow work that is independent of $n$: resetting a global array of size $10^6$,
+or a loop to $10^6$, costs $10^6$ \emph{per test case}, and there may be $10^4$ tests. Reset only what you used.
+
+\paragraph{Other time limits.} A 2-second limit doubles the budget; half a second halves it. Limits far above one second
+(5 or 10 seconds) usually mean the intended solution is heavy, often $\Oh{n\sqrt n}$ or a large constant, and a clean
+implementation of it will pass comfortably. Limits far below usually mean that input and output are large, so fast I/O
+matters.
+
+\paragraph{Memory limits.} The usual limit is 256\,MB, sometimes 512\,MB or 1\,GB, and occasionally as low as 16--64\,MB to
+force a clever idea. Section~\ref{sec:memory} converts megabytes into numbers of elements.
+
+% ======================================================================================================================
+\section[Analysing loops]{Analysing loops \hfill \silver}\label{sec:loops}
+
+Most running times are loops, and a small number of loop shapes cover almost everything.
+
+\paragraph{Independent nested loops multiply.} Two loops to $n$ and $m$ cost $n \cdot m$. Three nested loops to $n$ cost
+$n^3$ even if the body is a single addition.
+
+\paragraph{Dependent loops sum.} If the inner loop's length depends on the outer variable, add up the lengths. The pair loop
+of Section~\ref{sec:counting-ops} sums $0 + 1 + \dots + (n-1) = n(n-1)/2$, still $\Theta(n^2)$; a triple of nested dependent
+loops sums to about $n^3 / 6$. Halving the constant is nice but does not change the class.
+
+\paragraph{Loops that halve are logarithmic.} \cc{while (x > 0) x /= 2;} runs $\lfloor \log_2 x \rfloor + 1$ times. Binary
+search, fast exponentiation, Euclid's gcd algorithm and binary lifting all shrink the problem by a constant factor per
+step, so they take $\Oh{\log n}$ steps. A loop that multiplies by 2 until it passes $n$ is the same loop read backwards.
+
+\paragraph{Square-root loops.} \cc{for (ll d = 1; d * d <= n; d++)} runs $\sqrt n$ times. It enumerates divisors in pairs
+$(d, n/d)$ and tests primality by trial division: $10^6$ steps for $n = 10^{12}$.
+
+\paragraph{The harmonic sum.} Loops over multiples are cheaper than they look:
+
+\begin{code}
+for (int d = 1; d <= n; d++)
+    for (int x = d; x <= n; x += d)  // n / d iterations
+        cnt[x]++;                     // then cnt[x] = number of divisors
+\end{code}
+
+The inner loop runs $n / d$ times, so the total is $n\,(1 + \frac12 + \frac13 + \dots + \frac1n) = n \cdot H_n \approx n
+\ln n$. For $n = 10^6$ that is $1.4 \cdot 10^7$ steps: this ``for each $d$, visit every multiple'' pattern is how the sieve
+of Eratosthenes, divisor counting and many number-theory precomputations run in $\Oh{n \log n}$ or better
+(Chapter~\ref{ch:numbertheory}). The reverse, ``for each $x$, try every $d$ and check whether it divides'', costs $n^2$.
+
+\paragraph{Loops over submasks.} Iterating over every submask of every mask of $n$ bits looks like $4^n$ but is $3^n$: each
+of the $n$ bits is in one of three states (in the submask, in the mask only, in neither). For $n = 15$ that is $1.4 \cdot
+10^7$ instead of $10^9$ (Chapter~\ref{ch:dppatterns}).
+
+\begin{tip}
+When a loop's cost is not obvious, instrument it: count the iterations in a global variable on the largest input you can
+generate and print the count. Measuring beats guessing whenever the analysis gets subtle.
+\end{tip}
+
+% ======================================================================================================================
+\section[Amortized analysis]{Amortized analysis \hfill \gold}\label{sec:amortized}
+
+Sometimes a single step is expensive but the steps \emph{together} are cheap. Amortized analysis bounds the total cost of a
+whole sequence of operations instead of multiplying the worst single step by the number of steps.
+
+\subsection{The aggregate method}
+
+Count the total work directly. The standard example is \cc{vector::push_back}. When the vector is full, it allocates twice
+the capacity and copies every element, which costs as much as the current size. Most pushes cost 1, but pushes number 2, 3,
+5, 9, 17, \ldots\ copy $1, 2, 4, 8, 16, \ldots$ elements (Figure~\ref{fig:doubling}). Over $n$ pushes the copies total at
+most $1 + 2 + 4 + \dots < 2n$, so all $n$ pushes cost less than $3n$: $\Oh{1}$ amortized per push.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.32cm, y=0.24cm]
+  \foreach \k in {1,...,32} {
+    \pgfmathtruncatemacro{\km}{\k-1}
+    \pgfmathsetmacro{\cst}{(\k > 1 && (\km == 1 || \km == 2 || \km == 4 || \km == 8 || \km == 16)) ? \k : 1}
+    \pgfmathsetmacro{\isbig}{\cst > 1 ? 1 : 0}
+    \ifdim\isbig pt>0.5pt \fill[fgverm!45, draw=fgverm, line width=0.4pt] (\k-0.9, 0) rectangle (\k-0.1, \cst);
+    \else \fill[fgblue!30, draw=fgblue, line width=0.4pt] (\k-0.9, 0) rectangle (\k-0.1, \cst); \fi
+  }
+  % running average: total cost so far / number of pushes (computed exactly; the total after 32 pushes is 63)
+  \draw[line width=1.3pt, fggreen] plot coordinates {(0.5,1.000) (1.5,1.500) (2.5,2.000) (3.5,1.750) (4.5,2.400)
+    (5.5,2.167) (6.5,2.000) (7.5,1.875) (8.5,2.667) (9.5,2.500) (10.5,2.364) (11.5,2.250) (12.5,2.154) (13.5,2.071)
+    (14.5,2.000) (15.5,1.938) (16.5,2.824) (17.5,2.722) (18.5,2.632) (19.5,2.550) (20.5,2.476) (21.5,2.409) (22.5,2.348)
+    (23.5,2.292) (24.5,2.240) (25.5,2.192) (26.5,2.148) (27.5,2.107) (28.5,2.069) (29.5,2.033) (30.5,2.000) (31.5,1.969)};
+  \draw[line width=0.8pt, fgink, dashed] (0, 3) -- (32, 3) node[right, font=\sffamily\scriptsize] {3};
+  \draw[->, line width=0.6pt, fgink!70] (0, 0) -- (33, 0) node[right, lbl] {push number};
+  \draw[->, line width=0.6pt, fgink!70] (0, 0) -- (0, 19) node[above, lbl] {cost};
+  \foreach \k in {1, 8, 16, 24, 32} \node[lbl, below] at (\k-0.5, 0) {\k};
+  \foreach \v in {5, 10, 15} \node[lbl, left] at (0, \v) {\v};
+  \node[font=\sffamily\scriptsize, text=fgverm, anchor=south] at (16.5, 17.2) {copy 16};
+  \node[font=\sffamily\scriptsize, text=fggreen!80!black, anchor=west] at (20, 5.2) {average cost so far};
+\end{tikzpicture}
+\caption{The cost of 32 \texttt{push\_back} calls with capacity doubling. A few pushes are expensive (red: they copy the
+whole vector), but the average cost per push (green) never exceeds 3.}
+\label{fig:doubling}
+\end{figure}
+
+The same argument explains the two-pointer loop below. The inner \cc{while} can run many times for a single \cc{r}, but
+\cc{l} only ever moves forward and never passes $n$, so over the whole loop the inner body runs at most $n$ times in total.
+The loop is $\Oh{n}$, not $\Oh{n^2}$.
+
+\begin{code}
+for (int l = 0, r = 0; r < n; r++) {
+    add(a[r]);
+    while (bad()) remove(a[l++]);  // l moves at most n times in total
+}
+\end{code}
+
+\subsection{The potential method}
+
+For more complicated structures, define a \defn{potential} $\Phi \ge 0$ that measures ``stored-up work'', and charge each
+operation its real cost plus the change in potential: $\hat c = c + \Phi_{\text{after}} - \Phi_{\text{before}}$. Summed
+over a sequence, the potentials telescope, so the total real cost is at most the total charged cost (as long as $\Phi$
+starts at 0 and never goes negative). The art is choosing $\Phi$ so that every operation's charged cost is small.
+
+For a monotonic stack (Chapter~\ref{ch:prefix}), take $\Phi$ = the number of elements on the stack. A push costs 1 and
+raises $\Phi$ by 1: charged cost 2. Popping $k$ elements costs $k$ and lowers $\Phi$ by $k$: charged cost 0. Every
+operation is charged at most 2, so $n$ operations cost at most $2n$ in total, however the pops are distributed. The same
+method proves the $\Oh{\log n}$ amortized bounds of splay trees, the linear time of the KMP prefix function, and the nearly
+constant time of union--find with path compression.
+
+\begin{pitfall}[Amortized is not worst case]
+An amortized bound holds for the whole sequence, not for each operation. If a problem has multiple test cases and you
+``reset'' a structure by rebuilding it, or if a data structure is persistent and an old expensive state can be revisited
+many times, the amortization can break. Rollback DSU (Chapter~\ref{ch:dsu}) avoids path compression for exactly this reason.
+\end{pitfall}
+
+% ======================================================================================================================
+\section[Recursion]{Recursion: trees and the master theorem \hfill \gold}\label{sec:recursion}
+
+A recursive algorithm that splits a problem of size $n$ into $a$ subproblems of size $n/b$ and does $f(n)$ extra work
+(splitting and combining) takes time
+\[ T(n) = a\,T(n / b) + f(n). \]
+The reliable way to solve such a recurrence is to draw its \defn{recursion tree}: the root is the original call, each node
+has $a$ children, and each node is labelled with its own extra work. Adding up the work level by level gives the total
+(Figure~\ref{fig:mergesort-tree}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[lvl/.style={segn, minimum height=5.5mm}, lab/.style={font=\sffamily\scriptsize, text=fgink, anchor=west}]
+  \node[lvl, minimum width=11.4cm] at (0, 0) {$n$};
+  \foreach \i in {0,1} \node[lvl, minimum width=5.6cm] at (-2.9 + \i*5.8, -0.85) {$n/2$};
+  \foreach \i in {0,...,3} \node[lvl, minimum width=2.7cm] at (-4.35 + \i*2.9, -1.7) {$n/4$};
+  \foreach \i in {0,...,7} \node[lvl, minimum width=1.25cm] at (-5.075 + \i*1.45, -2.55) {$n/8$};
+  \node[font=\small, text=fggray] at (0, -3.2) {$\vdots$};
+  \foreach \i in {0,...,15} \node[seg, minimum width=0.6cm, minimum height=5mm] at (-5.4375 + \i*0.725, -3.85) {\tiny 1};
+  \foreach \y/\t in {0/{$n$}, -0.85/{$2 \cdot \frac n2 = n$}, -1.7/{$4 \cdot \frac n4 = n$}, -2.55/{$8 \cdot \frac n8 = n$},
+      -3.85/{$n \cdot 1 = n$}}
+    \node[lab] at (6.0, \y) {\t};
+  \node[font=\sffamily\scriptsize\bfseries, text=fgink, anchor=west] at (6.0, 0.6) {work per level};
+  \draw[brace] (-6.1, -4.1) -- (-6.1, 0.3) node[midway, left=8pt, font=\sffamily\scriptsize, align=center] {$\log_2 n$\\levels};
+\end{tikzpicture}
+\caption{The recursion tree of merge sort, $T(n) = 2T(n/2) + \Theta(n)$. Every level does $\Theta(n)$ work in total and
+there are $\log_2 n$ levels, so $T(n) = \Theta(n \log n)$.}
+\label{fig:mergesort-tree}
+\end{figure}
+
+Whether the root, the leaves, or all levels together dominate depends on how the work per level changes as you go down
+(Figure~\ref{fig:master}). That gives the three cases of the \defn{master theorem}:
+
+\begin{fact}[Master theorem]
+Let $T(n) = a\,T(n/b) + \Theta(n^c)$ and compare $c$ with the critical exponent $\log_b a$.
+\begin{itemize}
+  \item If $c > \log_b a$, the work shrinks down the tree and the root dominates: $T(n) = \Theta(n^c)$.
+  \item If $c = \log_b a$, every level does the same work: $T(n) = \Theta(n^c \log n)$.
+  \item If $c < \log_b a$, the work grows down the tree and the leaves dominate: $T(n) = \Theta(n^{\log_b a})$.
+\end{itemize}
+\end{fact}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[lvbar/.style={line width=0.4pt, draw=#1, fill=#1!35}]
+  \foreach \panel/\x/\title/\res/\col/\ws in {
+      1/0/{$T(n) = T(n/2) + n$}/{root dominates: $\Theta(n)$}/fgblue/{8,4,2,1,0.5},
+      2/4.9/{$T(n) = 2T(n/2) + n$}/{all equal: $\Theta(n \log n)$}/fggreen/{8,8,8,8,8},
+      3/9.8/{$T(n) = 4T(n/2) + n$}/{leaves dominate: $\Theta(n^2)$}/fgverm/{1,2,4,8,16}} {
+    \begin{scope}[xshift=\x cm]
+      \node[font=\sffamily\scriptsize\bfseries] at (1.8, 0.55) {\title};
+      \foreach \w [count=\lv from 0] in \ws {
+        \pgfmathsetmacro{\len}{\w*0.22}
+        \fill[fill=\col!35, draw=\col, line width=0.4pt] (0, -\lv*0.5) rectangle (\len, -\lv*0.5-0.34);
+        \node[lbl, anchor=east] at (-0.05, -\lv*0.5-0.17) {\lv};
+      }
+      \node[font=\sffamily\scriptsize, text=\col!80!black] at (1.8, -2.75) {\res};
+    \end{scope}
+  }
+  \node[lbl, anchor=east] at (-0.4, 0.1) {level};
+  \node[lbl] at (6.7, -3.25) {bar length = total work on that level};
+\end{tikzpicture}
+\caption{Work per level of the recursion tree in the three cases of the master theorem. Geometric decrease means the top
+level dominates; a constant means $\log n$ equal levels; geometric increase means the leaves dominate.}
+\label{fig:master}
+\end{figure}
+
+Some recurrences do not fit the theorem but are easy with a tree anyway. Linear recursion $T(n) = T(n-1) + \Theta(n)$ (a
+quicksort that always picks the worst pivot, or selection sort) has $n$ levels with $n, n-1, \dots$ work: $\Theta(n^2)$.
+$T(n) = 2T(n-1) + 1$ doubles the number of calls per level: $\Theta(2^n)$, which is why naive recursive Fibonacci is
+hopeless. Memoised recursion is analysed differently: its cost is (number of distinct states) $\times$ (work per state),
+the same as the equivalent DP (Chapter~\ref{ch:dp}).
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{Lll}
+\toprule
+\thd{Algorithm} & \thd{Recurrence} & \thd{Solution} \\
+\midrule
+binary search & $T(n) = T(n/2) + \Theta(1)$ & $\Theta(\log n)$ \\
+merge sort, divide-and-conquer DP & $T(n) = 2T(n/2) + \Theta(n)$ & $\Theta(n \log n)$ \\
+building a segment tree bottom-up & $T(n) = 2T(n/2) + \Theta(1)$ & $\Theta(n)$ \\
+Karatsuba multiplication & $T(n) = 3T(n/2) + \Theta(n)$ & $\Theta(n^{\log_2 3}) \approx \Theta(n^{1.585})$ \\
+Strassen matrix multiplication & $T(n) = 7T(n/2) + \Theta(n^2)$ & $\Theta(n^{\log_2 7}) \approx \Theta(n^{2.81})$ \\
+CDQ divide and conquer with a Fenwick tree & $T(n) = 2T(n/2) + \Theta(n \log n)$ & $\Theta(n \log^2 n)$ \\
+naive recursive Fibonacci & $T(n) = T(n-1) + T(n-2) + \Theta(1)$ & $\Theta(\varphi^n)$, $\varphi \approx 1.618$ \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+% ======================================================================================================================
+\section[Memory]{Memory \hfill \bronze}\label{sec:memory}
+
+Memory limits are checked as strictly as time limits, and running out gives \emph{memory limit exceeded} or a runtime error.
+Budgeting memory is simple multiplication once you know the sizes.
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{lrL}
+\toprule
+\thd{Type} & \thd{Bytes} & \thd{How many fit in 256\,MB} \\
+\midrule
+\texttt{char}, \texttt{bool} & 1 & $2.6\cdot 10^8$ (a \texttt{vector<bool>} or \texttt{bitset} stores 8 per byte) \\
+\texttt{int32\_t}, \texttt{float} & 4 & $6.7\cdot 10^7$ \\
+\texttt{long long}, \texttt{double} & 8 & $3.3\cdot 10^7$ \\
+\texttt{pair<ll, ll>}, \texttt{array<ll, 2>} & 16 & $1.6\cdot 10^7$ \\
+\texttt{vector} header (empty vector) & 24 & plus the heap block it owns \\
+\texttt{set} / \texttt{map} node & about 40--48 & about $5\cdot 10^6$ elements \\
+\texttt{unordered\_map} entry & about 40--64 & fewer than a \texttt{map}; plus the bucket array \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{pitfall}[Your template doubles every int]
+With \cc{#define int long long}, a \cc{vector<int>} of $10^7$ elements takes 80\,MB instead of 40\,MB, and a DP table of
+$5000 \times 5000$ ints takes 200\,MB. For big arrays that only hold small values, write \cc{int32_t} or \cc{char}
+explicitly; the macro does not touch them.
+\end{pitfall}
+
+Two memory traps have nothing to do with element sizes. The first is \emph{many small vectors}: a
+\cc{vector<vector<int>>} with $10^6$ rows spends 24 bytes per row on headers alone, plus a separate heap allocation (with
+its own overhead of 16 bytes or more) for every non-empty row, and its rows are scattered across memory, which also makes
+it slow (Figure~\ref{fig:vecvec}). When the rows are fixed after reading the input, a flat array with offsets (compressed
+sparse rows) uses a fraction of the memory and is several times faster to scan.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[hdr/.style={draw=fgblue, fill=fgfill, line width=0.6pt, minimum width=1.9cm, minimum height=5.5mm,
+    font=\sffamily\scriptsize, inner sep=1pt}, blk/.style={draw=fgverm, fill=fgverm!15, line width=0.6pt, minimum height=5.5mm,
+    font=\ttfamily\scriptsize, inner sep=1pt}]
+  \node[font=\small\bfseries, anchor=west] at (-1.0, 0.7) {\texttt{vector<vector<int>{}>}};
+  \foreach \i in {0,1,2} \node[hdr] (h\i) at (0, -\i*0.62) {ptr, size, cap};
+  \node[blk, minimum width=2.1cm] (b0) at (4.6, 0.3) {3 1 4};
+  \node[blk, minimum width=1.4cm] (b1) at (6.2, -0.62) {1 5};
+  \node[blk, minimum width=2.8cm] (b2) at (3.9, -1.55) {9 2 6 5};
+  \draw[->, line width=0.7pt, fgink!70] (h0.east) -- (b0.west);
+  \draw[->, line width=0.7pt, fgink!70] (h1.east) -- (b1.west);
+  \draw[->, line width=0.7pt, fgink!70] (h2.east) -- (b2.west);
+  \node[lbl, text width=4.8cm, align=left, anchor=north west] at (-1.0, -2.25) {24-byte header per row, one heap block per
+    row (scattered), allocator overhead on each block};
+  \begin{scope}[xshift=9.0cm]
+    \node[font=\sffamily\small\bfseries, anchor=west] at (-0.5, 0.7) {flat array + offsets};
+    \arr{F}{-0.5}{0}{3,1,4,1,5,9,2,6,5}
+    \arr{O}{-0.5}{-1.15}{0,3,5,9}
+    \node[lbl, anchor=east] at (-0.6, 0) {data};
+    \node[lbl, anchor=east] at (-0.6, -1.15) {start};
+    \node[lbl, text width=5.4cm, align=left, anchor=north west] at (-0.5, -1.85) {row $i$ is
+      \texttt{data[start[i] .. start[i+1])}: one allocation, contiguous, cache friendly};
+  \end{scope}
+\end{tikzpicture}
+\caption{The same three rows stored two ways. A vector of vectors pays a header and an allocation per row and scatters the
+rows; a flat array with offsets stores only the data and one integer per row.}
+\label{fig:vecvec}
+\end{figure}
+
+The second trap is the \emph{stack}. Local arrays and recursion live on the call stack, which on many judges is limited to
+8\,MB or less, though Codeforces and your local setup use 256\,MB. A recursive DFS on a path of $10^6$ vertices needs a
+million stack frames; with 50--100 bytes per frame it fits in 256\,MB but not in 8\,MB. Big arrays belong in global
+variables or vectors, never in local arrays; deep recursion should become an explicit stack when the judge is unknown.
+
+% ======================================================================================================================
+\section[How fast is an operation, really?]{How fast is an operation, really? \hfill \gold}\label{sec:measured}
+
+``$10^8$ operations per second'' is an average over very different operations. Table~\ref{tab:measured} was measured on
+a 2026 laptop with GCC 15 and \texttt{-O2}, the same flags as most judges; judges differ from it by a factor of about two in
+either direction, but the \emph{ratios} are what matter, and they are stable across machines.
+
+\begin{table}[htbp]
+\centering
+\caption{Measured cost of common operations (GCC 15, \texttt{-O2}, averaged over $10^6$ to $10^9$ repetitions).}
+\label{tab:measured}
+\small
+\begin{tabularx}{\linewidth}{Lrr}
+\toprule
+\thd{Operation} & \thd{Time per operation} & \thd{Operations per second} \\
+\midrule
+reading an array sequentially (the compiler vectorizes the loop) & 0.1 ns & $10^{10}$ \\
+dependent add / xor / shift in a loop & 0.6 ns & $1.6 \cdot 10^9$ \\
+\texttt{vector::push\_back} (amortized) & 1.5 ns & $6.6 \cdot 10^8$ \\
+\texttt{x = x * c \% MOD} with 64-bit numbers & 2.9 ns & $3.4 \cdot 10^8$ \\
+\texttt{std::sort} of $10^6$ ints, per element & 43 ns & $2.3 \cdot 10^7$ \\
+\texttt{priority\_queue} push + pop, per element & 60 ns & $1.7 \cdot 10^7$ \\
+reading one integer with \texttt{cin} (sync off) & 80 ns & $1.2 \cdot 10^7$ \\
+random access into a 64\,MB array (cache miss) & 88 ns & $1.1 \cdot 10^7$ \\
+\texttt{unordered\_map::operator[]}, with / without \texttt{reserve} & 135 / 215 ns & $5$--$7 \cdot 10^6$ \\
+\texttt{set::insert}, \texttt{map::operator[]} & 400--440 ns & $2.4 \cdot 10^6$ \\
+\texttt{set::count} on a set of $10^6$ random keys & 470--500 ns & $2 \cdot 10^6$ \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Four lessons stand out. \textbf{Memory access patterns dominate}: a random access into a large array costs as much as a
+hundred additions, because it misses the cache and waits for main memory. Scanning arrays in order is nearly free.
+\textbf{Balanced trees are slow}: every \cc{set} or \cc{map} operation is a chain of dependent cache misses down a tree, so
+$10^6$ operations take almost half a second; a sorted \cc{vector} with \cc{lower_bound}, or an array indexed by compressed
+values, is often ten times faster. \textbf{Division is expensive} relative to addition: reduce modulo only when needed.
+\textbf{I/O is not free}: reading $10^6$ numbers takes 0.08\,s even with fast settings, and many times more without them.
+
+% ======================================================================================================================
+\section[Constant factors that matter]{Constant factors that matter \hfill \gold}\label{sec:constants}
+
+Two $\Oh{n \log n}$ solutions can differ by a factor of twenty in running time, and near the limit that factor decides
+between accepted and \emph{time limit exceeded}. The usual culprits, in order of how often they matter:
+
+\begin{itemize}
+  \item \textbf{Slow I/O.} Without \cc{ios::sync_with_stdio(false)} and \cc{cin.tie(nullptr)}, reading $10^6$ numbers can
+        take a second; \cc{endl} flushes the output buffer on every line. Your template sets up the fast mode; print
+        \cc|'\n'|, never \cc{endl}, in loops.
+  \item \textbf{Node-based containers.} Replace \cc{set}/\cc{map} by sorted vectors, prefix sums or arrays over
+        compressed values whenever the data does not change after it is built.
+  \item \textbf{Cache-hostile loops.} Traverse two-dimensional arrays row by row, never column by column. In matrix
+        multiplication, the loop order $i, k, j$ is several times faster than $i, j, k$.
+  \item \textbf{Needless modulo.} Add, then subtract \cc{MOD} if the sum reached it; accumulate several products in a
+        64-bit variable and reduce once.
+  \item \textbf{Copies.} Passing a \cc{vector} or \cc{string} by value copies it on every call; pass \cc{const&}.
+  \item \textbf{Hidden allocation.} Creating a \cc{vector} inside a hot loop allocates every time; hoist it out and
+        \cc{clear()} it.
+\end{itemize}
+
+\begin{pitfall}[Hidden linear costs]
+These look like single operations but cost $\Oh{n}$ each: \cc{s = s + c} on a string (use \cc{s += c}),
+\cc{v.erase(v.begin())} and \cc{v.insert(v.begin(), x)}, \cc{std::distance} or \cc{std::next} on a \cc{set} iterator,
+\cc{count} or \cc{find} on a \cc{vector}, \cc{memset} of a whole array in every test case, \cc{s.substr(...)} inside a loop,
+and \cc{mp[key]}, which \emph{inserts} a default element when the key is missing and slowly fills the map.
+\end{pitfall}
+
+\begin{trick}[Bitsets divide by 64]
+A \cc{bitset<N>} stores bits in 64-bit words, and \cc{&}, \cc{|}, \cc{^}, shifts and \cc{count()} process 64 bits per
+instruction. Any computation that is ``OR of shifted boolean arrays'' becomes 64 times faster: subset sum up to $10^5$ over
+$10^4$ items needs $10^9/64 \approx 1.6\cdot10^7$ word operations. Reachability in a DAG, triangle detection and
+longest common subsequence have bitset versions too (Chapter~\ref{ch:special}).
+\end{trick}
+
+% ======================================================================================================================
+\section[Estimating before coding]{Estimating before coding: a worked example \hfill \silver}\label{sec:estimate}
+
+Suppose a problem has $n = 2 \cdot 10^5$ elements and $q = 2 \cdot 10^5$ queries, and you have three ideas.
+
+\begin{enumerate}
+  \item \textbf{Answer each query by scanning the array}: $nq = 4 \cdot 10^{10}$. Rejected immediately, without coding.
+  \item \textbf{Mo's algorithm with a \cc{map} inside}: $(n + q)\sqrt n$ pointer moves, each doing a \cc{map} operation:
+        $4\cdot10^5 \cdot 450 \approx 1.8\cdot 10^8$ moves at 400\,ns each is 72 seconds. Rejected: the complexity was
+        fine but the constant is not (Section~\ref{sec:measured}). With an array instead of the \cc{map}, each move costs
+        a few nanoseconds and the same idea runs in under a second.
+  \item \textbf{Offline sweep with a Fenwick tree}: $(n + q)\log n \approx 4\cdot10^5 \cdot 18 = 7\cdot10^6$ simple
+        operations. Clearly fast; code this one.
+\end{enumerate}
+
+Doing this arithmetic takes a minute and saves you from implementing the wrong idea. Notice that idea 2 was rejected for
+its constant, not its class: once you know the measured cost of your operations, ``fast enough'' is a calculation.
+
+\begin{summary}[Chapter summary]
+\begin{itemize}
+  \item Budget about $10^8$ simple operations per second; count the operations of your idea with the real limits.
+  \item Read the intended complexity from the limits (Table~\ref{tab:constraints}); the smallest limit is often the hint.
+  \item Harmonic sums, halving loops, submask loops and amortized arguments are cheaper than they look.
+  \item Solve recurrences with a recursion tree; the master theorem compares $c$ with $\log_b a$.
+  \item Memory is multiplication: know your type sizes, beware vectors of vectors and the stack.
+  \item Constants matter near the limit: cache misses, tree containers, modulo and I/O cost far more than an addition.
+\end{itemize}
+\end{summary}
+
+\begin{practice}
+\ppgroup{Estimate, then code}
+\begin{pplist}
+  \item Weird Algorithm
+  \item Distinct Numbers
+  \item Sum of Two Values
+  \item Josephus Problem I
+  \item Concert Tickets
+  \item Reading Books
+\end{pplist}
+\ppgroup{Harmonic sums and square roots}
+\begin{pplist}
+  \item Counting Divisors
+  \item Common Divisors
+  \item Sum of Divisors
+  \item Prime Multiples
+\end{pplist}
+\end{practice}

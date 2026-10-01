@@ -1,0 +1,1046 @@
+\chapter{Tree Decompositions}\label{ch:treedecomp}
+
+The techniques of the previous chapter answer questions about one root path, one subtree or one fixed root. Harder questions
+need the tree cut into pieces with a logarithmic guarantee. Paths between arbitrary vertices under updates call for heavy-light
+decomposition; problems about \emph{all} paths of a tree at once call for centroid decomposition; statistics of every subtree
+can be gathered in one shared table with DSU on tree, or in linear time with long-path decomposition; many small queries shrink
+to virtual trees; and trees that change shape are kept as Euler tour trees or link-cut trees. Most figures use the same running
+example, so the decompositions can be compared directly.
+
+\begin{chapterintro}{\plat\ \ioi}{Chapter~\ref{ch:trees} (Euler tours, LCA, small-to-large) and Chapter~\ref{ch:segtree}
+(segment trees).}
+  \item split a tree into heavy paths and answer path queries with updates in $\Oh{\log^2 n}$;
+  \item decompose a tree by centroids and solve problems about all of its paths, offline and online;
+  \item gather subtree statistics in one shared table (DSU on tree), and depth-indexed DP in linear time (long-path
+        decomposition);
+  \item compress a tree to a few key vertices (virtual trees);
+  \item keep a forest under link and cut (Euler tour trees), and know what link-cut trees and top trees add.
+\end{chapterintro}
+
+% the running example: 13 vertices rooted at 0
+\newcommand{\rexcoords}{%
+  \foreach \nm/\px/\py in {0/3.0/0, 1/1.2/-1.1, 2/4.4/-1.1, 3/6.0/-1.1, 4/0.6/-2.2, 5/1.8/-2.2, 6/4.4/-2.2, 7/0.0/-3.3,
+      8/1.2/-3.3, 9/3.8/-3.3, 10/5.0/-3.3, 11/0.0/-4.4, 12/5.0/-4.4}
+    \coordinate (R\nm) at (\px, \py);}
+\newcommand{\rexedges}{(R0) -- (R1) -- (R4) -- (R7) -- (R11) (R2) -- (R6) -- (R10) -- (R12) (R0) -- (R2) (R0) -- (R3)
+  (R1) -- (R5) (R4) -- (R8) (R6) -- (R9)}
+
+% ======================================================================================================================
+\section[Heavy-light decomposition]{Heavy-light decomposition \hfill \plat}\label{sec:hld}
+
+Consider Path Queries~II: vertex values change, and a query asks for the maximum on the path between two arbitrary vertices. The
+Euler tour of Section~\ref{sec:eulertour} handles subtrees and sums along root paths, but a maximum cannot be ``subtracted'', and a
+path between two arbitrary vertices is not a prefix of anything. \defn{Heavy-light decomposition} (HLD) cuts the tree into
+vertical paths such that every path of the tree uses only a few of them, and lays each vertical path out contiguously in an
+array. A segment tree over that array then answers each piece with one range query.
+
+\paragraph{Heavy and light edges.} For every vertex with children, the \defn{heavy child} is a child with the largest subtree
+(ties broken arbitrarily); the edge to it is \emph{heavy}, and the edges to all other children are \emph{light}. Every vertex has at
+most one heavy child edge, so the heavy edges form disjoint vertical paths, the \defn{heavy paths} or \emph{chains}. Every vertex
+lies on exactly one chain, and the top vertex of its chain is its \emph{head}; a vertex whose parent edge is light starts a new
+chain (Figure~\ref{fig:hld}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{pl/.style={font=\sffamily\scriptsize\bfseries, text=fgblue, inner sep=1.5pt}}
+  \rexcoords
+  \draw[hed] (R0) -- (R1) -- (R4) -- (R7) -- (R11);
+  \draw[bed] (R2) -- (R6) -- (R10) -- (R12);
+  \draw[xed] (R0) -- (R2) (R0) -- (R3) (R1) -- (R5) (R4) -- (R8) (R6) -- (R9);
+  \foreach \nm/\sy/\ps/\an in {0/hot/0/above, 1/hot/1/left, 4/hot/2/left, 7/hot/3/left, 11/hot/4/left, 8/n/5/right,
+      5/n/6/right, 3/n/7/right, 2/cool/8/right, 6/cool/9/right, 10/cool/10/right, 12/cool/11/right, 9/n/12/left}
+    \node[vtx, \sy, label={[pl]\an:\ps}] (V\nm) at (R\nm) {\nm};
+  \draw[hed] (7.0, -0.55) -- ++(0.55, 0); \node[lbl, anchor=west] at (7.65, -0.55) {heavy edge};
+  \draw[xed] (7.0, -0.95) -- ++(0.55, 0); \node[lbl, anchor=west] at (7.65, -0.95) {light edge};
+  \node[pl] at (7.27, -1.35) {7}; \node[lbl, anchor=west] at (7.65, -1.35) {position of the vertex};
+  \legendat{(7.27, -1.8)}{hot/chain with head 0, cool/chain with head 2, n/one-vertex chains}
+  \node[blbl, anchor=east] at (-0.2, -5.75) {vertex};
+  \arrs{H}{0}{-5.75}{0/hot, 1/hot, 4/hot, 7/hot, 11/hot, 8/n, 5/n, 3/n, 2/cool, 6/cool, 10/cool, 12/cool, 9/n}
+  \idx{H}{13}
+  \node[lbl, anchor=east] at (-0.2, -6.28) {position};
+  \draw[mbrace] ($(H-2.south west)+(0, -0.45)$) -- node[below=6pt, lbl] {subtree of 1: positions $[1, 7)$}
+    ($(H-7.south east)+(0, -0.45)$);
+  \draw[mbrace] ($(H-9.south west)+(0, -0.45)$) -- node[below=6pt, lbl] {subtree of 2: $[8, 13)$}
+    ($(H-13.south east)+(0, -0.45)$);
+\end{tikzpicture}
+\caption{Heavy-light decomposition of the running example. Heavy edges form the chains 0--1--4--7--11 and 2--6--10--12; every
+other vertex is a chain by itself. Numbering each chain from its head, and only then the light subtrees hanging from it, deepest
+first, makes every chain \emph{and} every subtree a contiguous block of positions.}
+\label{fig:hld}
+\end{figure}
+
+\begin{fact}
+On the path from any vertex to the root there are at most $\log_2 n$ light edges. If $p \to v$ is a light edge, the heavy child
+$h$ of $p$ has $\mathit{sub}(h) \ge \mathit{sub}(v)$, so $\mathit{sub}(p) \ge 1 + \mathit{sub}(v) + \mathit{sub}(h) > 2\,
+\mathit{sub}(v)$: every light edge on the way up more than doubles the subtree size, which never exceeds $n$
+(Figure~\ref{fig:hldlight}).
+\end{fact}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[vtx] (p) at (0, 0) {$p$};
+  \node[vtx, cool] (v) at (-1.5, -1.2) {$v$};
+  \node[vtx, hot] (h) at (1.5, -1.2) {$h$};
+  \draw[ed, dashed] (p) -- ++(0, 0.8);
+  \draw[xed] (p) -- (v);
+  \draw[hed] (p) -- (h);
+  \draw[draw=fgblue, fill=fgsky!18, line width=0.6pt] (v.south) -- ++(-0.55, -1.0) -- ++(1.1, 0) -- cycle;
+  \draw[draw=fgverm, fill=fgverm!10, line width=0.6pt] (h.south) -- ++(-0.8, -1.5) -- ++(1.6, 0) -- cycle;
+  \node[font=\sffamily\scriptsize, text=fgblue] at (-1.5, -2.85) {$\mathit{sub}(v) = s$};
+  \node[font=\sffamily\scriptsize, text=fgverm] at (1.5, -3.35) {$\mathit{sub}(h) \ge s$};
+  \node[font=\sffamily\scriptsize, anchor=west] at (0.3, 0.3) {$\mathit{sub}(p) \ge 2s + 1$};
+  \begin{scope}[xshift=5.4cm]
+    \foreach \nm/\py in {r/0.3, u4/-0.45, u3/-1.2, u2/-1.95, u1/-2.7, x/-3.45}
+      \node[vtxs] (\nm) at (0, \py) {};
+    \node[font=\sffamily\scriptsize] at (x) {$x$};
+    \draw[hed] (r) -- (u4) (u2) -- (u1);
+    \draw[xed] (u4) -- (u3) (u3) -- (u2) (u1) -- (x);
+    \node[lbl, anchor=west] at (x.east) {$\mathit{sub} = 1$};
+    \node[lbl, anchor=west] at (u1.east) {$\ge 3$};
+    \node[lbl, anchor=west] at (u3.east) {$\ge 7$};
+    \node[lbl, anchor=west] at (u4.east) {$\ge 15$};
+    \node[lbl, anchor=west] at (r.east) {root};
+    \node[notel, anchor=west, text width=4.3cm] at (1.5, -1.6) {Climbing from $x$, every light edge (dashed) more than
+      doubles the subtree size; heavy edges never shrink it. A root path therefore has at most $\log_2 n$ light edges.};
+  \end{scope}
+\end{tikzpicture}
+\caption{The light-edge lemma behind every $\log n$ bound of this section.}
+\label{fig:hldlight}
+\end{figure}
+
+So a root path touches at most $\log_2 n + 1$ chains, and the path between $u$ and $v$, which lies inside the union of the two
+root paths, is cut into at most $2\log_2 n + 2$ \emph{chain pieces}.
+
+\paragraph{Positions.} Number the vertices so that every chain is a contiguous block that starts at its head: walk a chain from
+its head, numbering as you go, and push the light children met on the way onto a stack, to be numbered later. Because the light
+subtrees are taken from the stack deepest first, the numbering is also a DFS preorder, so the subtree of $v$ is the block
+$[\mathit{pos}(v), \mathit{pos}(v) + \mathit{sub}(v))$ exactly as with the Euler tour (Figure~\ref{fig:hld}). One array, one
+segment tree, serves both path queries and subtree queries.
+
+\paragraph{Answering a path query.} While $a$ and $b$ lie on different chains, look at the one whose chain head is
+\emph{deeper}, say $b$: its chain piece from $\mathit{head}(b)$ down to $b$ is the position range $[\mathit{pos}(\mathit{head}(b)),
+\mathit{pos}(b)]$, so query it and move $b$ to the parent of its head. Once both are on one chain, the piece between them is a
+single range (Figure~\ref{fig:hldpath}). Moving the vertex with the deeper head never passes the LCA: if the LCA were on $b$'s
+chain at or below $\mathit{head}(b)$, then $a$, a descendant of it on another chain, would have a head strictly deeper than
+$\mathit{head}(b)$. Every move crosses a light edge, so there are $\Oh{\log n}$ pieces, and with a segment tree a query costs
+$\Oh{\log^2 n}$ and an update $\Oh{\log n}$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{pc/.style={circle, draw=fgverm, fill=white, line width=0.8pt, inner sep=1pt, minimum size=4.2mm,
+    font=\sffamily\scriptsize\bfseries, text=fgverm}}
+  \rexcoords
+  \draw[line width=5pt, draw=fggreen, opacity=0.3] (R11) -- (R7) -- (R4) -- (R1) -- (R0) -- (R2) -- (R6) -- (R9);
+  \draw[ed] \rexedges;
+  \foreach \nm/\sy in {0/n, 1/n, 2/n, 3/n, 4/n, 5/n, 6/n, 7/n, 8/n, 9/good, 10/n, 11/good, 12/n}
+    \node[vtx, \sy] at (R\nm) {\nm};
+  \node[pc] at ($(R9)+(-0.6, -0.3)$) {1};
+  \node[pc] at ($(R2)!0.5!(R6)+(-0.42, 0)$) {2};
+  \node[pc] at ($(R1)!0.5!(R4)+(-0.5, 0.05)$) {3};
+  \node[notel, anchor=north west, text width=5.6cm] at (6.9, 0.2) {\textbf{The query 11--9.}\\[3pt]
+    \textcolor{fgverm}{\textbf{1}}\quad The heads are 0 and 9; the head of 9 is deeper, so take the range $[12, 13)$ and move
+    to $\mathit{parent}(9) = 6$.\\[2pt]
+    \textcolor{fgverm}{\textbf{2}}\quad The heads are 0 and 2; the head of 6 is deeper, so take $[8, 10)$ and move to
+    $\mathit{parent}(2) = 0$.\\[2pt]
+    \textcolor{fgverm}{\textbf{3}}\quad Now 0 and 11 share a chain: take $[0, 5)$.};
+  \node[blbl, anchor=east] at (-0.2, -5.75) {vertex};
+  \arrs{H}{0}{-5.75}{0/good, 1/good, 4/good, 7/good, 11/good, 8/n, 5/n, 3/n, 2/good, 6/good, 10/n, 12/n, 9/good}
+  \idx{H}{13}
+  \cellframe{H-1}{H-5}{fgverm}
+  \cellframe{H-9}{H-10}{fgverm}
+  \cellframe{H-13}{H-13}{fgverm}
+  \node[pc] at ($(H-3.north)+(0, 0.4)$) {3};
+  \node[pc] at ($(H-9.north east)+(0, 0.4)$) {2};
+  \node[pc] at ($(H-13.north)+(0, 0.4)$) {1};
+\end{tikzpicture}
+\caption{A path query on the running example. The path from 11 to 9 (green) is cut into three chain pieces, which are three
+ranges of positions (framed); each costs one segment-tree query.}
+\label{fig:hldpath}
+\end{figure}
+
+\begin{problem}{Path Queries II (CSES)}
+A tree has a value at every vertex. Process $q$ operations: set the value of a vertex, or report the maximum value on the path
+between two vertices ($n, q \le 2 \cdot 10^5$).
+\solution HLD positions, and a bottom-up max segment tree over them. The program below runs in 0.25\,s on a path and 0.21\,s on a
+random tree with $n = q = 2 \cdot 10^5$ (\cc{g++ -O2}).
+\end{problem}
+
+\begin{code}
+void solve() {  // HLD (cphld) is pasted above solve()
+    int n, q;
+    cin >> n >> q;
+    vi val(n);
+    for (ll& x : val) cin >> x;
+    vvi adj(n);
+    rep(i, n - 1) {
+        int a, b;
+        cin >> a >> b;
+        a--, b--;
+        adj[a].push_back(b);
+        adj[b].push_back(a);
+    }
+    HLD h(adj);
+    // a bottom-up max segment tree over the HLD positions
+    vi t(2 * n);
+    rep(v, n) t[n + h.pos[v]] = val[v];
+    per(i, 1, n) t[i] = max(t[2 * i], t[2 * i + 1]);
+    auto query = [&](int l, int r) {  // max over positions [l, r)
+        ll res = LLONG_MIN;
+        for (l += n, r += n; l < r; l >>= 1, r >>= 1) {
+            if (l & 1) chmax(res, t[l++]);
+            if (r & 1) chmax(res, t[--r]);
+        }
+        return res;
+    };
+    while (q--) {
+        int type, a, b;
+        cin >> type >> a >> b;
+        if (type == 1) {  // the value of vertex a becomes b
+            int i = n + h.pos[a - 1];
+            for (t[i] = b; i > 1; i >>= 1) t[i >> 1] = max(t[i], t[i ^ 1]);
+        } else {  // O(log n) chain pieces, one range query each
+            ll best = LLONG_MIN;
+            h.for_path(a - 1, b - 1,
+                       [&](int l, int r) { chmax(best, query(l, r)); });
+            print(best);
+        }
+    }
+}
+\end{code}
+
+\usetemplate{Heavy-light decomposition}{Ctrl+Alt+Y, H}{cphld}
+
+The template's \cc{for_path(a, b, f)} calls \cc{f(l, r)} once for every piece, as a half-open range of positions, so any
+segment tree plugs in: sums, minima, a lazy tree with range assignment. It also offers \cc{lca(a, b)}, which runs the same loop
+without the queries and is one of the fastest LCA methods in practice: $\Oh{\log n}$ per query, $\Oh{n}$ memory, and on most
+trees only a few iterations, one per chain switch.
+
+\begin{pitfall}[Values on edges]
+When the values live on edges, store each edge's value at its deeper endpoint. A path query must then skip the LCA, whose stored
+value belongs to the edge above it: in the last piece, use $[\mathit{pos}(\mathrm{lca}) + 1, \mathit{pos}(v)]$. The template marks
+the line to change. Forgetting it gives answers that are wrong only when the edge above the LCA is the extreme one, which random
+tests rarely catch.
+\end{pitfall}
+
+\begin{trick}[Subtrees and paths in one structure]
+Because HLD positions are also a preorder, ``add $x$ to every value in the subtree of $v$'' is a range update on
+$[\mathit{pos}(v), \mathit{pos}(v) + \mathit{sub}(v))$, while ``sum on the path $u$--$v$'' is the usual $\Oh{\log n}$ ranges. One
+lazy segment tree handles both kinds of operations, which neither the Euler tour alone nor binary lifting can do.
+\end{trick}
+
+\begin{recognize}
+``Update a vertex or edge; query a sum, minimum or maximum on the path between two vertices'', or range updates on paths. For
+path queries without updates, binary lifting or prefix sums along the Euler tour are simpler; HLD earns its place where paths
+\emph{and} updates meet. With $n = q = 2 \cdot 10^5$ the $\Oh{\log^2 n}$ bound is far from tight: most paths cross only a few
+light edges.
+\end{recognize}
+
+% ======================================================================================================================
+\section[Centroid decomposition]{Centroid decomposition \hfill \plat}\label{sec:centroid}
+
+Some problems ask about \emph{all} paths of a tree: how many have exactly $k$ edges, how many have weight at most $W$, which has
+the largest XOR. There are $\Theta(n^2)$ paths, but a divide-and-conquer handles them in bulk: pick a vertex $c$, deal with all
+paths through $c$, delete $c$, and recurse into the pieces that remain. Every path is handled exactly once, at the first of its
+vertices to be picked. Picking a \emph{centroid} each time keeps the recursion $\Oh{\log n}$ deep.
+
+\paragraph{Centroids.} A \defn{centroid} of a tree with $n$ vertices is a vertex whose removal leaves components of at most $n/2$
+vertices each. One always exists, and a walk finds it: root the tree anywhere and, while some child of the current vertex has a
+subtree of more than $n/2$ vertices, step into that child. After a step into $c$, the component above $c$ has $n -
+\mathit{sub}(c) < n/2$ vertices, so only children can be too big; subtree sizes decrease, so the walk stops, at a centroid. A tree
+has one centroid or two adjacent ones.
+
+\paragraph{The decomposition.} Find a centroid $c$, process the paths through $c$, delete $c$, and recurse into every remaining
+component. Each component has at most half the vertices of the one it came from, so the recursion is at most $\lfloor \log_2 n
+\rfloor + 1$ levels deep, and each vertex belongs to one component per level. If the work at each component is linear in its
+size, the total is $\Oh{n \log n}$. Linking every centroid below the centroid whose deletion created its component gives the
+\defn{centroid tree} (Figure~\ref{fig:centroid}).
+
+\begin{figure}[htbp]
+\centering
+\begin{minipage}[c]{6.9cm}\centering
+\begin{tikzpicture}
+  \rexcoords
+  \draw[ed] \rexedges;
+  \foreach \nm/\sy in {0/hot, 3/warn, 4/warn, 6/warn, 1/cool, 2/cool, 7/cool, 8/cool, 9/cool, 10/cool, 5/n, 11/n, 12/n}
+    \node[vtx, \sy] at (R\nm) {\nm};
+  \foreach \sy/\tx [count=\ci] in {hot/level 0, warn/level 1, cool/level 2, n/level 3} {
+    \node[draw, \sy, minimum size=2.6mm, inner sep=0pt] (lg\ci) at ({1.6*(\ci - 1)}, -5.25) {};
+    \node[lbl, anchor=west] at ($(lg\ci.east)+(0.08, 0)$) {\tx};
+  }
+\end{tikzpicture}
+\end{minipage}
+\hspace{4mm}
+\begin{minipage}[c]{6cm}\centering
+\begin{forest}
+  cptree, for tree={s sep=3mm, l sep=7mm}
+  [0, hot [4, warn [1, cool [5]] [7, cool [11]] [8, cool]] [6, warn [2, cool] [9, cool] [10, cool [12]]] [3, warn]]
+\end{forest}
+\end{minipage}
+\caption{Centroid decomposition of the running example. Removing the centroid 0 leaves parts of 6, 5 and 1 vertices, at most
+$13/2$ each; their centroids 4, 6 and 3 form level 1, and so on. Right: the centroid tree, of depth $3 \le \log_2 13$. The path
+from 11 to 9 contains exactly one vertex of the lowest level, 0, which is the LCA of 11 and 9 in the centroid tree.}
+\label{fig:centroid}
+\end{figure}
+
+\begin{idea}
+For any two vertices $u$ and $v$, the path between them contains exactly one vertex of minimum level: their LCA $c$ in the
+centroid tree. Until $c$ is deleted, $u$ and $v$ stay in one component, and $c$ is the first vertex of the path to be deleted.
+Hence the ``paths through $c$ inside $c$'s component'' partition all paths, and $\mathrm{dist}(u, v) = \mathrm{dist}(u, c) +
+\mathrm{dist}(c, v)$.
+\end{idea}
+
+\begin{problem}{Fixed-Length Paths I (CSES)}
+Count the paths with exactly $k$ edges in a tree of $n \le 2 \cdot 10^5$ vertices.
+\solution At a centroid $c$, a path through $c$ joins two vertices in different branches of $c$ (or $c$ itself) whose depths below
+$c$ add up to $k$. Keep $\mathit{cnt}[d]$, the number of vertices at depth $d$ found so far, starting with $c$ itself at depth
+0. Visit the branches one by one: first add $\mathit{cnt}[k - d]$ for every depth $d$ of the branch, which pairs it only with
+earlier branches, then add the branch's own depths to $\mathit{cnt}$ (Figure~\ref{fig:fixedlen}).
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{minipage}[c]{4.1cm}\centering
+\begin{tikzpicture}
+  \node[vtx, hot] (c) at (1.4, 0) {$c$};
+  \foreach \nm/\px/\py/\sy/\dv in {a/0/-1.0/cool/1, a1/-0.5/-2.0/cool/2, a2/0.5/-2.0/cool/2, b/1.4/-1.0/warn/1,
+      b1/1.4/-2.0/warn/2, d/2.8/-1.0/pur/1, d1/2.8/-2.0/pur/2, d2/2.8/-3.0/pur/3}
+    \node[vtx, \sy] (\nm) at (\px, \py) {\dv};
+  \draw[ed] (c) -- (a) (a) -- (a1) (a) -- (a2) (c) -- (b) (b) -- (b1) (c) -- (d) (d) -- (d1) (d1) -- (d2);
+  \foreach \tx/\px in {A/0, B/1.4, C/2.8} \node[blbl] at (\px, -3.65) {\tx};
+\end{tikzpicture}
+\end{minipage}
+\hspace{4mm}
+\begin{minipage}[c]{10.2cm}\centering\small
+\begin{tabular}{@{}lccccr@{}}
+\toprule
+ & $\mathit{cnt}[0]$ & $\mathit{cnt}[1]$ & $\mathit{cnt}[2]$ & $\mathit{cnt}[3]$ & new paths \\
+\midrule
+start: $c$ alone & 1 & 0 & 0 & 0 & \\
+after branch A & 1 & 1 & 2 & 0 & 0 \\
+after branch B & 1 & 2 & 3 & 0 & $2 + 1 = 3$ \\
+after branch C & 1 & 3 & 4 & 1 & $3 + 2 + 1 = 6$ \\
+\bottomrule
+\end{tabular}
+\end{minipage}
+\caption{Counting the paths of length $k = 3$ through a centroid $c$; vertices show their depth below $c$. Branch B finds
+$\mathit{cnt}[2] + \mathit{cnt}[1] = 3$ partners for its depths 1 and 2, branch C finds 6, so $0 + 3 + 6 = 9$ paths pass through
+$c$. Paths inside one branch are counted later, at a deeper centroid.}
+\label{fig:fixedlen}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n, k;
+    cin >> n >> k;
+    vvi adj(n + 1);
+    rep(i, n - 1) {
+        int a, b;
+        cin >> a >> b;
+        adj[a].push_back(b);
+        adj[b].push_back(a);
+    }
+    vector<bool> gone(n + 1, false);  // centroids already removed
+    vi par(n + 1), sub(n + 1), dep(n + 1), cnt(n + 1, 0);
+    auto bfs = [&](int s, int p) {  // the part still attached to s, BFS order
+        vi order{s};
+        par[s] = p;
+        rep(i, sz(order)) for (int v : adj[order[i]]) {
+            if (v == par[order[i]] || gone[v]) continue;
+            par[v] = order[i];
+            order.push_back(v);
+        }
+        return order;
+    };
+    ll ans = 0;
+    vi roots{1};  // one vertex of every component still to decompose
+    while (!roots.empty()) {
+        int r = roots.back();
+        roots.pop_back();
+        vi order = bfs(r, 0);
+        per(i, sz(order)) {
+            int v = order[i];
+            sub[v] = 1;
+            for (int u : adj[v])
+                if (u != par[v] && !gone[u]) sub[v] += sub[u];
+        }
+        int total = sz(order), c = r;
+        for (bool moved = true; moved;) {  // step into a child with > half
+            moved = false;
+            for (int u : adj[c])
+                if (u != par[c] && !gone[u] && 2 * sub[u] > total) {
+                    c = u, moved = true;
+                    break;
+                }
+        }
+        // paths through c: pair each branch with c and the earlier branches
+        cnt[0] = 1, dep[c] = 0;
+        int maxd = 0;
+        for (int u : adj[c]) {
+            if (gone[u]) continue;
+            vi part = bfs(u, c);
+            for (int v : part) dep[v] = dep[par[v]] + 1;
+            for (int v : part)
+                if (dep[v] <= k) ans += cnt[k - dep[v]];
+            for (int v : part)
+                if (dep[v] <= k) cnt[dep[v]]++, chmax(maxd, dep[v]);
+        }
+        fill(cnt.begin(), cnt.begin() + maxd + 1, 0);
+        gone[c] = true;
+        for (int u : adj[c])
+            if (!gone[u]) roots.push_back(u);
+    }
+    print(ans);
+}
+\end{code}
+
+The decomposition uses an explicit stack of component roots and BFS orders, so it never recurses: on a path of $2 \cdot 10^5$
+vertices, the worst case for depth, it runs in 0.20\,s, and in 0.17\,s on a random tree. The counting array is cleared only up to
+the largest depth used, so each component costs time linear in its size, never $\Oh{n}$.
+
+\paragraph{Fixed-Length Paths II: a range of lengths.} When the length may be anywhere in $[k_1, k_2]$, the lookup
+$\mathit{cnt}[k - d]$ becomes a range sum over $\mathit{cnt}[k_1 - d .. k_2 - d]$, so the counts need prefix sums. Rebuilding the
+prefix sums after every branch costs the current largest depth, which could be large while the branch is tiny; the fix is to
+visit the branches in increasing order of height. Then the largest depth so far never exceeds the height of the branch being
+added, so each rebuild costs no more than that branch's size, and the whole decomposition stays $\Oh{n \log n}$ (the sort by
+height costs $\Oh{\deg \log \deg}$ per centroid).
+
+\begin{trick}[Inclusion--exclusion instead of branch order]
+For conditions that a sort handles, such as ``depth sum at most $K$'', count \emph{all} pairs in the component, ignoring branches,
+with a sort and two pointers; the pairs inside one branch were counted wrongly (their real path does not pass through $c$), so
+subtract the same count run on each branch's list of depths. This avoids any order between branches, at the cost of
+an extra $\log$ for sorting.
+\end{trick}
+
+\subsection{The centroid tree as a data structure}
+
+The centroid tree also supports \emph{online} queries. Every vertex has $\Oh{\log n}$ centroid ancestors, and by the key idea
+above, the path from $v$ to any vertex $w$ passes through one of them. Store at each centroid $c$ a summary of its component
+(for example, the distance from $c$ to the nearest marked vertex), store at each vertex the distances to its centroid ancestors,
+and a query combines $\Oh{\log n}$ summaries.
+
+\begin{problem}{Nearest red vertex}
+In a tree of $n$ vertices, vertex 1 is red and the others are blue. Process $q$ operations: paint vertex $v$ red, or report the
+distance from $v$ to the nearest red vertex ($n, q \le 2 \cdot 10^5$). This is Codeforces 342E, \emph{Xenia and Tree}, with
+larger limits.
+\solution For every centroid $c$ keep $\mathit{best}(c)$, the distance from $c$ to the nearest red vertex of its component. Painting
+$v$ updates $\mathit{best}$ at the $\Oh{\log n}$ centroid ancestors of $v$; a query returns $\min_c\, \mathrm{dist}(v, c) +
+\mathit{best}(c)$ over them. Every candidate is the length of a real walk, so it is never too small; and the path to the nearest
+red vertex $w$ passes through the centroid LCA $c$ of $v$ and $w$, where $\mathrm{dist}(v, c) + \mathit{best}(c) \le
+\mathrm{dist}(v, w)$.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, q;
+    cin >> n >> q;
+    vvi adj(n + 1);
+    rep(i, n - 1) {
+        int a, b;
+        cin >> a >> b;
+        adj[a].push_back(b);
+        adj[b].push_back(a);
+    }
+    vector<bool> gone(n + 1, false);
+    vi par(n + 1), sub(n + 1), dist(n + 1);
+    vector<vector<pii>> anc(n + 1);  // (centroid ancestor, distance to it)
+    auto bfs = [&](int s, int p) {
+        vi order{s};
+        par[s] = p;
+        rep(i, sz(order)) for (int v : adj[order[i]]) {
+            if (v == par[order[i]] || gone[v]) continue;
+            par[v] = order[i];
+            order.push_back(v);
+        }
+        return order;
+    };
+    vi roots{1};
+    while (!roots.empty()) {
+        int r = roots.back();
+        roots.pop_back();
+        vi order = bfs(r, 0);
+        per(i, sz(order)) {
+            int v = order[i];
+            sub[v] = 1;
+            for (int u : adj[v])
+                if (u != par[v] && !gone[u]) sub[v] += sub[u];
+        }
+        int total = sz(order), c = r;
+        for (bool moved = true; moved;) {
+            moved = false;
+            for (int u : adj[c])
+                if (u != par[c] && !gone[u] && 2 * sub[u] > total) {
+                    c = u, moved = true;
+                    break;
+                }
+        }
+        vi comp = bfs(c, 0);  // c's component, now in BFS order from c
+        for (int v : comp) {
+            dist[v] = v == c ? 0 : dist[par[v]] + 1;
+            anc[v].push_back({c, dist[v]});
+        }
+        gone[c] = true;
+        for (int u : adj[c])
+            if (!gone[u]) roots.push_back(u);
+    }
+    // best[c]: distance from centroid c to the nearest red vertex of its part
+    vi best(n + 1, INF);
+    auto paint = [&](int v) {
+        for (auto [c, d] : anc[v]) chmin(best[c], d);
+    };
+    paint(1);
+    while (q--) {
+        int type, v;
+        cin >> type >> v;
+        if (type == 1) {
+            paint(v);
+            continue;
+        }
+        ll res = INF;  // the path to the nearest red vertex passes some c
+        for (auto [c, d] : anc[v]) chmin(res, d + best[c]);
+        print(res);
+    }
+}
+\end{code}
+
+In the running example, vertex 11 stores its centroid ancestors 0, 4, 7 and 11 at distances 4, 2, 1 and 0. If 9 is red, then
+$\mathit{best}(0) = 3$, and the query from 11 finds $4 + 3 = 7$, the true distance, through the centroid 0 where the two vertices
+were separated. The lists hold $\Oh{n \log n}$ pairs in total; with $n = q = 2 \cdot 10^5$ the program runs in 0.44\,s on a path
+and 0.42\,s on a random tree.
+
+\usetemplate{Centroid decomposition}{Ctrl+Alt+Y, C}{cpcentroid}
+
+\begin{recognize}
+``Count or optimise over all paths'' with a condition on length, weight, XOR or colour; ``for each $k$, how many paths of length
+$k$''; or online queries about distances to a changing set of vertices. If the answer for a path depends only on the two
+endpoints' data relative to a common vertex, centroid decomposition applies.
+\end{recognize}
+
+% ======================================================================================================================
+\section[DSU on tree]{DSU on tree (Sack) \hfill \plat}\label{sec:sack}
+
+Small-to-large merging (Section~\ref{sec:smalltolarge}) keeps one set per vertex and moves the smaller sets into the larger. When
+the information is a global counting array, such as ``how many vertices of each colour'', moving it is impossible and copying it
+is too slow. \defn{DSU on tree}, also called \emph{Sack}, keeps a single global array and reuses the heavy child's contents instead
+of moving anything. To process a vertex $v$, and either keep or erase its counts afterwards:
+\begin{enumerate}[itemsep=1pt]
+  \item process each light child, erasing its counts afterwards;
+  \item process the heavy child, \emph{keeping} its counts;
+  \item add $v$ and every vertex of the light subtrees, walking their Euler-tour ranges;
+  \item the array now describes exactly the subtree of $v$: answer $v$'s question;
+  \item if $v$ itself is a light child, remove its whole subtree again.
+\end{enumerate}
+
+\emph{Why $\Oh{n \log n}$.} A vertex $x$ is added in step 3 once for every ancestor that reaches it through a light child, that
+is, once per light edge on its root path, and it is removed in step 5 at most as often. By the light-edge lemma of
+Section~\ref{sec:hld} that is at most $\log_2 n$ times, plus once for itself (Figure~\ref{fig:sack}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[vtx, hot] (v) at (0, 0) {$v$};
+  \node[vtx, cool] (h) at (0, -1.2) {};
+  \node[vtx, warn] (l1) at (-2.1, -1.2) {};
+  \node[vtx, warn] (l2) at (2.1, -1.2) {};
+  \draw[hed] (v) -- (h);
+  \draw[xed] (v) -- (l1) (v) -- (l2);
+  \draw[draw=fgblue, fill=fgsky!18, line width=0.6pt] (h.south) -- ++(-0.95, -1.7) -- ++(1.9, 0) -- cycle;
+  \draw[draw=fgorange!85!black, fill=fgorange!12, line width=0.6pt] (l1.south) -- ++(-0.5, -0.9) -- ++(1.0, 0) -- cycle;
+  \draw[draw=fgorange!85!black, fill=fgorange!12, line width=0.6pt] (l2.south) -- ++(-0.6, -1.1) -- ++(1.2, 0) -- cycle;
+  \node[font=\sffamily\scriptsize, text=fgblue, align=center, anchor=north] at (0, -3.33) {heavy child:\\counts kept};
+  \node[font=\sffamily\scriptsize, text=fgorange!85!black, align=center, anchor=north] at (-2.1, -2.53) {light child:\\counted,
+    erased,\\added again};
+  \node[font=\sffamily\scriptsize, text=fgorange!85!black, align=center, anchor=north] at (2.1, -2.73) {light child:\\counted,
+    erased,\\added again};
+  \begin{scope}[xshift=5.6cm]
+    \foreach \nm/\py in {r/0.3, u4/-0.45, u3/-1.2, u2/-1.95, u1/-2.7, x/-3.45}
+      \node[vtxs] (\nm) at (0, \py) {};
+    \node[font=\sffamily\scriptsize] at (x) {$x$};
+    \draw[hed] (r) -- (u4) (u3) -- (u2) (u1) -- (x);
+    \draw[xed] (u4) -- (u3) (u2) -- (u1);
+    \node[lbl, anchor=west] at (u4.east) {adds $x$ again};
+    \node[lbl, anchor=west] at (u2.east) {adds $x$ again};
+    \node[notel, anchor=west, text width=3.7cm] at (2.45, -1.55) {Only an ancestor that reaches $x$ through a light child
+      (dashed edge) adds $x$ again, so $x$ is added at most $\log_2 n + 1$ times.};
+  \end{scope}
+\end{tikzpicture}
+\caption{DSU on tree. Left: when $v$ is processed, the heavy child's counts are still in the array, and only $v$ and the light
+subtrees are added. Right: why every vertex is added $\Oh{\log n}$ times.}
+\label{fig:sack}
+\end{figure}
+
+\begin{problem}{Dominating colours}
+Every vertex of a tree rooted at 1 has a colour in $1..n$. For every vertex $v$, report the sum of all colours that occur in $v$'s
+subtree the maximum number of times ($n \le 10^5$; Codeforces 600E, \emph{Lomsat gelral}).
+\solution DSU on tree with a counting array $\mathit{cnt}$, the current largest count, and the sum of the colours reaching it.
+Adding a vertex updates all three in $\Oh{1}$; erasing resets the two numbers and decrements the counts. The recursion is replaced
+by an explicit stack of (vertex, keep, children done) triples, since a path of $10^5$ vertices would otherwise recurse $10^5$
+deep.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vi col(n + 1);
+    rep(v, 1, n + 1) cin >> col[v];
+    vvi adj(n + 1);
+    rep(i, n - 1) {
+        int a, b;
+        cin >> a >> b;
+        adj[a].push_back(b);
+        adj[b].push_back(a);
+    }
+    vi order{1}, par(n + 1, 0), sub(n + 1, 1), heavy(n + 1, 0);
+    rep(i, n) for (int v : adj[order[i]])
+        if (v != par[order[i]]) par[v] = order[i], order.push_back(v);
+    per(i, 1, n) sub[par[order[i]]] += sub[order[i]];
+    for (int v : order)
+        for (int c : adj[v])
+            if (c != par[v] && (!heavy[v] || sub[c] > sub[heavy[v]]))
+                heavy[v] = c;
+    vi tin(n + 1), ver, st{1};  // preorder: ver[tin[v] .. + sub[v]) = subtree
+    while (!st.empty()) {
+        int v = st.back();
+        st.pop_back();
+        tin[v] = sz(ver), ver.push_back(v);
+        for (int c : adj[v])
+            if (c != par[v]) st.push_back(c);
+    }
+    vi cnt(n + 1, 0), ans(n + 1);
+    ll top = 0, sum = 0;  // the largest count, the sum of colours reaching it
+    auto add = [&](int v) {
+        int c = col[v];
+        if (++cnt[c] > top) top = cnt[c], sum = c;
+        else if (cnt[c] == top) sum += c;
+    };
+    // an explicit stack of (vertex, keep its counts?, children done?)
+    vector<array<ll, 3>> todo{{1, 1, 0}};
+    while (!todo.empty()) {
+        auto [v, keep, done] = todo.back();
+        todo.pop_back();
+        if (!done) {  // light children run first (popped first), heavy last
+            todo.push_back({v, keep, 1});
+            if (heavy[v]) todo.push_back({heavy[v], 1, 0});
+            for (int c : adj[v])
+                if (c != par[v] && c != heavy[v]) todo.push_back({c, 0, 0});
+            continue;
+        }
+        // the heavy child's counts are still there; add everything else
+        for (int c : adj[v])
+            if (c != par[v] && c != heavy[v])
+                rep(t, tin[c], tin[c] + sub[c]) add(ver[t]);
+        add(v);
+        ans[v] = sum;
+        if (!keep) {  // a light child: leave the counts empty again
+            rep(t, tin[v], tin[v] + sub[v]) cnt[col[ver[t]]]--;
+            top = sum = 0;
+        }
+    }
+    print(vi(ans.begin() + 1, ans.end()));
+}
+\end{code}
+
+\usetemplate{DSU on tree (Sack)}{Ctrl+Alt+U, Shift+T}{cpsack}
+
+The order of the stack matters: the heavy child is pushed \emph{before} the light children, so it is popped, and processed,
+after all of them, and its counts are the ones still present when $v$ is finished. With $n = 2 \cdot 10^5$ the program runs in
+0.17\,s on a path and 0.12\,s on a random tree.
+
+\begin{tip}
+Small-to-large merging, DSU on tree and the offline methods of later chapters overlap. Use small-to-large when each vertex needs a
+set or map of its own afterwards; DSU on tree when the statistic lives in one array (counts by colour, by depth, by value) and
+must support ``the most frequent'' or ``how many with count at least $k$''; and the Euler tour with an offline range technique when
+the question is a plain range question on the flattened tree, such as the number of distinct values (Mo's algorithm,
+Chapter~\ref{ch:advds}).
+\end{tip}
+
+% ======================================================================================================================
+\section[Long-path decomposition]{Long-path decomposition \hfill \plat}\label{sec:longpath}
+
+Many tree DPs are indexed by depth: $f_v[d]$ is the number (or best value) of vertices at distance $d$ below $v$. Merging the
+children's arrays naively costs the sum of all heights over all vertices, which is $\Theta(n^2)$ on a path. Small to large by
+height gives $\Oh{n \log n}$; a sharper idea gives $\Oh{n}$.
+
+\paragraph{Long paths.} The \defn{height} $h(v)$ is the number of vertices on the longest downward path from $v$. Call the child
+with the largest height the \emph{long child} and decompose the tree into \defn{long paths} exactly as HLD does with sizes. Now
+$f_v[d] = f_{\mathit{long}}[d - 1]$ for every $d \ge 1$, plus the contributions of the short children. So give each long path one
+block of a shared buffer, as long as the path, and let the array of every vertex on the path start one cell after its parent's
+(Figure~\ref{fig:longpath}): a vertex inherits its long child's array without copying, sets $f_v[0] = 1$, and merges only its short
+children by hand.
+
+\emph{Why $\Oh{n}$.} Merging a short child $c$ costs $h(c)$, the length of the long path that starts at $c$. Every long path
+starts at a short child (or at the root) and is merged once, into its parent, so the total cost is the total length of all long
+paths, which is $n$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \foreach \nm/\px/\py/\sy in {1/1.8/0/hot, 2/1.0/-1.0/hot, 3/2.6/-1.0/cool, 4/0.5/-2.0/hot, 5/1.5/-2.0/n, 8/2.6/-2.0/cool,
+      6/0.5/-3.0/hot, 9/2.6/-3.0/cool, 7/0.5/-4.0/hot}
+    \node[vtx, \sy] (L\nm) at (\px, \py) {\nm};
+  \draw[hed] (L1) -- (L2) -- (L4) -- (L6) -- (L7);
+  \draw[bed] (L3) -- (L8) -- (L9);
+  \draw[xed] (L1) -- (L3) (L2) -- (L5);
+  \foreach \ci/\nm in {1/1, 2/2, 3/4, 4/6, 5/7, 6/3, 7/8, 8/9, 9/5}
+    \node[font=\sffamily\scriptsize\bfseries, text=fgink] at ({4.2 + 0.7*\ci - 0.35}, -0.3) {\nm};
+  \node[lbl, anchor=east] at (4.05, -0.3) {$f[0]$ of};
+  \node[blbl, anchor=east] at (4.05, -1.0) {buffer};
+  \arrs{B}{4.2}{-1.0}{1/hot, 2/hot, 3/hot, 2/hot, 1/hot, 1/cool, 1/cool, 1/cool, 1/n}
+  \foreach \nm/\fc/\yy in {1/1/-1.62, 2/2/-1.92, 4/3/-2.22} {
+    \draw[line width=1.8pt, draw=fgverm!75, line cap=butt] ({4.25 + 0.7*(\fc - 1)}, \yy) -- (7.65, \yy);
+    \node[font=\sffamily\scriptsize, text=fgverm, anchor=east] at ({4.2 + 0.7*(\fc - 1)}, \yy) {$f_{\nm}$};
+  }
+  \draw[line width=1.8pt, draw=fgblue!75, line cap=butt] (7.75, -1.62) -- (9.75, -1.62);
+  \node[font=\sffamily\scriptsize, text=fgblue, anchor=west] at (9.8, -1.62) {$f_3$};
+  \draw[->, line width=1pt, draw=fgblue] ($(B-6.north)+(0, 0.62)$) to[bend right=35]
+    node[above, font=\sffamily\scriptsize, text=fgblue] {merge 3: $f_1[d + 1] \mathrel{+}= f_3[d]$} ($(B-2.north)+(0, 0.62)$);
+  \node[notel, anchor=north west, text width=6.0cm] at (4.2, -2.6) {Long paths 1--2--4--6--7 (red), 3--8--9 (blue) and 5. The
+    bars show where the arrays of 1, 2 and 4 live: each starts one cell after its parent's. The final block of 1 reads
+    $f_1 = (1, 2, 3, 2, 1)$.};
+\end{tikzpicture}
+\caption{Long-path decomposition. Each long path owns one block of the buffer, so a vertex inherits its long child's counts in
+$\Oh{1}$; only the short child 3 is merged by hand. Three vertices lie at distance 2 below 1, the most at any distance, so the
+dominant depth of 1 is 2.}
+\label{fig:longpath}
+\end{figure}
+
+\begin{problem}{Dominant depths}
+In a tree rooted at 1 with $n \le 10^6$ vertices, for every vertex $v$ find the smallest $d$ that maximises the number of
+vertices of $v$'s subtree at distance exactly $d$ from $v$ (Codeforces 1009F, \emph{Dominant Indices}).
+\solution Long-path decomposition with counts. Vertex $v$ inherits the best depth of its long child plus one, compares it with
+$f_v[0] = 1$, and re-checks only the cells that its short children change; values only grow, so the running best stays correct.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vvi adj(n + 1);
+    rep(i, n - 1) {
+        int a, b;
+        cin >> a >> b;
+        adj[a].push_back(b);
+        adj[b].push_back(a);
+    }
+    vi order{1}, par(n + 1, 0);
+    rep(i, n) for (int v : adj[order[i]])
+        if (v != par[order[i]]) par[v] = order[i], order.push_back(v);
+    // h[v]: vertices on the longest downward path from v; lc[v]: its child
+    vi h(n + 1, 1), lc(n + 1, 0);
+    per(i, 1, n) {
+        int v = order[i], p = par[v];
+        if (h[v] + 1 > h[p]) h[p] = h[v] + 1, lc[p] = v;
+    }
+    // each long path owns one block of the buffer, and along the path the
+    // arrays are shifted by one: a vertex inherits its long child's array
+    vi pos(n + 1), cnt(n, 0), ans(n + 1);
+    int next = 0;
+    for (int v : order) {
+        if (v == 1 || lc[par[v]] != v) pos[v] = next, next += h[v];
+        else pos[v] = pos[par[v]] + 1;
+    }
+    per(i, n) {  // children first
+        int v = order[i];
+        auto f = cnt.begin() + pos[v];  // f[d]: vertices at distance d below v
+        f[0] = 1;
+        ans[v] = lc[v] ? ans[lc[v]] + 1 : 0;
+        if (f[ans[v]] <= 1) ans[v] = 0;
+        for (int c : adj[v]) {  // merge the short children by hand
+            if (c == par[v] || c == lc[v]) continue;
+            rep(d, h[c]) {
+                f[d + 1] += cnt[pos[c] + d];
+                ll a = f[d + 1], b = f[ans[v]];
+                if (a > b || (a == b && d + 1 < ans[v])) ans[v] = d + 1;
+            }
+        }
+    }
+    print(vi(ans.begin() + 1, ans.end()));
+}
+\end{code}
+
+\usetemplate{Long-path decomposition}{Ctrl+Alt+U, Shift+N}{cplongpath}
+
+The buffer has exactly $n$ cells, because the blocks are as long as the long paths and those partition the vertices. With $n =
+10^6$ the program runs in 0.42\,s on a path, 0.39\,s on a random tree and 0.36\,s on a caterpillar, most of it spent reading the
+input.
+
+\begin{trick}[Level ancestors in $\Oh{1}$: the ladder algorithm]
+Extend every long path upwards by its own length to get a \emph{ladder} of at most twice the length; the ladders have $\Oh{n}$
+cells in total. To find the $k$-th ancestor of $v$, first jump $2^j$ levels with binary lifting, where $2^j$ is the highest power
+of two not above $k$, landing at $u$. Since $u$ has a descendant $2^j$ levels below it, the long path through $u$ continues for at
+least $2^j$ more vertices below $u$, so its ladder extends at least $2^j > k - 2^j$ levels above its head, and the remaining
+climb is a single array lookup in that ladder. Preprocessing is $\Oh{n \log n}$, and every query is two lookups.
+\end{trick}
+
+% ======================================================================================================================
+\section[Virtual trees]{Virtual (auxiliary) trees \hfill \plat}\label{sec:virtualtree}
+
+Some problems ask many queries, each about a small set of $k$ \emph{key vertices}, with the sum of all $k$ bounded by about $2
+\cdot 10^5$. A DP over the whole tree costs $\Oh{n}$ per query, far too much, but most of the tree is irrelevant to a query: only
+the keys and the places where their paths branch matter. The \defn{virtual tree} of the keys contains the keys and the LCAs of
+pairs of keys; its edges stand for the compressed paths between them, with the path length as weight
+(Figure~\ref{fig:virtualtree}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \rexcoords
+  \draw[line width=5pt, draw=fggreen, opacity=0.3] (R11) -- (R7) -- (R4) -- (R1) -- (R0) -- (R2) -- (R6) -- (R10) -- (R12)
+    (R4) -- (R8) (R1) -- (R5);
+  \draw[ed] \rexedges;
+  \foreach \nm/\sy in {0/cool, 1/cool, 2/n, 3/n, 4/cool, 5/hot, 6/n, 7/n, 8/hot, 9/n, 10/n, 11/hot, 12/hot}
+    \node[vtx, \sy] at (R\nm) {\nm};
+  \begin{scope}[xshift=8.6cm]
+    \foreach \nm/\px/\py/\sy in {0/1.6/0/cool, 1/0.6/-1.3/cool, 12/2.6/-1.3/hot, 4/0.0/-2.6/cool, 5/1.2/-2.6/hot,
+        11/-0.5/-3.9/hot, 8/0.5/-3.9/hot}
+      \node[vtx, \sy] (W\nm) at (\px, \py) {\nm};
+    \foreach \pa/\ch/\elen in {0/1/1, 0/12/4, 1/4/1, 1/5/1, 4/11/2, 4/8/1}
+      \draw[ed] (W\pa) -- node[wl, font=\sffamily\scriptsize\bfseries, text=fggreen!50!black] {\elen} (W\ch);
+    \node[lbl] at (1.0, -4.75) {virtual tree; edge weights are path lengths};
+  \end{scope}
+\end{tikzpicture}
+\caption{The virtual tree of the keys 11, 8, 5 and 12 (red). In DFS order the keys are 11, 8, 5, 12, and the LCAs of neighbours
+in that order, 4, 1 and 0 (blue), complete the vertex set. The smallest subtree containing the keys (green) has 10 edges, the
+total weight of the virtual tree.}
+\label{fig:virtualtree}
+\end{figure}
+
+\paragraph{Construction.} Sort the keys by DFS entry time, $v_1, \dots, v_k$. Every LCA of two keys is already the LCA of two
+\emph{neighbours} in this order: for $i < j$, $\mathrm{lca}(v_i, v_j)$ is the shallowest of $\mathrm{lca}(v_t, v_{t+1})$ for $i \le t
+< j$. So adding the $k - 1$ neighbour LCAs closes the set under LCA, and the virtual tree has at most $2k - 1$ vertices. Sort this
+set by entry time again, $w_1, \dots, w_m$; then the virtual parent of $w_i$ is $\mathrm{lca}(w_{i-1}, w_i)$.
+
+\emph{Why the parent rule works.} The parent of $w_i$ must be the deepest vertex of the set that is a proper ancestor of $w_i$.
+The vertex $\mathrm{lca}(w_{i-1}, w_i)$ belongs to the set and is an ancestor of $w_i$; it is not $w_i$ itself, since $w_i$ comes
+after $w_{i-1}$ in preorder and so cannot be its ancestor. Any other ancestor $a$ of $w_i$ in the set is entered before $w_i$,
+hence no later than $w_{i-1}$, and its subtree range covers everything up to $w_i$, so $a$ is an ancestor of $w_{i-1}$ too, and
+therefore of their LCA. With $\Oh{\log n}$ LCAs, one query costs $\Oh{k \log n}$ after the sorting.
+
+\begin{problem}{Key vertex queries}
+A tree has $n$ vertices. Each of $q$ queries gives $k$ distinct key vertices ($\sum k \le 2 \cdot 10^5$); report the number of
+edges of the smallest subtree containing all keys, and the sum of the distances over all pairs of keys.
+\solution Build the virtual tree; the HLD template provides both a DFS order (\cc{pos}) and LCAs. Walk the virtual vertices in
+reverse DFS order, children first, and count the keys below each one. A virtual edge of length $\ell$ above a part with $b$ keys
+belongs to the smallest subtree, and every one of its $\ell$ original edges separates $b$ keys from the other $k - b$, so it adds
+$\ell$ to the first answer and $\ell\, b\, (k - b)$ to the second (the ``count what each edge separates'' trick of
+Section~\ref{sec:rerooting}).
+\end{problem}
+
+\begin{code}
+void solve() {  // cphld and cpvirtual are pasted above solve()
+    int n, q;
+    cin >> n >> q;
+    vvi adj(n);
+    rep(i, n - 1) {
+        int a, b;
+        cin >> a >> b;
+        a--, b--;
+        adj[a].push_back(b);
+        adj[b].push_back(a);
+    }
+    HLD h(adj);  // h.pos is a DFS order, h.lca an LCA
+    auto lca = [&](int a, int b) { return h.lca(a, b); };
+    vi idx(n, -1), below;
+    while (q--) {
+        int k;
+        cin >> k;
+        vi keys(k);
+        for (ll& v : keys) cin >> v, v--;
+        auto [vs, vp] = virtual_tree(keys, h.pos, lca);
+        int m = sz(vs);
+        rep(i, m) idx[vs[i]] = i;
+        below.assign(m, 0);  // key vertices in each virtual subtree
+        for (int v : keys) below[idx[v]] = 1;
+        ll steiner = 0, pairs = 0;
+        per(i, 1, m) {  // vs is in DFS order: children before parents
+            int v = vs[i], p = vp[i];
+            ll len = h.depth[v] - h.depth[p];  // edges of the compressed path
+            steiner += len;
+            pairs += len * below[i] * (k - below[i]);
+            below[idx[p]] += below[i];
+        }
+        print(steiner, pairs);
+        for (int v : vs) idx[v] = -1;
+    }
+}
+\end{code}
+
+\usetemplate{Virtual tree}{Ctrl+Alt+Y, V}{cpvirtual}
+
+The array \cc{idx} maps a vertex to its index in the current virtual tree and is reset after each query, touching only the
+$\Oh{k}$ vertices used; clearing an $n$-sized array per query would cost $\Oh{nq}$, the classic mistake with virtual trees. With
+$\sum k = 2 \cdot 10^5$ the program runs in 0.15\,s.
+
+\begin{trick}[The smallest subtree from the DFS order alone]
+For keys sorted by entry time, $v_1, \dots, v_k$, the number of edges of the smallest subtree containing them is
+\[
+  \tfrac12 \bigl(\mathrm{dist}(v_1, v_2) + \mathrm{dist}(v_2, v_3) + \dots + \mathrm{dist}(v_{k-1}, v_k) + \mathrm{dist}(v_k,
+  v_1)\bigr),
+\]
+because walking from key to key in DFS order and back to the start traverses every edge of that subtree exactly twice, like the
+DFS itself. In Figure~\ref{fig:virtualtree}: $(3 + 3 + 6 + 8)/2 = 10$. With a set ordered by entry time, the formula also maintains
+the subtree size under insertions and deletions of keys in $\Oh{\log n}$ each.
+\end{trick}
+
+\begin{recognize}
+Many queries, each naming a few vertices, with ``the sum of $k$ over all queries is at most \dots'' in the constraints, and a
+question that would be an easy tree DP if it were asked once.
+\end{recognize}
+
+% ======================================================================================================================
+\section[Euler tour trees]{Euler tour trees: link and cut \hfill \ioi}\label{sec:ett}
+
+So far the tree never changed. In a \emph{dynamic forest}, edges are added (link) and removed (cut) online, and queries ask
+whether two vertices are connected, or for the sum of the values in a vertex's tree. When all operations are known in advance,
+divide and conquer over time with a rollback DSU is usually simpler (Section~\ref{sec:offline-dyncon}); online, keep every tree as
+its Euler tour inside a balanced binary search tree.
+
+\paragraph{Representation.} An \defn{Euler tour tree} stores the tour of each tree as a sequence that contains every vertex once
+and every edge twice, once in each direction (Figure~\ref{fig:ett}). The sequence is read cyclically, so rerooting the tree at $v$
+is a rotation that starts the sequence at $v$: one split and one merge. With a treap (Chapter~\ref{ch:advds}) every operation is
+$\Oh{\log n}$ expected:
+\begin{itemize}[itemsep=1pt]
+  \item \textbf{connected$(u, v)$}: are $u$ and $v$ in the same treap? Compare the roots.
+  \item \textbf{link$(u, v)$}: reroot both trees at $u$ and $v$, then concatenate tour$(u)$, the node $(u, v)$, tour$(v)$ and the
+        node $(v, u)$.
+  \item \textbf{cut$(u, v)$}: reroot at $u$; the tour is now $A\,(u, v)\,B\,(v, u)\,C$, where $B$ is $v$'s side. Split out $B$
+        and the two edge nodes, and merge $A$ with $C$.
+  \item \textbf{aggregates}: every treap node stores the sum (or minimum, or count of vertices) of its subtree, so the treap root
+        holds the aggregate of the whole tree; changing a vertex value updates one root path.
+\end{itemize}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[vtx] (ta) at (0, 0) {a}; \node[vtx] (tb) at (0, -1.0) {b};
+  \node[vtx] (tc) at (-0.6, -2.0) {c}; \node[vtx, cool] (td) at (0.6, -2.0) {d};
+  \draw[ed] (ta) -- (tb) (tb) -- (tc);
+  \draw[hed] (tb) -- (td);
+  \node[blbl, anchor=east] at (4.3, 0) {tour from a};
+  \arrs{T}{4.45}{0}{a/n, ab/dim, b/n, bc/dim, c/n, cb/dim, bd/dim, d/n, db/dim, ba/dim}
+  \node[blbl, anchor=east] at (4.3, -1.0) {rerooted at b};
+  \arrs{U}{4.45}{-1.0}{b/n, bc/dim, c/n, cb/dim, bd/hot, d/cool, db/hot, ba/dim, a/n, ab/dim}
+  \cellframe{U-5}{U-7}{fgverm}
+  \node[blbl, anchor=east] at (4.3, -2.0) {after cutting b--d};
+  \arrs{X}{4.45}{-2.0}{b/n, bc/dim, c/n, cb/dim, ba/dim, a/n, ab/dim}
+  \arrs{Y}{10.05}{-2.0}{d/cool}
+\end{tikzpicture}
+\caption{An Euler tour tree. The tour lists every vertex once (white) and every edge once in each direction (grey). Rerooting at b
+rotates the tour; cutting b--d removes the two edge nodes (red) together with d's side between them (blue), which leaves the tour
+of the remaining tree and the tour of d alone.}
+\label{fig:ett}
+\end{figure}
+
+\begin{problem}{Forest operations}
+A forest on $n$ vertices starts without edges; every vertex has a value. Process online: link two vertices of different trees,
+cut an existing edge, ask whether two vertices are connected, change a value, and report the sum of the values in a vertex's tree.
+\end{problem}
+
+\begin{code}
+void solve() {  // Euler tour tree (cpett) is pasted above solve()
+    int n, q;
+    cin >> n >> q;
+    ETT f(n);
+    rep(v, n) {
+        ll x;
+        cin >> x;
+        f.set(v, x);
+    }
+    while (q--) {
+        int type, u;
+        cin >> type >> u;
+        u--;
+        if (type == 5) {  // the sum of the values in u's tree
+            print(f.comp_sum(u));
+            continue;
+        }
+        ll x;
+        cin >> x;
+        if (type == 1) f.link(u, x - 1);
+        else if (type == 2) f.cut(u, x - 1);
+        else if (type == 3) yn(f.connected(u, x - 1));
+        else f.set(u, x);
+    }
+}
+\end{code}
+
+\usetemplate{Euler tour tree}{Ctrl+Alt+U, E}{cpett}
+
+The template finds the treap node of an edge through a \cc{map} from vertex pairs, which costs another $\Oh{\log n}$ per link or
+cut. Subtree aggregates are available too: to get the subtree of $v$ when the tree is rooted at $r$, reroot at $r$, and the subtree
+is the part of the tour between the nodes $(p, v)$ and $(v, p)$, where $p$ is the parent of $v$.
+
+% ======================================================================================================================
+\section[Link-cut trees and top trees]{Link-cut trees and top trees \hfill \ioi}\label{sec:lct}
+
+Euler tour trees answer questions about whole trees and subtrees, but not about \emph{paths}: the tour mixes the vertices of a path
+with everything hanging from it. A \defn{link-cut tree} (Sleator and Tarjan) keeps a dynamic forest with path aggregates, such as
+the maximum edge weight between two vertices, in $\Oh{\log n}$ amortised time per operation. It splits each tree into
+\emph{preferred paths}, much like the chains of HLD but changing over time, and stores each preferred path in a splay tree ordered
+by depth. Its central operation, \emph{access}$(v)$, makes the path from the root to $v$ preferred, after which that path is a
+single splay tree and any path aggregate is read at its root. Rerooting reverses a whole preferred path, with a lazy ``reverse''
+flag.
+
+The classic use is a \emph{dynamic minimum spanning forest} under edge insertions: when an edge $u$--$v$ of weight $w$ arrives and
+$u, v$ are already connected, find the heaviest edge on the path between them; if it is heavier than $w$, cut it and link the new
+edge, which by the cycle property of Section~\ref{sec:mst} keeps the forest minimum. \defn{Top trees} combine path and subtree
+aggregates in one structure, with $\Oh{\log n}$ per operation, but they are long to implement and rarely appear outside the
+hardest olympiad problems. Table~\ref{tab:dyntrees} summarises the structures of this chapter.
+
+\begin{table}[htbp]
+\centering\small
+\begin{tabular}{@{}lccccl@{}}
+\toprule
+structure & link, cut & path aggregates & subtree aggregates & time per operation & code \\
+\midrule
+HLD + segment tree & no & yes & yes & $\Oh{\log^2 n}$ & short \\
+centroid tree & no & distances & no & $\Oh{\log n}$ & short \\
+Euler tour tree & yes & no & yes & $\Oh{\log n}$ expected & medium \\
+link-cut tree & yes & yes & extra work & $\Oh{\log n}$ amortised & medium \\
+top tree & yes & yes & yes & $\Oh{\log n}$ & long \\
+\bottomrule
+\end{tabular}
+\caption{What the tree structures of this chapter support. ``Distances'' means queries that combine distances to centroid
+ancestors, as in the nearest-red-vertex problem.}
+\label{tab:dyntrees}
+\end{table}
+
+\begin{tip}
+Before reaching for a dynamic tree, check whether the problem is offline. Operations known in advance usually yield to a sweep, to
+divide and conquer over time with a rollback DSU, or to a static HLD over the final tree, all of them shorter and safer to write
+in a contest.
+\end{tip}
+
+\begin{summary}[Chapter summary]
+\begin{itemize}
+  \item A root path crosses at most $\log_2 n$ light edges, so HLD cuts every path into $\Oh{\log n}$ chain pieces, each a range of
+        positions; positions also keep subtrees contiguous.
+  \item Centroid decomposition has $\Oh{\log n}$ levels; every path is handled at exactly one centroid, its LCA in the centroid
+        tree, which gives $\Oh{n \log n}$ algorithms for all-paths problems and $\Oh{\log n}$ online distance queries.
+  \item DSU on tree keeps the heavy child's counts and re-adds light subtrees: $\Oh{n \log n}$ with a single global array.
+  \item Long-path decomposition shares one buffer along each long path and runs depth-indexed DP in $\Oh{n}$.
+  \item A virtual tree on $k$ keys has at most $2k - 1$ vertices: sort by entry time, add neighbour LCAs, and the parent of each
+        vertex is its LCA with its predecessor.
+  \item Euler tour trees keep a forest under link and cut with component aggregates; link-cut trees add path aggregates.
+\end{itemize}
+\end{summary}
+
+\begin{practice}
+\ppgroup{Heavy-light and centroid decomposition}
+\begin{pplist}
+  \item Path Queries II
+  \item Counting Paths
+  \item Finding a Centroid
+  \item Fixed-Length Paths I
+  \item Fixed-Length Paths II
+\end{pplist}
+\ppgroup{Subtree statistics}
+\begin{pplist}
+  \item Distinct Colors
+  \item Subtree Queries
+  \item Path Queries
+\end{pplist}
+\end{practice}

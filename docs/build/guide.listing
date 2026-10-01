@@ -1,0 +1,13 @@
+// @name   Sum of a range (example)
+// @prefix cprangesum
+// @key    y z
+// @desc   [global] range_sum(P, l, r) = sum of a[l, r) from prefix sums P.
+// @usage  ll s = range_sum(P, l, r);
+// @complexity O(1)
+#include <bits/stdc++.h>
+using namespace std;
+using ll = long long;
+
+// @begin
+ll range_sum(const vector<ll>& P, int l, int r) { return P[r] - P[l]; }
+// @end

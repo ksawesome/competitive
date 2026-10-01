@@ -1,0 +1,1311 @@
+\chapter{Worked Problems}\label{ch:worked}
+
+This chapter puts the book to work. It solves seventeen classic problems from the CSES Problem Set
+(\href{https://cses.fi/problemset/}{cses.fi/problemset}) all the way from the statement to accepted code, and it shows the
+\emph{thinking} that leads to each solution, not just the answer. The problems follow the order of the book: sorting and
+greedy, binary search, prefix sums, graphs, dynamic programming, trees, range queries, strings and binary lifting.
+
+\begin{tip}[Get the most out of this chapter]
+Open the problem on CSES, send it to VS Code with Competitive Companion (CPH creates the file from your template) and try it
+for twenty minutes \emph{before} reading on. If you are stuck, read only the ``Find the idea'' step and try again. Solving it
+yourself is what makes a technique stick; reading a solution only makes it look familiar.
+\end{tip}
+
+\section[The method]{The method \hfill \bronze}
+
+Every solution below is found with the same six steps. They are worth making a habit: most wrong answers in contests come
+from skipping step 2 (the solution was never fast enough) or step 6 (it was never tested on a hard case).
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[wbox/.style={draw=cpblue, fill=cpblue!6, rounded corners=3pt, thick, text width=4cm, align=center,
+    minimum height=1.3cm, font=\sffamily\small}, node distance=0.6cm]
+  \node[wbox] (a) {\textbf{1. Read}\\statement, samples, limits};
+  \node[wbox, right=of a] (b) {\textbf{2. Budget}\\limits $\to$ complexity};
+  \node[wbox, right=of b] (c) {\textbf{3. Brute force}\\the obvious slow solution};
+  \node[wbox, below=of c] (d) {\textbf{4. Observe}\\why is the brute force slow?};
+  \node[wbox, left=of d] (e) {\textbf{5. Code}\\template + library};
+  \node[wbox, left=of e] (f) {\textbf{6. Test}\\samples, edge cases, stress};
+  \draw[ded] (a)--(b); \draw[ded] (b)--(c); \draw[ded] (c)--(d); \draw[ded] (d)--(e); \draw[ded] (e)--(f);
+\end{tikzpicture}
+\caption{The six steps used for every problem in this chapter.}
+\end{figure}
+
+\begin{enumerate}
+  \item \textbf{Read} the statement twice. Note what is given, what is asked, and every limit.
+  \item \textbf{Budget.} A judge does roughly $10^8$ simple operations per second. Table~\ref{tab:constraints} turns the limits
+        into the complexity you need: with $n \le 2\cdot 10^5$, $\Oh{n\log n}$ is fine and $\Oh{n^2} = 4\cdot10^{10}$ is
+        hopeless.
+  \item \textbf{Brute force.} Write down the simplest correct solution, even if it is far too slow. It fixes what you are
+        computing, and later it is the reference for a stress test.
+  \item \textbf{Observe.} Ask what the brute force repeats or wastes. The answer is almost always one of the techniques in
+        this book, and the ``How to recognize it'' boxes are there to help you spot which.
+  \item \textbf{Code} it with your template and, where one exists, a library template pasted with its shortcut.
+  \item \textbf{Test}: run the CPH samples, then the extremes (smallest input, largest input, all equal, negative numbers),
+        then a stress test against the brute force if anything is uncertain.
+\end{enumerate}
+
+\paragraph{About the code.} Each solution is the body of \cc{solve()} in your template: it replaces the empty
+\cc|void solve() {}|. Remember what the template gives you: \cc{int} is 64-bit (\cc{#define int long long}), \cc{rep(i, n)}
+loops $i = 0, \dots, n-1$ and \cc{rep(i, a, b)} loops $i = a, \dots, b-1$, \cc{per} loops backwards, \cc{cin >> v} reads a
+whole vector, \cc{print(a, b)} prints its arguments separated by spaces and ends the line (a vector prints as its elements),
+\cc{chmax(a, b)} sets $a = \max(a, b)$, and \cc{INF}, \cc{MOD}, \cc{vi}, \cc{vvi}, \cc{pii}, \cc{pll}, \cc{minpq} are ready
+to use. Where a library template is needed (DSU, Fenwick tree) it is pasted above \cc{solve()} with its shortcut.
+
+\begin{fact}[Every program here is tested]
+Each solution in this chapter was compiled with your exact template and compiler flags and compared with a brute-force
+solution on 150 random inputs (the same kind of stress test as Section~4.4 of GUIDE.pdf). The largest cases were also timed
+with the judge's flags: every solution runs in well under 0.25\,s. Statements are paraphrased and limits rounded; always read
+the original.
+\end{fact}
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{rlLlr}
+\toprule
+\thd{\#} & \thd{Problem} & \thd{Technique} & \thd{Chapter} & \thd{Page} \\
+\midrule
+1 & Maximum Subarray Sum & Kadane's algorithm (a one-variable DP) & \ref{ch:dp} & \pageref{wp:kadane} \\
+2 & Apartments & sorting + two pointers, greedy matching & \ref{ch:sorting} & \pageref{wp:apartments} \\
+3 & Movie Festival & greedy by earliest end (exchange argument) & \ref{ch:sorting} & \pageref{wp:movies} \\
+4 & Factory Machines & binary search on the answer & \ref{ch:binsearch} & \pageref{wp:factory} \\
+5 & Subarray Sums II & prefix sums + counting map & \ref{ch:prefix} & \pageref{wp:subarray} \\
+6 & Counting Rooms & flood fill, connected components & \ref{ch:graphs} & \pageref{wp:rooms} \\
+7 & Message Route & BFS + parent pointers & \ref{ch:graphs} & \pageref{wp:route} \\
+8 & Shortest Routes I & Dijkstra & \ref{ch:shortest} & \pageref{wp:dijkstra} \\
+9 & Road Construction & DSU (union--find) & \ref{ch:dsu} & \pageref{wp:roads} \\
+10 & Coin Combinations II & counting DP (unbounded knapsack) & \ref{ch:dp} & \pageref{wp:coins} \\
+11 & Book Shop & 0/1 knapsack & \ref{ch:dp} & \pageref{wp:books} \\
+12 & Increasing Subsequence & LIS in $\Oh{n\log n}$ & \ref{ch:dp} & \pageref{wp:lis} \\
+13 & Subordinates & tree DP, children before parents & \ref{ch:trees} & \pageref{wp:subordinates} \\
+14 & Tree Diameter & two BFS passes & \ref{ch:trees} & \pageref{wp:diameter} \\
+15 & Dynamic Range Sum Queries & Fenwick tree & \ref{ch:segtree} & \pageref{wp:bit} \\
+16 & String Matching & prefix function (KMP) & \ref{ch:strings} & \pageref{wp:kmp} \\
+17 & Planets Queries I & binary lifting on a functional graph & \ref{ch:graphs} & \pageref{wp:planets} \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+% ======================================================================================================================
+\section[Maximum subarray sum]{Maximum subarray sum \hfill \silver}\label{wp:kadane}
+
+\begin{statement}{Maximum Subarray Sum}{CSES Problem Set}
+Given an array of $n$ integers, find the largest sum of a contiguous, non-empty subarray.
+Limits: $n \le 2\cdot 10^5$, $|a_i| \le 10^9$.
+\sample{8\\-1 3 -2 5 3 -5 2 2}{9}
+\end{statement}
+
+\wstep{Read the limits.} $n \le 2\cdot10^5$ allows $\Oh{n}$ or $\Oh{n\log n}$. Trying every pair $(l, r)$ is
+$\Oh{n^2} = 4\cdot10^{10}$ even with prefix sums. The answer can reach $2\cdot10^5\cdot10^9 = 2\cdot10^{14}$, so it needs
+64 bits (your template's \cc{int} already is).
+
+\wstep{Find the idea.} Ask a smaller question: what is the best subarray that \emph{ends} at position $i$? Call its sum
+$\mathrm{cur}_i$. Such a subarray is either $a_i$ alone, or $a_i$ appended to the best subarray ending at $i-1$:
+\[
+  \mathrm{cur}_i = \max(\mathrm{cur}_{i-1} + a_i,\; a_i).
+\]
+The answer is the largest $\mathrm{cur}_i$. This is a dynamic programming whose whole state is one number, known as
+\defn{Kadane's algorithm}. In words: keep a running sum, and start over whenever the sum so far is negative, because a
+negative prefix can only make what follows smaller.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+  \arr{A}{0}{0}{-1,3,-2,5,3,-5,2,2}\node[lbl, left=4pt of A-1] {$a_i$};
+  \arr{C}{0}{-1}{-1,3,1,6,9,4,6,8}\node[lbl, left=4pt of C-1] {cur};
+  \arr{B}{0}{-2}{-1,3,3,6,9,9,9,9}\node[lbl, left=4pt of B-1] {best};
+  \node[cell, hot] at (C-2.west) {3};
+  \node[cell, good] at (C-5.west) {9};
+  \node[cell, good] at (B-5.west) {9};
+  \node[draw=cpgreen, ultra thick, rounded corners=2pt, fit=(A-2)(A-5), inner sep=1pt] {};
+  \draw[brace] (A-2.north west) -- node[above=7pt, lbl] {$3 - 2 + 5 + 3 = 9$} (A-5.north east);
+  \node[note, text width=5.6cm, anchor=west] at (6.1, -1)
+    {cur is the best sum ending at $i$. Orange: the old sum was negative, so the subarray restarts at $a_i$. Green: the
+     best value, reached at the end of the framed subarray.};
+\end{tikzpicture}
+\caption{Kadane's algorithm on the sample.}
+\end{figure}
+
+\wstep{Code.}
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    ll best = LLONG_MIN, cur = 0;
+    rep(i, n) {
+        ll x;
+        cin >> x;
+        cur = max(cur + x, x);  // best sum of a subarray that ends here
+        chmax(best, cur);
+    }
+    print(best);
+}
+\end{code}
+
+\wstep{Complexity.} $\Oh{n}$ time and $\Oh{1}$ extra memory: the array is never stored.
+
+\begin{pitfall}[Starting from zero]
+Initialising \cc{best = 0} is wrong when every number is negative: for $[-3, -1]$ the answer is $-1$, because the subarray
+must be non-empty. Start from \cc{LLONG_MIN} (or from $a_0$).
+\end{pitfall}
+
+\begin{trick}[Variants you will meet]
+\begin{itemize}
+  \item \textbf{Length at least $k$}: with prefix sums, the answer is $\max_r \bigl(P_r - \min_{l \le r-k} P_l\bigr)$; keep the
+        running minimum.
+  \item \textbf{Circular array}: the best wrapping subarray is the total minus the \emph{minimum} subarray. Take the larger
+        of that and the ordinary answer, except when all numbers are negative (then the ``wrap'' would be empty).
+  \item \textbf{Maximum-sum rectangle} in an $n\times m$ matrix: fix the top and bottom rows, add the columns between them
+        into one array, and run Kadane on it: $\Oh{n^2 m}$.
+\end{itemize}
+\end{trick}
+
+% ======================================================================================================================
+\section[Apartments]{Apartments \hfill \silver}\label{wp:apartments}
+
+\begin{statement}{Apartments}{CSES Problem Set}
+There are $n$ applicants and $m$ apartments. Applicant $i$ wants an apartment of size $a_i$ and accepts any size in
+$[a_i - k, a_i + k]$. Each apartment can go to at most one applicant. How many applicants can get an apartment?
+Limits: $n, m \le 2\cdot 10^5$; sizes and $k$ up to $10^9$.
+\sample{4 3 5\\60 45 80 60\\30 60 75}{2}
+\end{statement}
+
+\wstep{Read the limits.} Pairing every applicant with every apartment is $4\cdot10^{10}$ pairs; general matching is much
+worse. We need sorting and a single sweep: $\Oh{n\log n + m\log m}$.
+
+\wstep{Find the idea.} Sort both lists and look at the smallest apartment $b_j$ and the smallest applicant $a_i$:
+\begin{itemize}
+  \item If $b_j < a_i - k$, the apartment is too small for applicant $i$, and for everyone after $i$ too (they want even
+        more). Nobody can use it: skip the apartment.
+  \item If $b_j > a_i + k$, the apartment is too big for $i$, and every remaining apartment is even bigger. Applicant $i$
+        can never be served: skip the applicant.
+  \item Otherwise $b_j$ fits $a_i$: match them. Giving the smallest usable apartment to the smallest applicant never hurts,
+        because any later applicant who could use $b_j$ could also use the larger apartments that $a_i$ would otherwise
+        take (an exchange argument, Section~\ref{sec:exchange}).
+\end{itemize}
+Every step discards an applicant or an apartment, so there are at most $n + m$ steps: this is the \defn{two pointers}
+technique.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+  \draw[->, cpgray] (0,0) -- (8.6,0) node[right, lbl] {size};
+  \foreach \av/\y/\st in {45/0.7/dim, 60/1.2/good, 60/1.7/dim, 80/2.2/good} {
+    \node[\st, draw, rounded corners=2pt, minimum height=3.5mm, minimum width=1.3cm, inner sep=0pt, anchor=west]
+      at ({(\av-30)*0.13}, \y) {};
+    \node[lbl, anchor=east] at ({(\av-30)*0.13 - 0.08}, \y) {$a = \av$};
+  }
+  \draw[cpgreen, thick, dashed] (4.55,0.1) -- (4.55,1.02);
+  \draw[cpgreen, thick, dashed] (6.5,0.1) -- (6.5,2.02);
+  \foreach \bv/\st in {30/dim, 60/good, 75/good} {
+    \node[circle, \st, draw, thick, minimum size=2.4mm, inner sep=0pt] (b\bv) at ({(\bv-25)*0.13}, 0) {};
+    \node[lbl, below=2pt of b\bv] {\bv};
+  }
+\end{tikzpicture}
+\caption{Sorted applicants (bars: acceptable sizes $[a_i - k, a_i + k]$ with $k = 5$) and apartments (dots). The sweep
+matches 60 with the first applicant who wants 60 and 75 with the applicant who wants 80; apartment 30 fits nobody.}
+\end{figure}
+
+\wstep{Code.}
+\begin{code}
+void solve() {
+    int n, m, k;
+    cin >> n >> m >> k;
+    vi a(n), b(m);
+    cin >> a >> b;
+    sort(all(a)), sort(all(b));
+    int ans = 0;
+    for (int i = 0, j = 0; i < n && j < m;) {
+        if (b[j] < a[i] - k) j++;       // too small for everyone still waiting
+        else if (b[j] > a[i] + k) i++;  // no apartment left fits applicant i
+        else ans++, i++, j++;
+    }
+    print(ans);
+}
+\end{code}
+
+\wstep{Complexity.} $\Oh{n\log n + m\log m}$ for sorting; the sweep is $\Oh{n + m}$.
+
+\begin{recognize}
+Two sets must be paired, and whether $x$ and $y$ can be paired depends on comparing their values (a threshold or a
+window). Sort both sides and sweep them together; the greedy match of ``smallest with smallest'' is usually optimal.
+\end{recognize}
+\usetemplate{Two pointers (sliding window)}{Ctrl+Alt+T, 5}{cptwoptr}
+
+% ======================================================================================================================
+\section[Movie festival]{Movie festival \hfill \silver}\label{wp:movies}
+
+\begin{statement}{Movie Festival}{CSES Problem Set}
+There are $n$ movies; movie $i$ runs from time $a_i$ to $b_i$ ($a_i < b_i$). You can watch one movie at a time and only
+from start to end; a movie may start exactly when the previous one ends. What is the largest number of whole movies you
+can watch? Limits: $n \le 2\cdot 10^5$, times up to $10^9$.
+\sample{3\\3 5\\4 9\\5 8}{2}
+\end{statement}
+
+\wstep{Read the limits.} Trying all $2^n$ subsets works for $n \le 20$; here $n$ is $2\cdot10^5$, so we need a greedy rule
+and $\Oh{n\log n}$.
+
+\wstep{Find the idea.} Which movie should you watch first? The one that \emph{ends} earliest, because it leaves the most
+time for everything else. Proof by exchange: take any optimal schedule and replace its first movie by the movie that ends
+earliest overall. That movie ends no later, so it does not clash with the rest of the schedule, and the count is the same.
+So some optimal schedule starts with the earliest-ending movie; apply the same argument to the movies that start after it
+ends. In code: sort by end time and take every movie that starts no earlier than the end of the last one taken.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=0.9cm]
+  \draw[->, cpgray] (0,0) -- (10.5,0) node[right, lbl] {time};
+  \foreach \t in {0,...,10} \draw[cpgray] (\t,0.07) -- (\t,-0.07) node[below, lbl] {\t};
+  \node[seg, good, minimum width=1.8cm, anchor=west] at (3,0.6) {3--5};
+  \node[seg, good, minimum width=2.7cm, anchor=west] at (5,1.25) {5--8};
+  \node[seg, dim, minimum width=4.5cm, anchor=west] at (4,1.9) {4--9};
+  \node[lbl, anchor=west] at (10.8,0.6) {ends first: take it};
+  \node[lbl, anchor=west] at (10.8,1.25) {starts at $5 \ge 5$: take it};
+  \node[lbl, anchor=west] at (10.8,1.9) {starts at $4 < 8$: skip};
+\end{tikzpicture}
+\caption{Movies sorted by end time; the greedy takes the green ones.}
+\end{figure}
+
+\wstep{Code.}
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vector<pii> mv(n);
+    for (auto& [a, b] : mv) cin >> a >> b;
+    sort(all(mv), [](const pii& x, const pii& y) { return x.second < y.second; });
+    int cnt = 0, free_at = 0;  // the time the last chosen movie ends
+    for (auto [a, b] : mv)
+        if (a >= free_at) cnt++, free_at = b;
+    print(cnt);
+}
+\end{code}
+
+\wstep{Complexity.} $\Oh{n\log n}$ for the sort, then one pass.
+
+\begin{pitfall}[Plausible rules that are wrong]
+\begin{itemize}
+  \item \emph{Earliest start first}: for $[1,10], [2,3], [4,5]$ it takes $[1,10]$ and nothing else, but the answer is 2.
+  \item \emph{Shortest first}: for $[1,5], [4,7], [6,10]$ it takes $[4,7]$, which blocks both others; the answer is 2.
+\end{itemize}
+Whenever you invent a greedy rule, look for a small counterexample (or stress test it) before coding it.
+\end{pitfall}
+\usetemplate{Intervals: merge + max disjoint}{Ctrl+Alt+T, Shift+N}{cpintervals}
+
+% ======================================================================================================================
+\section[Factory machines]{Factory machines \hfill \silver}\label{wp:factory}
+
+\begin{statement}{Factory Machines}{CSES Problem Set}
+A factory has $n$ machines working at the same time; machine $i$ makes one product every $k_i$ seconds. What is the
+shortest time in which the machines can make $t$ products together? Limits: $n \le 2\cdot 10^5$; $t, k_i \le 10^9$.
+\sample{3 7\\3 2 5}{8}
+\end{statement}
+
+\wstep{Read the limits.} The answer can be as large as $10^{18}$ (one machine with $k = t = 10^9$), so trying times one
+second at a time is out of the question.
+
+\wstep{Find the idea.} Turn ``find the minimum time'' into a yes/no question: \emph{can the machines make $t$ products within
+time $T$?} That is easy: machine $i$ makes $\lfloor T / k_i\rfloor$ products, so add these up and compare with $t$, in
+$\Oh{n}$. The answer is also \emph{monotone}: if time $T$ is enough, so is $T+1$. A monotone yes/no question means
+\defn{binary search on the answer} (Chapter~\ref{ch:binsearch}): find the first $T$ that says yes. The search range is
+$[1, \min_i k_i \cdot t]$, because the fastest machine alone makes $t$ products in that time.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+  \arr{M}{0}{0}{0,1,2,3,4,6,6,7,8,10}
+  \foreach \i in {1,...,10} \node[lbl, above=0pt of M-\i] {\i};
+  \node[lbl, left=4pt of M-1] {made};
+  \node[lbl, anchor=east] at ($(M-1.north west)+(-0.1,0.2)$) {$T$};
+  \arr{V}{0}{-0.9}{no,no,no,no,no,no,no,yes,yes,yes}
+  \foreach \i in {1,...,7} \node[cell, fill=cpred!12, draw=cpred!60] at (V-\i.west) {no};
+  \foreach \i in {8,...,10} \node[cell, good] at (V-\i.west) {yes};
+  \node[lbl, left=4pt of V-1] {$\ge 7$?};
+  \draw[hded] ($(V-8.south)+(0,-0.75)$) node[below, lbl] {first yes: $T = 8$} -- (V-8.south);
+  \node[note, text width=4.6cm, anchor=west] at (7.4, -0.45)
+    {made$(T) = \sum_i \lfloor T / k_i \rfloor$ for $k = (3, 2, 5)$. The answers form a block of ``no'' followed by a
+     block of ``yes'', so binary search finds the boundary.};
+\end{tikzpicture}
+\caption{Products made by time $T$ in the sample, and the monotone yes/no question.}
+\end{figure}
+
+\wstep{Code.}
+\begin{code}
+void solve() {
+    int n, t;
+    cin >> n >> t;
+    vi k(n);
+    cin >> k;
+    auto ok = [&](ll T) {  // can the machines make t products within time T?
+        ll made = 0;
+        for (ll x : k)
+            if ((made += T / x) >= t) return true;
+        return false;
+    };
+    ll lo = 1, hi = *min_element(all(k)) * t;  // the fastest machine alone is enough
+    while (lo < hi) {
+        ll mid = lo + (hi - lo) / 2;
+        if (ok(mid)) hi = mid;
+        else lo = mid + 1;
+    }
+    print(lo);
+}
+\end{code}
+
+\wstep{Complexity.} $\Oh{n \log(\min k \cdot t)}$: about 60 checks of $\Oh{n}$ each, roughly $1.2\cdot10^7$ operations.
+
+\begin{pitfall}[Overflow inside the check]
+Summing $\lfloor T/k_i\rfloor$ over all machines can reach $2\cdot10^5 \cdot 10^{18}$, far beyond 64 bits. The check stops
+as soon as the count reaches $t$: before each addition the count is below $t \le 10^9$, so it never exceeds about
+$10^{18} + 10^9$, which fits. Also write the midpoint as \cc{lo + (hi - lo) / 2}.
+\end{pitfall}
+\usetemplate{Binary search on the answer}{Ctrl+Alt+T, A}{cpbsearch}
+
+% ======================================================================================================================
+\section[Subarray sums]{Subarray sums \hfill \silver}\label{wp:subarray}
+
+\begin{statement}{Subarray Sums II}{CSES Problem Set}
+Given $n$ integers (which may be negative) and a target $x$, count the contiguous subarrays whose sum is exactly $x$.
+Limits: $n \le 2\cdot 10^5$, $|a_i|, |x| \le 10^9$.
+\sample{5 7\\2 -1 3 5 -2}{2}
+\end{statement}
+
+\wstep{Read the limits.} All $\Oh{n^2}$ pairs are too many. With only positive numbers a sliding window would work (the sum
+grows as the window grows), but negative numbers break that: this is exactly what separates ``Subarray Sums II'' from
+``Subarray Sums I''.
+
+\wstep{Find the idea.} With prefix sums $P_0 = 0$ and $P_r = a_1 + \dots + a_r$, the sum of $a_{l+1}, \dots, a_r$ is
+$P_r - P_l$ (Chapter~\ref{ch:prefix}). So we count pairs $l < r$ with $P_l = P_r - x$. Sweep $r$ from left to right and keep,
+in a map, how many earlier prefixes had each value: at each $r$, add the number of earlier prefixes equal to $P_r - x$, then
+record $P_r$.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+  \arr{P}{0}{0}{0,2,1,4,9,7}\idx{P}{6}
+  \node[lbl, left=4pt of P-1] {$P$};
+  \arr{A}{0.35}{-1.35}{2,-1,3,5,-2}
+  \node[lbl, left=4pt of A-1] {$a$};
+  \draw[hded] (P-2.north) to[out=60, in=120] node[above, lbl, text=cporange] {$9 - 2 = 7$} (P-5.north);
+  \draw[ultra thick, cpteal, ->] (P-1.north) to[out=75, in=105, looseness=1.3] node[above, lbl, text=cpteal] {$7 - 0 = 7$}
+    (P-6.north);
+  \node[note, text width=6cm, anchor=west] at (4.8, -0.4)
+    {$P_r - P_l = x$ exactly when $a_{l+1} + \dots + a_r = x$. Orange: $P_4 - P_1$, the subarray $-1, 3, 5$. Teal:
+     $P_5 - P_0$, the whole array (this one needs the empty prefix $P_0 = 0$).};
+\end{tikzpicture}
+\caption{The two subarrays with sum 7 in the sample, seen as pairs of prefix sums that differ by 7.}
+\end{figure}
+
+\wstep{Code.}
+\begin{code}
+void solve() {
+    int n;
+    ll x;
+    cin >> n >> x;
+    map<ll, int> seen;  // how many prefixes had each sum
+    seen[0] = 1;
+    ll pre = 0, ans = 0;
+    rep(i, n) {
+        ll a;
+        cin >> a;
+        pre += a;
+        auto it = seen.find(pre - x);  // earlier prefix P with pre - P = x
+        if (it != seen.end()) ans += it->second;
+        seen[pre]++;
+    }
+    print(ans);
+}
+\end{code}
+
+\wstep{Complexity.} $\Oh{n\log n}$ with \cc{map}. The answer can reach $n(n+1)/2 \approx 2\cdot10^{10}$, which needs 64 bits.
+
+\begin{pitfall}[The empty prefix]
+\cc{seen[0] = 1} stands for $P_0$, the sum of nothing. Without it every subarray that starts at the first element is
+missed; in the sample the answer would be 1.
+\end{pitfall}
+
+\begin{tip}
+\cc{unordered_map} is faster on average, but on Codeforces it can be attacked with inputs that make every key collide; use
+\cc{map}, or a hash map with a randomized hash (Chapter~\ref{ch:ds-basics}).
+\end{tip}
+\usetemplate{Prefix sums (1D)}{Ctrl+Alt+T, 1}{cpprefix}
+
+% ======================================================================================================================
+\section[Counting rooms]{Counting rooms \hfill \silver}\label{wp:rooms}
+
+\begin{statement}{Counting Rooms}{CSES Problem Set}
+A building map has $n$ rows and $m$ columns; each cell is floor (\texttt{.}) or wall (\texttt{\#}). You can walk left,
+right, up and down through floor cells. Count the rooms. Limits: $n, m \le 1000$.
+\sample{5 8\\\#\#\#\#\#\#\#\#\\\#..\#...\#\\\#\#\#\#.\#.\#\\\#..\#...\#\\\#\#\#\#\#\#\#\#}{3}
+\end{statement}
+
+\wstep{Read the limits.} Up to $10^6$ cells, so every cell may be touched only a constant number of times: $\Oh{nm}$.
+
+\wstep{Find the idea.} A grid is a graph in disguise: every floor cell is a vertex, and neighbouring floor cells are joined by
+an edge. A room is a \defn{connected component}. Scan the cells row by row; the first time you meet an unvisited floor cell
+you have found a new room, so count it and \defn{flood fill} it (a BFS that marks every cell it reaches), so that none of
+its cells starts another count. Overwriting visited cells with \texttt{\#} saves a separate visited array.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+  \foreach \r in {0,...,4} \foreach \c in {0,...,7} \fill[cpgray!45] (\c*0.55, -\r*0.55) rectangle ++(0.55, -0.55);
+  \foreach \r/\c in {1/1, 1/2} \fill[cporange!35] (\c*0.55, -\r*0.55) rectangle ++(0.55, -0.55);
+  \foreach \r/\c in {1/4, 1/5, 1/6, 2/4, 2/6, 3/4, 3/5, 3/6} \fill[cpteal!30] (\c*0.55, -\r*0.55) rectangle ++(0.55, -0.55);
+  \foreach \r/\c in {3/1, 3/2} \fill[cppurple!25] (\c*0.55, -\r*0.55) rectangle ++(0.55, -0.55);
+  \draw[white, thick] (0,-2.75) grid[step=0.55] (4.4,0);
+  \foreach \r/\c/\rid in {1/1/1, 1/4/2, 3/1/3} \node[font=\sffamily\scriptsize\bfseries] at ({(\c+0.5)*0.55}, {-(\r+0.5)*0.55}) {\rid};
+  \node[note, text width=6.4cm, anchor=west] at (5, -1.35)
+    {Walls are grey. Scanning row by row, the numbered cell is the first free cell met in each room. Each one starts a flood
+     fill that paints its whole room, so later cells of that room are skipped and each room is counted exactly once.};
+\end{tikzpicture}
+\caption{The three rooms of the sample.}
+\end{figure}
+
+\wstep{Code.}
+\begin{code}
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    vector<string> g(n);
+    cin >> g;
+    const int dr[4] = {-1, 1, 0, 0}, dc[4] = {0, 0, -1, 1};
+    int rooms = 0;
+    rep(sr, n) rep(sc, m) {
+        if (g[sr][sc] != '.') continue;
+        rooms++;  // a new room: flood it so it is not counted again
+        queue<pii> q;
+        q.push({sr, sc});
+        g[sr][sc] = '#';
+        while (!q.empty()) {
+            auto [r, c] = q.front();
+            q.pop();
+            rep(d, 4) {
+                int nr = r + dr[d], nc = c + dc[d];
+                bool inside = 0 <= nr && nr < n && 0 <= nc && nc < m;
+                if (!inside || g[nr][nc] != '.') continue;
+                g[nr][nc] = '#';
+                q.push({nr, nc});
+            }
+        }
+    }
+    print(rooms);
+}
+\end{code}
+
+\wstep{Complexity.} $\Oh{nm}$: every cell enters the queue at most once and looks at four neighbours.
+
+\begin{pitfall}[Recursive flood fill]
+A recursive DFS can go $10^6$ calls deep on a $1000\times1000$ grid. Your local build has a 256\,MB stack, so it passes on
+your machine, but on judges with the usual 1--8\,MB stack it crashes. The queue-based BFS above has no such limit.
+\end{pitfall}
+\usetemplate{Flood fill (grid regions)}{Ctrl+Alt+T, F}{cpflood}
+
+% ======================================================================================================================
+\section[Message route]{Message route \hfill \silver}\label{wp:route}
+
+\begin{statement}{Message Route}{CSES Problem Set}
+A network has $n$ computers and $m$ two-way connections. Find a route from computer 1 to computer $n$ that passes through as
+few computers as possible: print their number and the route, or \texttt{IMPOSSIBLE}. Limits: $n \le 10^5$, $m \le 2\cdot10^5$.
+\sample{5 5\\1 2\\1 3\\1 4\\2 3\\5 4}{3\\1 4 5}
+\end{statement}
+
+\wstep{Read the limits.} $\Oh{n + m}$ or close to it.
+
+\wstep{Find the idea.} All connections cost the same, so the fewest computers means the fewest edges: an unweighted shortest
+path, which \defn{BFS} finds (Chapter~\ref{ch:graphs}). BFS discovers vertices in order of distance. To print the route,
+remember for every vertex the vertex it was discovered from, \cc{par[v]}. Following \cc{par} back from $n$ walks the
+shortest path backwards; reverse it.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+  \node[vtx, good] (1) at (0,0) {1};
+  \node[vtx] (2) at (1.9,1.25) {2};
+  \node[vtx] (3) at (1.9,0) {3};
+  \node[vtx, good] (4) at (1.9,-1.25) {4};
+  \node[vtx, good] (5) at (3.8,-1.25) {5};
+  \draw[ed, dashed] (2) -- (3);
+  \draw[hded] (1) -- (2); \draw[hded] (1) -- (3);
+  \draw[ultra thick, cpgreen, ->] (1) -- (4); \draw[ultra thick, cpgreen, ->] (4) -- (5);
+  \node[lbl, left=2pt of 1] {$d = 0$}; \node[lbl, above=2pt of 2] {$d = 1$}; \node[lbl, right=2pt of 3] {$d = 1$};
+  \node[lbl, below=2pt of 4] {$d = 1$}; \node[lbl, below=2pt of 5] {$d = 2$};
+  \node[note, text width=6.2cm, anchor=west] at (5, 0)
+    {Arrows point from \texttt{par[v]} to $v$: the edge through which $v$ was discovered. Walking back from 5 gives $5, 4, 1$;
+     reversed, the route is $1\ 4\ 5$. The dashed edge joins two vertices of the same layer and is never used.};
+\end{tikzpicture}
+\caption{BFS from computer 1 on the sample, with parent pointers.}
+\end{figure}
+
+\wstep{Code.}
+\begin{code}
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    vvi adj(n);
+    rep(i, m) {
+        int u, v;
+        cin >> u >> v;
+        u--, v--;
+        adj[u].push_back(v), adj[v].push_back(u);
+    }
+    vi dist(n, -1), par(n, -1);
+    queue<int> q;
+    q.push(0), dist[0] = 0;
+    while (!q.empty()) {
+        int u = q.front();
+        q.pop();
+        for (int v : adj[u])
+            if (dist[v] == -1) dist[v] = dist[u] + 1, par[v] = u, q.push(v);
+    }
+    if (dist[n - 1] == -1) return print("IMPOSSIBLE");
+    vi path;
+    for (int v = n - 1; v != -1; v = par[v]) path.push_back(v + 1);
+    reverse(all(path));
+    print(sz(path));
+    print(path);
+}
+\end{code}
+
+\wstep{Complexity.} $\Oh{n + m}$.
+
+\begin{pitfall}
+\begin{itemize}
+  \item DFS does \emph{not} find shortest paths; only BFS (or Dijkstra with weights) does.
+  \item Mark a vertex when it is \emph{pushed}, not when it is popped. Otherwise a vertex can enter the queue once per
+        neighbour, and the queue can grow to $\Oh{m}$ entries with repeated work.
+\end{itemize}
+\end{pitfall}
+
+\begin{tip}
+\cc{return print("IMPOSSIBLE");} prints and leaves \cc{solve()} in one line. It is legal because both functions return
+\cc{void}; it saves an \cc{else} and a level of indentation.
+\end{tip}
+\usetemplate{BFS (shortest path, unweighted)}{Ctrl+Alt+T, B}{cpbfs}
+
+% ======================================================================================================================
+\section[Shortest routes]{Shortest routes \hfill \gold}\label{wp:dijkstra}
+
+\begin{statement}{Shortest Routes I}{CSES Problem Set}
+There are $n$ cities and $m$ one-way flights; each flight has a price. Print the cheapest total price from city 1 to every
+city (all cities can be reached). Limits: $n \le 10^5$, $m \le 2\cdot10^5$, prices up to $10^9$.
+\sample{3 4\\1 2 6\\1 3 2\\3 2 3\\1 3 4}{0 5 2}
+\end{statement}
+
+\wstep{Read the limits.} Bellman--Ford's $\Oh{nm} = 2\cdot10^{10}$ is too slow. Weights are non-negative, so
+\defn{Dijkstra} in $\Oh{(n+m)\log m}$ applies (Chapter~\ref{ch:shortest}).
+
+\wstep{Find the idea.} Always settle the unsettled city with the smallest known distance: with non-negative weights no later
+path can make it cheaper. A min-priority queue of (distance, city) pairs gives that city in $\Oh{\log m}$. When a flight
+improves a distance, push the new pair and leave the old one in the queue; when an outdated pair is popped
+(\cc{d != dist[u]}), skip it. This \emph{lazy deletion} is simpler than updating entries inside the heap.
+
+\begin{figure}[H]
+\centering
+\begin{minipage}{0.36\linewidth}
+\centering
+\begin{tikzpicture}
+  \node[vtx, good] (1) at (0,0) {1};
+  \node[vtx] (3) at (1.8,-1.4) {3};
+  \node[vtx] (2) at (3.6,0) {2};
+  \draw[ded] (1) -- node[above, lbl] {6} (2);
+  \draw[hded] (1) to[bend right=22] node[below left, lbl] {2} (3);
+  \draw[ded] (1) to[bend left=22] node[above right, lbl] {4} (3);
+  \draw[hded] (3) -- node[below right, lbl] {3} (2);
+  \node[lbl, above=2pt of 1] {dist 0}; \node[lbl, above=2pt of 2] {dist 5}; \node[lbl, below=2pt of 3] {dist 2};
+\end{tikzpicture}
+\end{minipage}\hfill
+\begin{minipage}{0.6\linewidth}
+\small
+\begin{tabular}{@{}clp{5.4cm}@{}}
+\toprule
+\thd{Step} & \thd{Pop} & \thd{What happens} \\
+\midrule
+1 & $(0, 1)$ & dist$[2] = 6$, dist$[3] = 2$; the second flight $1\to3$ (price 4) is no better \\
+2 & $(2, 3)$ & $2 + 3 = 5 < 6$: dist$[2] = 5$, push $(5, 2)$ \\
+3 & $(5, 2)$ & city 2 has no flights out \\
+4 & $(6, 2)$ & outdated: $6 \ne \mathrm{dist}[2] = 5$, skipped \\
+\bottomrule
+\end{tabular}
+\end{minipage}
+\caption{Dijkstra on the sample. Orange: the cheapest routes.}
+\end{figure}
+
+\wstep{Code.}
+\begin{code}
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    vector<vector<pll>> adj(n);
+    rep(i, m) {
+        int a, b;
+        ll c;
+        cin >> a >> b >> c;
+        adj[a - 1].push_back({b - 1, c});  // one-way flight
+    }
+    vector<ll> dist(n, INF);
+    minpq<pll> pq;
+    dist[0] = 0, pq.push({0, 0});
+    while (!pq.empty()) {
+        auto [d, u] = pq.top();
+        pq.pop();
+        if (d != dist[u]) continue;
+        for (auto [v, w] : adj[u])
+            if (d + w < dist[v]) dist[v] = d + w, pq.push({dist[v], v});
+    }
+    print(dist);
+}
+\end{code}
+
+\wstep{Complexity.} $\Oh{(n + m)\log m}$; 0.14\,s on a random graph of the maximum size.
+
+\begin{pitfall}
+\begin{itemize}
+  \item Distances reach $(n-1)\cdot10^9 \approx 10^{14}$: 64-bit integers are required.
+  \item Without the \cc{d != dist[u]} check the answer is still right, but a city can be expanded once per outdated entry,
+        which is quadratic on some graphs (a star with many improving edges).
+  \item With \emph{negative} weights Dijkstra is wrong; use Bellman--Ford or SPFA with care.
+\end{itemize}
+\end{pitfall}
+\usetemplate{Dijkstra}{Ctrl+Alt+T, J}{cpdijkstra}
+
+% ======================================================================================================================
+\section[Road construction]{Road construction \hfill \gold}\label{wp:roads}
+
+\begin{statement}{Road Construction}{CSES Problem Set}
+There are $n$ cities and no roads. Then $m$ two-way roads are built one by one. After each road, print the number of
+connected components and the size of the largest one. Limits: $n \le 10^5$, $m \le 2\cdot10^5$.
+\sample{5 3\\1 2\\1 3\\4 5}{4 2\\3 3\\2 3}
+\end{statement}
+
+\wstep{Read the limits.} A BFS after every road costs $\Oh{m(n+m)} \approx 6\cdot10^{10}$. Each road must be handled in
+(almost) constant time.
+
+\wstep{Find the idea.} Components only ever \emph{merge}, never split: exactly what a \defn{disjoint set union} (DSU) is made
+for (Chapter~\ref{ch:dsu}). \cc{unite(a, b)} returns \cc{true} if it merged two different components; the DSU also keeps
+the number of components and each component's size. The largest component can only grow, so a running maximum updated after
+each successful merge is enough.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+  \begin{scope}
+    \node[vtx, hot] (1) at (0,1) {1}; \node[vtx, hot] (2) at (1.1,1) {2}; \node[vtx] (3) at (0.55,0) {3};
+    \node[vtx] (4) at (2.4,1) {4}; \node[vtx] (5) at (2.4,0) {5};
+    \draw[hed] (1) -- (2);
+    \node[lbl] at (1.2,-0.75) {after road 1--2}; \node[font=\ttfamily\small] at (1.2,-1.2) {4 2};
+  \end{scope}
+  \begin{scope}[xshift=4.4cm]
+    \node[vtx, hot] (1) at (0,1) {1}; \node[vtx, hot] (2) at (1.1,1) {2}; \node[vtx, hot] (3) at (0.55,0) {3};
+    \node[vtx] (4) at (2.4,1) {4}; \node[vtx] (5) at (2.4,0) {5};
+    \draw[ed] (1) -- (2); \draw[hed] (1) -- (3);
+    \node[lbl] at (1.2,-0.75) {after road 1--3}; \node[font=\ttfamily\small] at (1.2,-1.2) {3 3};
+  \end{scope}
+  \begin{scope}[xshift=8.8cm]
+    \node[vtx, hot] (1) at (0,1) {1}; \node[vtx, hot] (2) at (1.1,1) {2}; \node[vtx, hot] (3) at (0.55,0) {3};
+    \node[vtx, cool] (4) at (2.4,1) {4}; \node[vtx, cool] (5) at (2.4,0) {5};
+    \draw[ed] (1) -- (2); \draw[ed] (1) -- (3); \draw[hed] (4) -- (5);
+    \node[lbl] at (1.2,-0.75) {after road 4--5}; \node[font=\ttfamily\small] at (1.2,-1.2) {2 3};
+  \end{scope}
+\end{tikzpicture}
+\caption{Components after each road (one colour per component of size at least 2) and the printed line.}
+\end{figure}
+
+\wstep{Code.} Paste the DSU template above \cc{solve()} with \key{Ctrl+Alt+T, U}, then:
+\begin{code}
+void solve() {  // DSU (cpdsu) is pasted above solve()
+    int n, m;
+    cin >> n >> m;
+    DSU d(n);
+    int biggest = 1;
+    rep(i, m) {
+        int a, b;
+        cin >> a >> b;
+        if (d.unite(a - 1, b - 1)) chmax(biggest, d.size(a - 1));
+        print(d.comps, biggest);
+    }
+}
+\end{code}
+
+\wstep{Complexity.} $\Oh{m\,\alpha(n)}$, effectively $\Oh{m}$.
+
+\begin{trick}[Deleting edges: go backwards]
+A DSU cannot split a component. If a problem \emph{removes} roads and asks the same questions, read everything first and
+process the removals in reverse order as additions, then print the answers in the original order. If additions and
+removals are mixed, see offline dynamic connectivity (Chapter~\ref{ch:dsu}).
+\end{trick}
+\usetemplate{DSU (union-find)}{Ctrl+Alt+T, U}{cpdsu}
+
+% ======================================================================================================================
+\section[Coin combinations]{Coin combinations \hfill \gold}\label{wp:coins}
+
+\begin{statement}{Coin Combinations II}{CSES Problem Set}
+Given $n$ distinct coin values and a target $x$, count the ways to make the sum $x$ when the \emph{order of coins does not
+matter} ($2 + 3$ and $3 + 2$ are the same way). Each coin value can be used any number of times. Print the count modulo
+$10^9+7$. Limits: $n \le 100$, $x \le 10^6$.
+\sample{3 9\\2 3 5}{3}
+\end{statement}
+
+\wstep{Read the limits.} $n\cdot x = 10^8$ simple steps is fine. The number of ways is astronomically large, hence the
+modulus.
+
+\wstep{Find the idea.} Let \cc{ways[s]} be the number of ways to make $s$ with the coins processed so far; start with only
+\cc{ways[0] = 1} (the empty sum). Add the coins one at a time: with coin $c$ available, a way to make $s$ either does not use
+$c$ at all (the old \cc{ways[s]}), or it is a way to make $s - c$ that may already contain $c$, plus one more $c$. Looping
+$s$ \emph{upwards} makes \cc{ways[s - c]} already include uses of $c$, so the coin can be used many times. Putting the coins
+in the \emph{outer} loop means every multiset is built in one fixed order (all 2s, then all 3s, then all 5s), so it is
+counted exactly once.
+
+\begin{figure}[H]
+\centering
+\newcommand{\chg}[1]{\cellcolor{cporange!18}\textbf{#1}}
+\small
+\begin{tabular}{l*{10}{c}}
+\toprule
+$s$ & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 \\
+\midrule
+start & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+after coin 2 & 1 & 0 & \chg{1} & 0 & \chg{1} & 0 & \chg{1} & 0 & \chg{1} & 0 \\
+after coin 3 & 1 & 0 & 1 & \chg{1} & 1 & \chg{1} & \chg{2} & \chg{1} & \chg{2} & \chg{2} \\
+after coin 5 & 1 & 0 & 1 & 1 & 1 & \chg{2} & 2 & \chg{2} & \chg{3} & \cellcolor{cpgreen!25}\textbf{3} \\
+\bottomrule
+\end{tabular}
+\caption{\texttt{ways[s]} after each coin; changed entries are highlighted. For example, after coin 5,
+\texttt{ways[8]} $= 2 + {}$\texttt{ways[3]} $= 3$: $\{2,2,2,2\}, \{2,3,3\}$ and $\{3,5\}$. The answer is \texttt{ways[9]} $= 3$:
+$\{2,2,5\}, \{3,3,3\}, \{2,2,2,3\}$.}
+\end{figure}
+
+\wstep{Code.}
+\begin{code}
+void solve() {
+    int n, x;
+    cin >> n >> x;
+    vi c(n);
+    cin >> c;
+    vector<ll> ways(x + 1);
+    ways[0] = 1;
+    for (int coin : c)  // coins in the outer loop: each multiset is counted once
+        for (int s = coin; s <= x; s++)
+            if ((ways[s] += ways[s - coin]) >= MOD) ways[s] -= MOD;  // cheaper than %
+    print(ways[x]);
+}
+\end{code}
+
+\wstep{Complexity.} $\Oh{n\cdot x}$ time and $\Oh{x}$ memory; 0.21\,s at the maximum size.
+
+\begin{pitfall}[The order of the loops is the problem]
+Swapping the loops (sums outside, coins inside) counts \emph{ordered} sequences instead: that is the other CSES problem,
+Coin Combinations I. On this sample it gives 8, not 3, because $\{2,2,5\}$ is counted as $2{+}2{+}5$, $2{+}5{+}2$ and
+$5{+}2{+}2$, and $\{2,2,2,3\}$ four times.
+\end{pitfall}
+
+\begin{tip}
+\cc{if ((w += v) >= MOD) w -= MOD;} replaces \cc{w = (w + v) % MOD} whenever both values are already below \cc{MOD}. A
+comparison is several times cheaper than a 64-bit division, which matters at $10^8$ steps. Your local build uses the checked
+STL (\texttt{-D\_GLIBCXX\_DEBUG}), so this loop runs much slower on your machine than on the judge; GUIDE.pdf,
+Section~5.4 shows how to time a solution without it.
+\end{tip}
+\usetemplate{Knapsack (0/1, unbounded, coin-change ways)}{Ctrl+Alt+T, Shift+Q}{cpknap}
+
+% ======================================================================================================================
+\section[Book shop]{Book shop \hfill \gold}\label{wp:books}
+
+\begin{statement}{Book Shop}{CSES Problem Set}
+A shop sells $n$ books; book $i$ costs $h_i$ and has $s_i$ pages. With a budget of $x$, buying each book at most once, what
+is the largest total number of pages? Limits: $n \le 1000$, $x \le 10^5$, prices and pages up to 1000.
+\sample{4 10\\4 8 5 3\\5 12 8 1}{13}
+\end{statement}
+
+\wstep{Read the limits.} $2^{1000}$ subsets is impossible, but $n\cdot x = 10^8$ is fine: a DP over (book, budget).
+
+\wstep{Find the idea.} This is the \defn{0/1 knapsack} (Chapter~\ref{ch:dp}). Let \cc{best[c]} be the most pages with total
+price at most $c$ using the books seen so far. Adding book $i$ either skips it or buys it:
+\[
+  \mathrm{best}[c] \leftarrow \max\bigl(\mathrm{best}[c],\ \mathrm{best}[c - h_i] + s_i\bigr).
+\]
+Iterate $c$ \emph{downwards}, so that \cc{best[c - price[i]]} still describes the books \emph{before} $i$ and book $i$ is bought
+at most once. (Upwards is the unbounded version, exactly as in the previous problem.)
+
+\begin{figure}[H]
+\centering
+\newcommand{\chg}[1]{\cellcolor{cporange!18}\textbf{#1}}
+\small
+\setlength{\tabcolsep}{4.2pt}
+\begin{tabular}{l*{11}{c}}
+\toprule
+budget $c$ & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10 \\
+\midrule
+start & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+book 1 (price 4, 5 pages) & 0 & 0 & 0 & 0 & \chg{5} & \chg{5} & \chg{5} & \chg{5} & \chg{5} & \chg{5} & \chg{5} \\
+book 2 (price 8, 12 pages) & 0 & 0 & 0 & 0 & 5 & 5 & 5 & 5 & \chg{12} & \chg{12} & \chg{12} \\
+book 3 (price 5, 8 pages) & 0 & 0 & 0 & 0 & 5 & \chg{8} & \chg{8} & \chg{8} & 12 & \chg{13} & \chg{13} \\
+book 4 (price 3, 1 page) & 0 & 0 & 0 & \chg{1} & 5 & 8 & 8 & 8 & 12 & 13 & \cellcolor{cpgreen!25}\textbf{13} \\
+\bottomrule
+\end{tabular}
+\caption{\texttt{best[c]} after each book. The answer 13 buys books 1 and 3 (price 9).}
+\end{figure}
+
+\wstep{Code.}
+\begin{code}
+void solve() {
+    int n, x;
+    cin >> n >> x;
+    vi price(n), pages(n);
+    cin >> price >> pages;
+    vector<ll> best(x + 1, 0);  // best[c] = most pages with total price <= c
+    rep(i, n)
+        for (int c = x; c >= price[i]; c--)  // downwards: every book at most once
+            chmax(best[c], best[c - price[i]] + pages[i]);
+    print(best[x]);
+}
+\end{code}
+
+\wstep{Complexity.} $\Oh{n\cdot x}$ time, $\Oh{x}$ memory: one row instead of an $n \times x$ table.
+
+\begin{pitfall}[The greedy by value per price]
+Buying the books with the most pages per unit of price is wrong. With budget 10 and books (price 6, 7 pages), (5, 5),
+(5, 5): the best ratio takes the first book and then nothing fits (7 pages), but the two others give 10 pages.
+\end{pitfall}
+\usetemplate{Knapsack (0/1, unbounded, coin-change ways)}{Ctrl+Alt+T, Shift+Q}{cpknap}
+
+% ======================================================================================================================
+\section[Longest increasing subsequence]{Longest increasing subsequence \hfill \gold}\label{wp:lis}
+
+\begin{statement}{Increasing Subsequence}{CSES Problem Set}
+Given an array of $n$ integers, find the length of its longest strictly increasing subsequence (the elements need not be
+adjacent). Limits: $n \le 2\cdot 10^5$, values up to $10^9$.
+\sample{8\\7 3 5 3 6 2 9 8}{4}
+\end{statement}
+
+\wstep{Read the limits.} The textbook DP, $\mathrm{dp}[i] = 1 + \max\{\mathrm{dp}[j] : j < i,\ a_j < a_i\}$, is
+$\Oh{n^2} = 4\cdot10^{10}$. We need $\Oh{n\log n}$.
+
+\wstep{Find the idea.} Keep \cc{tail[k]}: the smallest possible last element of an increasing subsequence of length $k+1$
+among the elements seen so far. A small last element is always better, since more future elements can extend it. The
+array \cc{tail} is strictly increasing, so for each new $x$ binary search finds the first entry $\ge x$
+(\cc{lower_bound}):
+\begin{itemize}
+  \item if there is none, $x$ extends the longest subsequence: append it;
+  \item otherwise a subsequence of that length can now end with the smaller value $x$: overwrite the entry.
+\end{itemize}
+The length of \cc{tail} at the end is the answer.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+  \begin{scope}
+    \node[lbl, anchor=east] at (-0.15,0) {$x = 7$}; \arr{T1}{0}{0}{7}\node[cell, hot] at (T1-1.west) {7};
+    \node[lbl, anchor=west] at (3,0) {append};
+    \node[lbl, anchor=east] at (-0.15,-0.85) {$x = 3$}; \arr{T2}{0}{-0.85}{3}\node[cell, hot] at (T2-1.west) {3};
+    \node[lbl, anchor=west] at (3,-0.85) {replaces 7};
+    \node[lbl, anchor=east] at (-0.15,-1.7) {$x = 5$}; \arr{T3}{0}{-1.7}{3,5}\node[cell, hot] at (T3-2.west) {5};
+    \node[lbl, anchor=west] at (3,-1.7) {append};
+    \node[lbl, anchor=east] at (-0.15,-2.55) {$x = 3$}; \arr{T4}{0}{-2.55}{3,5}
+    \node[lbl, anchor=west] at (3,-2.55) {3 is there: no change};
+  \end{scope}
+  \begin{scope}[xshift=7.2cm]
+    \node[lbl, anchor=east] at (-0.15,0) {$x = 6$}; \arr{T5}{0}{0}{3,5,6}\node[cell, hot] at (T5-3.west) {6};
+    \node[lbl, anchor=west] at (3,0) {append};
+    \node[lbl, anchor=east] at (-0.15,-0.85) {$x = 2$}; \arr{T6}{0}{-0.85}{2,5,6}\node[cell, hot] at (T6-1.west) {2};
+    \node[lbl, anchor=west] at (3,-0.85) {replaces 3};
+    \node[lbl, anchor=east] at (-0.15,-1.7) {$x = 9$}; \arr{T7}{0}{-1.7}{2,5,6,9}\node[cell, hot] at (T7-4.west) {9};
+    \node[lbl, anchor=west] at (3,-1.7) {append};
+    \node[lbl, anchor=east] at (-0.15,-2.55) {$x = 8$}; \arr{T8}{0}{-2.55}{2,5,6,8}\node[cell, good] at (T8-4.west) {8};
+    \node[lbl, anchor=west] at (3,-2.55) {replaces 9; length 4};
+  \end{scope}
+\end{tikzpicture}
+\caption{\texttt{tail} after each element of the sample (read the left column first).}
+\end{figure}
+
+\wstep{Code.}
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vi a(n);
+    cin >> a;
+    vi tail;  // tail[k] = smallest end of an increasing subsequence of length k + 1
+    for (int x : a) {
+        auto it = lower_bound(all(tail), x);
+        if (it == tail.end()) tail.push_back(x);
+        else *it = x;
+    }
+    print(sz(tail));
+}
+\end{code}
+
+\wstep{Complexity.} $\Oh{n\log n}$.
+
+\begin{pitfall}[\texttt{tail} is not a subsequence]
+The final \cc{tail} is $2, 5, 6, 8$, but that is not a subsequence of the input (the 2 comes after the 5 and the 6). Only its
+\emph{length} is meaningful. To output an actual subsequence, remember for each element its predecessor, as the library
+template does. For the longest \emph{non-decreasing} subsequence use \cc{upper_bound} instead.
+\end{pitfall}
+\usetemplate{Longest increasing subsequence}{Ctrl+Alt+T, Shift+L}{cplis}
+
+% ======================================================================================================================
+\section[Subordinates]{Subordinates \hfill \gold}\label{wp:subordinates}
+
+\begin{statement}{Subordinates}{CSES Problem Set}
+A company has $n$ employees. Employee 1 is the director and every other employee has one direct boss. For every employee,
+count their subordinates (everyone below them in the hierarchy). Limits: $n \le 2\cdot 10^5$.
+\sample{5\\1 1 2 3}{4 1 1 0 0}
+\end{statement}
+
+\wstep{Read the limits.} Walking up from every employee to the director is $\Oh{n^2}$ on a chain. We need $\Oh{n}$.
+
+\wstep{Find the idea.} The hierarchy is a tree rooted at the director. The subordinates of $u$ are its children and their
+subordinates:
+\[
+  \mathrm{sub}[u] = \sum_{c \text{ child of } u} \bigl(\mathrm{sub}[c] + 1\bigr).
+\]
+This is a \defn{tree DP} (Chapter~\ref{ch:trees}): every child must be finished before its parent. A recursive DFS does
+that, but a chain of $2\cdot10^5$ employees makes it recurse $2\cdot10^5$ deep. The iterative version is just as short: list
+the vertices in BFS order from the root (parents before children), then process that list backwards.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+  \node[vtx] (1) at (0,0) {1};
+  \node[vtx] (2) at (-1.2,-1.2) {2}; \node[vtx] (3) at (1.2,-1.2) {3};
+  \node[vtx] (4) at (-1.2,-2.4) {4}; \node[vtx] (5) at (1.2,-2.4) {5};
+  \draw[ed] (1) -- (2) (1) -- (3) (2) -- (4) (3) -- (5);
+  \node[lbl, right=3pt of 1, text=cporange] {sub $= 4$};
+  \node[lbl, left=3pt of 2, text=cporange] {sub $= 1$}; \node[lbl, right=3pt of 3, text=cporange] {sub $= 1$};
+  \node[lbl, left=3pt of 4, text=cporange] {sub $= 0$}; \node[lbl, right=3pt of 5, text=cporange] {sub $= 0$};
+  \arr{O}{4}{-1.2}{1,2,3,4,5}
+  \node[lbl, above=2pt of O-3] {BFS order (0-indexed in the code)};
+  \draw[hded] ($(O-5.south)+(0,-0.35)$) -- node[below, lbl] {processed right to left: children first} ($(O-1.south)+(0,-0.35)$);
+\end{tikzpicture}
+\caption{The sample hierarchy with its answers, and the order in which the DP visits it.}
+\end{figure}
+
+\wstep{Code.}
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vvi ch(n);
+    rep(i, 1, n) {
+        int b;
+        cin >> b;
+        ch[b - 1].push_back(i);  // employee i's boss is b
+    }
+    vi order{0};  // BFS order from the director: parents before children
+    rep(i, n) for (int c : ch[order[i]]) order.push_back(c);
+    vi sub(n, 0);
+    per(i, n) {  // children before parents
+        int u = order[i];
+        for (int c : ch[u]) sub[u] += sub[c] + 1;
+    }
+    print(sub);
+}
+\end{code}
+
+\wstep{Complexity.} $\Oh{n}$.
+
+\begin{tip}
+\cc{order} grows while the loop reads it. That is safe with an index, as here, but \emph{not} with a range-based \cc{for}
+or an iterator: \cc{push_back} may move the vector's storage and leave the iterator dangling.
+\end{tip}
+\usetemplate{Tree DP (subtree DP, iterative)}{Ctrl+Alt+T, ;}{cptreedp}
+
+% ======================================================================================================================
+\section[Tree diameter]{Tree diameter \hfill \gold}\label{wp:diameter}
+
+\begin{statement}{Tree Diameter}{CSES Problem Set}
+Given a tree with $n$ nodes, find its diameter: the largest number of edges on a path between two nodes.
+Limits: $n \le 2\cdot 10^5$.
+\sample{5\\1 2\\1 3\\3 4\\3 5}{3}
+\end{statement}
+
+\wstep{Read the limits.} A BFS from every node is $\Oh{n^2}$. We need $\Oh{n}$.
+
+\wstep{Find the idea.} Run a BFS from any node; the node \cc{far} that is farthest from it is always one end of some
+diameter. Run a second BFS from \cc{far}: the largest distance found is the diameter. (Sketch: if a longest path did not end
+at \cc{far}, you could splice the path to \cc{far} onto it and make it longer; Chapter~\ref{ch:trees} has the details and
+the DP alternative.)
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+  \begin{scope}
+    \node[vtx, hot] (1) at (0,0) {1}; \node[vtx] (2) at (-1,-1.1) {2}; \node[vtx] (3) at (1,-1.1) {3};
+    \node[vtx, good] (4) at (0.4,-2.3) {4}; \node[vtx] (5) at (1.6,-2.3) {5};
+    \draw[ed] (1) -- (2) (1) -- (3) (3) -- (4) (3) -- (5);
+    \node[lbl, above=2pt of 1] {0}; \node[lbl, left=2pt of 2] {1}; \node[lbl, right=2pt of 3] {1};
+    \node[lbl, below=2pt of 4] {2}; \node[lbl, below=2pt of 5] {2};
+    \node[note, text width=4.4cm] at (0.3,-3.85) {BFS from 1: the farthest node is 4 (the first with distance 2)};
+  \end{scope}
+  \begin{scope}[xshift=6.5cm]
+    \node[vtx, good] (1) at (0,0) {1}; \node[vtx, good] (2) at (-1,-1.1) {2}; \node[vtx, good] (3) at (1,-1.1) {3};
+    \node[vtx, hot] (4) at (0.4,-2.3) {4}; \node[vtx] (5) at (1.6,-2.3) {5};
+    \draw[ed] (3) -- (5);
+    \draw[hed] (4) -- (3) -- (1) -- (2);
+    \node[lbl, above=2pt of 1] {2}; \node[lbl, left=2pt of 2] {3}; \node[lbl, right=2pt of 3] {1};
+    \node[lbl, below=2pt of 4] {0}; \node[lbl, below=2pt of 5] {2};
+    \node[note, text width=4.4cm] at (0.3,-3.85) {BFS from 4: the largest distance is 3, along the diameter 4--3--1--2};
+  \end{scope}
+\end{tikzpicture}
+\caption{The two BFS passes on the sample; numbers next to the nodes are distances.}
+\end{figure}
+
+\wstep{Code.}
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vvi adj(n);
+    rep(i, n - 1) {
+        int a, b;
+        cin >> a >> b;
+        a--, b--;
+        adj[a].push_back(b), adj[b].push_back(a);
+    }
+    auto bfs = [&](int s) {  // distances from s
+        vi d(n, -1);
+        queue<int> q;
+        q.push(s), d[s] = 0;
+        while (!q.empty()) {
+            int u = q.front();
+            q.pop();
+            for (int v : adj[u])
+                if (d[v] < 0) d[v] = d[u] + 1, q.push(v);
+        }
+        return d;
+    };
+    vi d0 = bfs(0);
+    int far = max_element(all(d0)) - d0.begin();  // one end of a diameter
+    vi df = bfs(far);
+    print(*max_element(all(df)));
+}
+\end{code}
+
+\wstep{Complexity.} $\Oh{n}$: two BFS passes. With $n = 1$ there are no edges and the answer is 0, which the code handles.
+
+\begin{pitfall}
+The two-pass trick needs a \emph{tree} with non-negative edge weights (with weights, use a DFS that adds them up instead of a
+BFS). On general graphs the longest simple path is NP-hard, and the trick gives wrong answers.
+\end{pitfall}
+\usetemplate{Tree diameter}{Ctrl+Alt+T, Shift+D}{cpdiameter}
+
+% ======================================================================================================================
+\section[Range sum queries with updates]{Range sum queries with updates \hfill \gold}\label{wp:bit}
+
+\begin{statement}{Dynamic Range Sum Queries}{CSES Problem Set}
+Given an array of $n$ integers, process $q$ queries: \texttt{1 k u} sets $a_k = u$; \texttt{2 a b} prints
+$a_a + \dots + a_b$ (positions are 1-indexed). Limits: $n, q \le 2\cdot 10^5$, values up to $10^9$.
+\sample{8 4\\3 2 4 5 1 1 5 3\\2 1 4\\2 5 6\\1 3 1\\2 1 4}{14\\2\\11}
+\end{statement}
+
+\wstep{Read the limits.} Prefix sums answer a sum in $\Oh{1}$ but an update changes $\Oh{n}$ of them; a plain array updates
+in $\Oh{1}$ but sums in $\Oh{n}$. Either way the worst case is $\Oh{nq} = 4\cdot10^{10}$. Both operations must be about
+$\Oh{\log n}$.
+
+\wstep{Find the idea.} A \defn{Fenwick tree} (binary indexed tree, Chapter~\ref{ch:segtree}) does both in $\Oh{\log n}$.
+Entry $t_i$ stores the sum of the $\mathrm{lowbit}(i)$ positions that end at $i$, where $\mathrm{lowbit}(i)$ is the lowest
+set bit of $i$. A prefix sum adds $\Oh{\log n}$ entries, removing the lowest bit each time; an update changes
+$\Oh{\log n}$ entries, adding the lowest bit each time. The tree supports ``add $v$ at $i$'', so ``set $a_k = u$'' becomes
+``add $u - a_k$'', and we keep the current array to know $a_k$.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+  \foreach \v [count=\i] in {3,2,4,5,1,1,5,3} {
+    \node[cell, minimum width=8mm] at ({(\i-1)*0.8}, 0) {\v};
+    \node[lbl] at ({(\i-0.5)*0.8}, -0.55) {\i};
+  }
+  \foreach \i/\lb/\lv/\v/\st in {1/1/0/3/seg, 2/2/1/5/seg, 3/1/0/4/seg, 4/4/2/14/hot, 5/1/0/1/hot, 6/2/1/2/seg, 7/1/0/5/cool,
+                                 8/8/3/24/cool}
+    \node[seg, \st, minimum width={\lb*0.8cm - 0.06cm}, anchor=west] at ({(\i-\lb)*0.8 + 0.03}, {0.85 + \lv*0.72})
+      {$t_{\i} = \v$};
+  \node[note, text width=5.6cm, anchor=west] at (6.8, 1.5)
+    {Each bar is one entry $t_i$ and the positions it sums. Orange: prefix$(5) = t_5 + t_4 = 1 + 14 = 15$ (index
+     $5 \to 4 \to 0$). Teal: changing position 7 updates $t_7$ and $t_8$ (index $7 \to 8$).};
+\end{tikzpicture}
+\caption{A Fenwick tree over the sample array.}
+\end{figure}
+
+\wstep{Code.} Paste the Fenwick template above \cc{solve()} with \key{Ctrl+Alt+T, I}. It is 0-indexed with half-open ranges
+$[l, r)$, so positions $a..b$ of the statement are \cc{sum(a - 1, b)}:
+\begin{code}
+void solve() {  // BIT (cpbit) is pasted above solve()
+    int n, q;
+    cin >> n >> q;
+    vi a(n);
+    cin >> a;
+    BIT bit(n);
+    rep(i, n) bit.add(i, a[i]);
+    while (q--) {
+        int type, x, y;
+        cin >> type >> x >> y;
+        if (type == 1) x--, bit.add(x, y - a[x]), a[x] = y;  // set a[x] = y
+        else print(bit.sum(x - 1, y));  // positions x..y, 1-indexed
+    }
+}
+\end{code}
+
+\wstep{Complexity.} $\Oh{(n + q)\log n}$.
+
+\begin{recognize}
+Point updates and range sums (or any operation that can be undone, like XOR): Fenwick tree. Range minimum or maximum with
+updates cannot be undone by subtraction: use a segment tree (Chapter~\ref{ch:segtree}). No updates at all: plain prefix sums.
+\end{recognize}
+\usetemplate{Fenwick tree / BIT}{Ctrl+Alt+T, I}{cpbit}
+
+% ======================================================================================================================
+\section[String matching]{String matching \hfill \gold}\label{wp:kmp}
+
+\begin{statement}{String Matching}{CSES Problem Set}
+Given a string and a pattern, count the positions where the pattern occurs in the string (occurrences may overlap).
+Limits: both lengths up to $10^6$.
+\sample{saippuakauppias\\pp}{2}
+\end{statement}
+
+\wstep{Read the limits.} Comparing the pattern at every position costs $\Oh{|t|\cdot|p|}$, up to $10^{12}$ on inputs like
+\texttt{aaa\ldots a} and \texttt{aa\ldots ab}. We need $\Oh{|t| + |p|}$.
+
+\wstep{Find the idea.} The \defn{prefix function} $\pi[i]$ of a string is the length of the longest proper prefix of
+$s[0..i]$ that is also a suffix of it (Chapter~\ref{ch:strings}). Compute it on $s = p + \texttt{\#} + t$. The separator
+appears in neither string, so no border can be longer than $|p|$, and $\pi[i] = |p|$ exactly when the pattern ends at
+position $i$. Computing $\pi$ takes $\Oh{|s|}$ in total: $j$ grows by at most one per position and every step of the inner
+\cc{while} loop shrinks it.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+  \arr{S}{0}{0}{a,b,a,\#,a,b,a,b,a}\node[lbl, left=4pt of S-1] {$s$};
+  \arr{P}{0}{-0.9}{0,0,1,0,1,2,3,2,3}\node[lbl, left=4pt of P-1] {$\pi$};\idx{P}{9}
+  \node[cell, good] at (P-7.west) {3}; \node[cell, good] at (P-9.west) {3};
+  \draw[brace] (S-1.north west) -- node[above=7pt, lbl] {pattern} (S-3.north east);
+  \draw[brace] (S-5.north west) -- node[above=7pt, xshift=-4mm, lbl] {match 1} (S-7.north east);
+  \draw[brace, decoration={raise=17pt}] (S-7.north west) -- node[above=22pt, lbl] {match 2} (S-9.north east);
+  \node[note, text width=4.6cm, anchor=west] at (6.8, -0.45)
+    {Pattern \texttt{aba}, text \texttt{ababa}. $\pi = 3 = |p|$ (green) marks the end of an occurrence; the two
+     occurrences overlap.};
+\end{tikzpicture}
+\caption{The prefix function of pattern\,\texttt{\#}\,text.}
+\end{figure}
+
+\wstep{Code.}
+\begin{code}
+void solve() {
+    string text, pat;
+    cin >> text >> pat;
+    string s = pat + '#' + text;
+    int m = sz(pat), cnt = 0;
+    vi pi(sz(s));
+    rep(i, 1, sz(s)) {  // prefix function of pat#text
+        int j = pi[i - 1];
+        while (j > 0 && s[i] != s[j]) j = pi[j - 1];
+        if (s[i] == s[j]) j++;
+        pi[i] = j;
+        cnt += j == m;  // a border of length |pat| ends here: one occurrence
+    }
+    print(cnt);
+}
+\end{code}
+
+\wstep{Complexity.} $\Oh{|t| + |p|}$ time and memory; 0.05\,s at the maximum size.
+
+\begin{pitfall}
+The separator must not occur in either string. CSES strings are lowercase letters, so \texttt{\#} is safe; for arbitrary
+bytes, run the prefix function on the pattern alone and match the text against it (the library's \cc{find_occurrences}).
+\end{pitfall}
+\usetemplate{KMP (prefix function + pattern search)}{Ctrl+Alt+T, Shift+K}{cpkmp}
+
+% ======================================================================================================================
+\section[Teleporters]{Teleporters: binary lifting \hfill \gold}\label{wp:planets}
+
+\begin{statement}{Planets Queries I}{CSES Problem Set}
+There are $n$ planets and each has one teleporter, which sends you to planet $t_i$. Answer $q$ queries: starting from planet
+$x$ and using a teleporter $k$ times, where do you end up? Limits: $n, q \le 2\cdot10^5$, $k \le 10^9$.
+\sample{4 3\\2 1 1 4\\1 2\\3 4\\4 1}{1\\2\\4}
+\end{statement}
+
+\wstep{Read the limits.} Simulating $k \le 10^9$ steps per query is far too slow. Each query must take about $\Oh{\log k}$.
+
+\wstep{Find the idea.} Every planet has exactly one outgoing edge: a \defn{functional graph} (Chapter~\ref{ch:graphs}).
+Precompute \cc{up[j][v]}, the planet reached from $v$ after $2^j$ steps. Two jumps of $2^{j-1}$ make one jump of $2^j$:
+\[
+  \mathrm{up}[j][v] = \mathrm{up}[j-1]\bigl[\mathrm{up}[j-1][v]\bigr].
+\]
+A query writes $k$ in binary and makes one jump for every set bit, at most 30 jumps. This is \defn{binary lifting}, the same
+table that finds ancestors and LCAs in trees (Chapter~\ref{ch:trees}).
+
+\begin{figure}[H]
+\centering
+\begin{minipage}{0.34\linewidth}
+\centering
+\begin{tikzpicture}
+  \node[vtx] (1) at (0,0) {1}; \node[vtx] (2) at (1.9,0) {2};
+  \node[vtx] (3) at (0,-1.5) {3}; \node[vtx] (4) at (1.9,-1.5) {4};
+  \draw[ded] (1) to[bend left=25] (2); \draw[ded] (2) to[bend left=25] (1);
+  \draw[ded] (3) -- (1);
+  \draw[ded] (4) to[out=25, in=-25, looseness=7] (4);
+\end{tikzpicture}
+\end{minipage}\hfill
+\begin{minipage}{0.62\linewidth}
+\small
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+ & $v = 1$ & $v = 2$ & $v = 3$ & $v = 4$ \\
+\midrule
+\texttt{up[0][v]} (1 step) & 2 & 1 & 1 & 4 \\
+\texttt{up[1][v]} (2 steps) & 1 & 2 & 2 & 4 \\
+\texttt{up[2][v]} (4 steps) & 1 & 2 & \cellcolor{cporange!25}\textbf{2} & 4 \\
+\bottomrule
+\end{tabular}
+
+\smallskip
+{\footnotesize Query $(x = 3, k = 4)$: $4 = 100_2$, so one jump: \texttt{up[2][3]} $= 2$.}
+\end{minipage}
+\caption{The functional graph of the sample and the first rows of its jump table.}
+\end{figure}
+
+\wstep{Code.}
+\begin{code}
+void solve() {
+    int n, q;
+    cin >> n >> q;
+    const int LOG = 30;  // k < 2^30
+    vector<vi> up(LOG, vi(n));  // up[j][v] = planet reached from v after 2^j teleports
+    rep(i, n) cin >> up[0][i], up[0][i]--;
+    rep(j, 1, LOG) rep(i, n) up[j][i] = up[j - 1][up[j - 1][i]];
+    while (q--) {
+        int x, k;
+        cin >> x >> k;
+        x--;
+        rep(j, LOG) if (k >> j & 1) x = up[j][x];
+        print(x + 1);
+    }
+}
+\end{code}
+
+\wstep{Complexity.} $\Oh{n\log K}$ to build the table and $\Oh{\log K}$ per query, with $K = 10^9$; 0.21\,s at the maximum
+size.
+
+\begin{tip}[Memory]
+The table holds $30n$ numbers: 48\,MB with the template's 64-bit \cc{int}. That is fine for CSES (512\,MB) but on a 256\,MB
+problem with bigger $n$, store it as \cc{vector<vector<int32_t>>} to halve it.
+\end{tip}
+\usetemplate{K-th successor (binary lifting / jumping)}{Ctrl+Alt+T, .}{cpjump}
+
+% ======================================================================================================================
+\section[Where to go next]{Where to go next \hfill \bronze}
+
+\begin{summary}[What these problems teach]
+\begin{itemize}
+  \item \textbf{Ask a smaller question}: ``best subarray \emph{ending here}'' (Kadane), ``smallest tail for each length''
+        (LIS), ``can it be done in time $T$?'' (binary search on the answer).
+  \item \textbf{Change the representation}: subarray sums become pairs of prefix sums, a grid becomes a graph, a hierarchy
+        becomes a tree.
+  \item \textbf{Prove the greedy} with an exchange argument, or break it with a small counterexample.
+  \item \textbf{Loop order is meaning}: coins outside or inside, budget upwards or downwards.
+  \item \textbf{Check every bound}: 64-bit sums, overflow inside a check, recursion depth, memory of a table.
+\end{itemize}
+\end{summary}
+
+The CSES Problem Set has about 300 problems in the same style, grouped by topic, and it is the best next step after this
+chapter; the USACO Guide lists problems for every section of this book by level. Solve a few from each topic, and for every
+problem you could not solve, read the editorial and implement it yourself the same day.

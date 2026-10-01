@@ -1,0 +1,131 @@
+\chapter{Special Topics}\label{ch:special}
+
+\section[Randomized algorithms]{Randomized algorithms \hfill \plat}
+
+Randomness gives simple algorithms with guarantees that hold with overwhelming probability, and it defeats inputs built to
+break deterministic choices.
+
+\begin{itemize}
+  \item \textbf{Random pivots and shuffles}: shuffling the input before inserting into a naive BST, before a quickselect, or before
+        an incremental algorithm (smallest enclosing circle, expected $\Oh{n}$) turns worst cases into expected cases.
+  \item \textbf{Randomized hashing}: random bases and seeds (string hashing, \texttt{custom\_hash}, set hashing by random 64-bit
+        values) make collisions both rare and impossible to construct in advance.
+  \item \textbf{Sampling}: if an answer is shared by at least half of the elements (a majority, a gcd that divides at least half
+        of the numbers, a line through at least a fraction of the points), pick a random element and test it: each try succeeds
+        with probability $\ge \frac12$, so 30 tries fail with probability $2^{-30}$.
+  \item \textbf{Random priorities}: treaps, random weights in skip lists.
+\end{itemize}
+
+\begin{problem}{Ghd (Codeforces 364D)}
+Find the largest $g$ that divides at least half of $n \le 10^6$ numbers up to $10^{12}$.
+\solution The answer divides some element of the ``good'' half, so a random element is a candidate source with probability
+$\ge \frac12$. For a random $a_i$, the answer is a divisor of $a_i$; count, for each divisor of $a_i$, how many elements share it
+(via gcds with $a_i$, grouped). A dozen random picks suffice.
+\end{problem}
+
+\begin{pitfall}[Seeds]
+Seed with the clock (\cc{chrono::steady_clock::now().time_since_epoch().count()}), not a constant. On Codeforces, a fixed seed
+lets anyone read your code and craft an anti-random input during the hacking phase.
+\end{pitfall}
+
+\usetemplate{Random generator}{Ctrl+Alt+T, Shift+R}{cprng}
+
+\section[Interactive problems]{Interactive problems \hfill \gold}
+
+The judge answers your questions during the run. Rules that always apply:
+\begin{itemize}
+  \item \textbf{Flush after every query}: \cc{cout << ... << endl} (\cc{endl} flushes) or \cc{cout.flush()}. Forgetting it gives
+        ``Idleness limit exceeded''.
+  \item \textbf{Count your queries} against the limit before coding; $\log_2(10^9) \approx 30$, $\lceil\log_3 n\rceil$ for ternary
+        splits.
+  \item \textbf{Stop immediately} if the judge answers $-1$ (wrong query or limit exceeded), or you get a misleading verdict.
+  \item Some judges are \textbf{adaptive}: the hidden answer is only fixed to be consistent with your questions, so randomised
+        strategies that rely on a fixed hidden value can fail. Design strategies that are worst-case optimal.
+\end{itemize}
+
+\usetemplate{Interactive helpers}{Ctrl+Alt+T, Shift+I}{cpinteractive}
+
+\begin{tip}[Testing interactive solutions locally]
+CPH cannot play the judge. Write a small interactor that reads your queries and answers them, or temporarily replace \cc{ask}
+with a function that computes the answer from a hidden array you generate; the rest of the solution stays unchanged.
+\end{tip}
+
+\section[Communication problems]{Communication problems \hfill \ioi}
+
+Your program runs twice: first to \emph{encode} some information into a limited message, then (without memory of the first
+run) to \emph{decode} it. Typical tools: fixing a canonical order so both runs agree, encoding numbers in the ``shape'' of the
+output (which elements are chosen, their order: $n!$ permutations carry $\log_2 n!$ bits), and error-correcting parity bits. Think
+of the two runs as two parties who agreed on a protocol in advance and design the protocol first.
+
+\section[Bitsets]{Bitsets \hfill \plat}
+
+\cc{bitset<N>} packs booleans 64 per machine word, and its operations work word by word. Any algorithm dominated by OR/AND of
+boolean rows gets a 64$\times$ speed-up:
+
+\begin{itemize}
+  \item subset sums and knapsack feasibility: \cc{b |= b << w};
+  \item transitive closure / reachability in a DAG: \cc{reach[u] |= reach[v]} in reverse topological order, $\Oh{nm/64}$;
+  \item counting triangles or common neighbours: \cc{(adj[u] & adj[v]).count()};
+  \item Gaussian elimination over GF(2) with rows as bitsets.
+\end{itemize}
+
+\begin{pitfall}[Bitset sizes are compile-time]
+\cc{N} must be a constant. If the needed size varies between tests, use the maximum; or write a template function
+instantiated for a few sizes and dispatch at run time.
+\end{pitfall}
+
+\section[Matroids]{Matroids \hfill \ioi}
+
+A \defn{matroid} is a ground set with a family of ``independent'' subsets such that (1) subsets of independent sets are
+independent and (2) if $A$ and $B$ are independent with $|A| < |B|$, some element of $B \setminus A$ can be added to $A$ keeping it
+independent (the \emph{exchange property}). The theorem that makes them useful: \textbf{on a matroid, the greedy algorithm (add
+elements in order of decreasing weight whenever independence is kept) finds a maximum-weight independent set.}
+
+\begin{center}
+\begin{tabularx}{\linewidth}{p{3.6cm}L}
+\toprule
+\thd{Matroid} & \thd{Independent sets, and the greedy algorithm it justifies} \\
+\midrule
+graphic & forests of a graph: Kruskal's MST \\
+linear (over GF(2)) & linearly independent vectors: XOR basis with maximum total weight \\
+uniform & sets of size $\le k$: take the $k$ heaviest \\
+partition & at most $c_i$ elements from group $i$ \\
+scheduling & sets of unit jobs that can all meet their deadlines: the deadline greedy of Chapter~\ref{ch:sorting} \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{recognize}
+A greedy ``sort by weight, take if still feasible'' that you cannot prove with an exchange argument: check whether feasibility
+defines a matroid; if it does, greedy is correct. If feasibility is the intersection of \emph{two} matroids (for example ``a
+spanning forest using at most one edge of each colour'': graphic $\cap$ partition), greedy fails but \textbf{matroid
+intersection} finds the largest common independent set with repeated augmenting paths in an exchange graph, in
+$\Oh{r\cdot n\cdot(\text{oracle cost})}$ for rank $r$. Bipartite matching is the simplest case (two partition matroids).
+\end{recognize}
+
+\section[Vectorization and pragmas]{Vectorization and pragmas \hfill \ioi}
+
+Modern CPUs process 4--8 integers per instruction (SIMD). GCC vectorizes simple loops over contiguous arrays automatically at
+\texttt{-O3}; some contestants add
+\begin{code}
+#pragma GCC optimize("O3,unroll-loops")
+#pragma GCC target("avx2,bmi,bmi2,popcnt,lzcnt")
+\end{code}
+at the top of the file. It can make an $\Oh{n^2}$ loop over plain arrays several times faster, which occasionally turns an
+intended-to-fail $n^2$ into a pass. It is not a substitute for a better algorithm, it helps only branch-free loops over arrays
+(not \cc{set}, \cc{map} or recursion), and \texttt{target} can crash with ``illegal instruction'' on judges whose CPUs lack AVX2
+(some older USACO and ICPC machines). Keep it out of your default template and add it only when a constant factor is the
+bottleneck.
+
+\section[Constructive problems]{Constructive problems \hfill \silver}
+
+``Output any array / permutation / graph with property P'' problems reward patterns more than algorithms:
+
+\begin{itemize}
+  \item Solve small $n$ by brute force (write the brute force!), print all solutions, and look for a structure that
+        generalises: alternating, sorted then reversed, pairs swapped, a spiral.
+  \item Build inductively: from a solution for $n$, get one for $n + 1$ or $n + 2$ by a local change.
+  \item Look for invariants that rule out some $n$ (parity, sums modulo something); the impossible cases often show the
+        construction for the rest.
+  \item Extremal choices: put the largest element first, connect everything to one vertex, use a star or a path.
+\end{itemize}

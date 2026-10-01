@@ -1,0 +1,1055 @@
+\chapter{Graph Fundamentals}\label{ch:graphs}
+
+A \defn{graph} is a set of \defn{vertices} (also called nodes) joined by \defn{edges}. Road maps, friendships, dependencies
+between tasks, the cells of a maze, the states of a puzzle and the moves between them: an astonishing number of problems
+become graph problems once you see them that way, and then a small toolbox of traversal algorithms answers them. This
+chapter builds that toolbox. It introduces the vocabulary and the ways to store a graph, then the two fundamental searches,
+depth-first and breadth-first, together with their direct applications: connected components, shortest paths in unweighted
+graphs and grids, bipartiteness, cycles, and the special structure of graphs in which every vertex has exactly one outgoing
+edge. It closes with two techniques for searching huge implicit graphs: bidirectional search and A*.
+
+\begin{chapterintro}{\bronze\ \silver\ \gold\ \ioi}{Chapters~\ref{ch:complexity} and~\ref{ch:ds-basics}.}
+  \item speak the language of graphs, and choose between adjacency lists, matrices and edge lists;
+  \item run DFS and BFS, and know exactly what each one guarantees;
+  \item find components, shortest paths in grids, escape routes and 2-colourings;
+  \item detect and output cycles in undirected and directed graphs;
+  \item analyse functional graphs, and find cycles with $\Oh{1}$ memory;
+  \item search huge implicit graphs with bidirectional BFS and A*.
+\end{chapterintro}
+
+% ======================================================================================================================
+\section[Vocabulary]{Vocabulary \hfill \bronze}\label{sec:graph-vocab}
+
+We write $n$ for the number of vertices and $m$ for the number of edges. An edge of an \emph{undirected} graph joins two
+vertices symmetrically; an edge of a \emph{directed} graph (a \defn[arc]{arc}) goes from a tail to a head. A graph is
+\emph{weighted} when every edge carries a number, its length or cost (Figure~\ref{fig:graphkinds}). Unless a problem says
+otherwise, assume a \emph{simple} graph: no \emph{self-loops} (edges from a vertex to itself) and no \emph{parallel edges}
+(two edges joining the same pair). Contest inputs, however, often contain both, and the algorithms of this chapter handle
+them with at most a line of care.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \begin{scope}
+    \node[vtx] (a) at (0, 1.2) {0}; \node[vtx] (b) at (1.4, 1.9) {1}; \node[vtx] (c) at (2.6, 1) {2};
+    \node[vtx] (d) at (1.2, 0) {3}; \node[vtx] (e) at (3.3, 2.2) {4}; \node[vtx, dim] (f) at (3.5, 0) {5};
+    \draw[ed] (a) -- (b) -- (c) -- (d) -- (a) (b) -- (e);
+    \node[lbl] at (1.8, -0.75) {undirected; vertex 5 is isolated};
+  \end{scope}
+  \begin{scope}[xshift=5.3cm]
+    \node[vtx] (a) at (0, 1.2) {0}; \node[vtx] (b) at (1.4, 1.9) {1}; \node[vtx] (c) at (2.6, 1) {2};
+    \node[vtx] (d) at (1.2, 0) {3};
+    \draw[ded] (a) -- (b); \draw[ded] (b) -- (c); \draw[ded] (c) -- (d); \draw[ded] (d) -- (a); \draw[ded] (a) -- (c);
+    \node[lbl] at (1.3, -0.75) {directed; cycle $0 \to 1 \to 2 \to 3 \to 0$};
+  \end{scope}
+  \begin{scope}[xshift=10.3cm]
+    \node[vtx] (a) at (0, 1.2) {0}; \node[vtx] (b) at (1.6, 1.9) {1}; \node[vtx] (c) at (2.8, 0.8) {2};
+    \node[vtx] (d) at (1.2, 0) {3};
+    \draw[ed] (a) -- node[wl] {4} (b) (b) -- node[wl] {1} (c) (c) -- node[wl] {7} (d) (d) -- node[wl] {2} (a)
+      (a) -- node[wl] {5} (c);
+    \node[lbl] at (1.4, -0.75) {weighted};
+  \end{scope}
+\end{tikzpicture}
+\caption{An undirected graph, a directed graph and a weighted graph.}
+\label{fig:graphkinds}
+\end{figure}
+
+\begin{itemize}
+  \item A \defn{path} is a sequence of vertices in which consecutive vertices are joined by edges; it is \emph{simple} if no
+        vertex repeats. A \defn{cycle} is a path of at least one edge that returns to its start (in an undirected simple graph,
+        of length at least 3).
+  \item An undirected graph is \defn{connected} if every two vertices are joined by a path. Its maximal connected pieces are
+        its \defn{connected components}; every vertex belongs to exactly one.
+  \item The \defn{degree} of a vertex is the number of edges at it. Every edge adds one to the degrees of both its ends, so
+        the degrees sum to $2m$ (the \emph{handshake lemma}); in particular, the number of vertices of odd degree is even.
+        In a directed graph, each vertex has an in-degree and an out-degree, and both sum to $m$.
+  \item A \defn{tree} is a connected graph without cycles. The following are equivalent for a graph with $n$ vertices: it is
+        a tree; it is connected with $n - 1$ edges; it is acyclic with $n - 1$ edges; any two vertices are joined by exactly
+        one simple path. A \defn{forest} is a graph whose components are trees.
+  \item A \defn{DAG} is a directed acyclic graph. DAGs are exactly the graphs that have a topological order
+        (Chapter~\ref{ch:dsu}), and they are the natural shape of every dynamic programming (Part~V).
+  \item A graph is \defn{bipartite} if its vertices split into two sides with every edge crossing between them
+        (Section~\ref{sec:bipartite}).
+\end{itemize}
+
+Many graphs in contests are \emph{implicit}: the vertices are the cells of a grid, the arrangements of a puzzle, the numbers
+up to $10^6$, and the edges are the legal moves between them. Such graphs are never stored; the search generates the
+neighbours of a vertex when it needs them.
+
+% ======================================================================================================================
+\section[Representing a graph]{Representing a graph \hfill \bronze}\label{sec:graph-rep}
+
+Three representations cover almost every need (Figure~\ref{fig:graphrep}).
+
+\begin{itemize}
+  \item The \defn{adjacency list} stores, for every vertex, the list of its neighbours. It takes $\Oh{n + m}$ memory, and
+        visiting the edges of a vertex costs its degree, so a whole traversal costs $\Oh{n + m}$. It is the default.
+  \item The \defn{adjacency matrix} is an $n \times n$ table with a 1 (or the edge weight) where an edge exists. It answers
+        ``is there an edge from $u$ to $v$?'' in $\Oh{1}$ but needs $\Oh{n^2}$ memory and $\Oh{n}$ to list a vertex's
+        neighbours, so it suits only small or dense graphs: Floyd--Warshall, bitmask DP, $n$ up to a few thousand.
+  \item The \defn{edge list} is just the array of edges. It is what Kruskal's algorithm sorts and what Bellman--Ford relaxes,
+        and it is the natural format when edges are processed in some order rather than explored from vertices.
+\end{itemize}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \begin{scope}
+    \node[vtx] (a) at (0, 1.4) {0}; \node[vtx] (b) at (1.5, 1.9) {1}; \node[vtx] (c) at (2.4, 0.6) {2};
+    \node[vtx] (d) at (1.0, -0.1) {3}; \node[vtx] (e) at (-0.4, -0.1) {4};
+    \draw[ed] (a) -- (b) (a) -- (d) (b) -- (c) (b) -- (d) (d) -- (e);
+    \node[lbl] at (1.0, -0.85) {the graph};
+  \end{scope}
+  \begin{scope}[xshift=4.0cm, yshift=1.9cm]
+    \foreach \vi/\lst in {0/{1, 3}, 1/{0, 2, 3}, 2/{1}, 3/{0, 1, 4}, 4/{3}} {
+      \node[font=\sffamily\small\bfseries, text=fgblue] at (0, -\vi*0.5) {\vi};
+      \node[font=\ttfamily\small, anchor=west] at (0.35, -\vi*0.5) {\lst};
+    }
+    \node[lbl] at (0.9, -2.75) {adjacency list};
+  \end{scope}
+  \begin{scope}[xshift=7.3cm, yshift=1.9cm]
+    \foreach \rw/\bits in {0/{0,1,0,1,0}, 1/{1,0,1,1,0}, 2/{0,1,0,0,0}, 3/{1,1,0,0,1}, 4/{0,0,0,1,0}} {
+      \node[font=\sffamily\scriptsize\bfseries, text=fgblue] at (-0.45, -\rw*0.44) {\rw};
+      \foreach \bv [count=\ci from 0] in \bits {
+        \ifnum\bv=1 \node[cellc, cool, minimum width=4.4mm, minimum height=4.4mm, font=\ttfamily\scriptsize] at (\ci*0.44,
+          -\rw*0.44) {1};
+        \else \node[cellc, minimum width=4.4mm, minimum height=4.4mm, font=\ttfamily\scriptsize, text=fggray] at
+          (\ci*0.44, -\rw*0.44) {0}; \fi
+      }
+    }
+    \foreach \ci in {0,...,4} \node[font=\sffamily\scriptsize\bfseries, text=fgblue] at (\ci*0.44, 0.42) {\ci};
+    \node[lbl] at (0.88, -2.75) {adjacency matrix};
+  \end{scope}
+  \begin{scope}[xshift=11.0cm, yshift=1.9cm]
+    \foreach \ea/\eb [count=\kc from 0] in {0/1, 0/3, 1/2, 1/3, 3/4}
+      \node[font=\ttfamily\small] at (0.6, -\kc*0.5) {\ea\ \eb};
+    \node[lbl] at (0.6, -2.75) {edge list};
+  \end{scope}
+\end{tikzpicture}
+\caption{One undirected graph in the three standard representations. The adjacency list has one entry per edge end ($2m$
+in total), the matrix has $n^2$ entries whatever the number of edges, and the edge list has $m$ entries.}
+\label{fig:graphrep}
+\end{figure}
+
+Reading a graph into adjacency lists is the first few lines of countless solutions. Most inputs number the vertices from 1;
+either convert to 0-based indices while reading or allocate $n + 1$ lists and ignore list 0, but do it the same way
+everywhere.
+
+\begin{code}
+int n, m;
+cin >> n >> m;
+vvi adj(n + 1);  // vertices 1..n, as in the input
+rep(i, m) {
+    int u, v;
+    cin >> u >> v;
+    adj[u].push_back(v);
+    adj[v].push_back(u);  // leave this line out for a directed graph
+}
+\end{code}
+
+\usetemplate{Read graph (n, m, m edges)}{Ctrl+Alt+T, Shift+G}{cpgraph}
+
+\usetemplate{Read weighted graph (n, m, edges u v w)}{Ctrl+Alt+T, Shift+E}{cpgraphw}
+
+\begin{trick}[Flat adjacency arrays]
+A \cc{vector<vector<int>>} makes $n$ separate allocations and scatters the lists across memory. For graphs with millions of
+edges, the \emph{compressed sparse row} format is faster and smaller: count the degrees, turn them into starting offsets with
+a prefix sum, and fill one array of $2m$ neighbours, so that the neighbours of $u$ are \cc{nb[start[u]]} up to
+\cc{nb[start[u + 1] - 1]}. It is counting sort (Section~\ref{sec:radix}) applied to the edge list. On a random graph with
+$10^6$ vertices and $4 \cdot 10^6$ edges, building nested vectors took 0.97\,s against 0.08\,s for the flat array, and a
+BFS took 0.10\,s against 0.07\,s: the many small allocations, not the traversal, are what hurts
+(Section~\ref{sec:memory}).
+\end{trick}
+
+% ======================================================================================================================
+\section[Depth-first search]{Depth-first search \hfill \silver}\label{sec:dfs}
+
+\defn{Depth-first search} (DFS) explores a graph the way you would explore a maze with a ball of string: always go deeper
+along an unexplored edge, and when there is none, back up to the previous vertex and try its next edge. Implemented
+recursively it is a few lines, visits every vertex reachable from the start exactly once, and looks at every edge at most
+twice, so it runs in $\Oh{n + m}$.
+
+\begin{pseudo}{Depth-first search}
+\begin{algorithmic}[1]
+\Procedure{DFS}{$u$}
+  \State mark $u$ as visited; \ $\mathit{tin}[u] \gets \mathit{timer}{+}{+}$ \Comment{discovery time}
+  \ForAll{edges $u \to v$}
+    \If{$v$ is not visited}
+      \State $\mathit{parent}[v] \gets u$; \ \Call{DFS}{$v$} \Comment{a tree edge}
+    \EndIf
+  \EndFor
+  \State $\mathit{tout}[u] \gets \mathit{timer}{+}{+}$ \Comment{finishing time}
+\EndProcedure
+\end{algorithmic}
+\end{pseudo}
+
+The edges along which DFS discovers new vertices form the \defn{DFS tree} (a forest if the graph is not connected). The
+\emph{discovery} and \emph{finishing} times nest like parentheses: the interval $[\mathit{tin}[v], \mathit{tout}[v]]$ of a
+descendant lies inside that of its ancestor, and the intervals of unrelated vertices are disjoint. Relative to the tree, every
+edge of a directed graph falls into one of four classes (Figure~\ref{fig:dfsclasses}):
+\begin{itemize}
+  \item \textbf{tree edges} discover a new vertex;
+  \item \textbf{back edges} go to an ancestor that is still open (on the recursion stack): each one closes a cycle;
+  \item \textbf{forward edges} go to a descendant that is already finished;
+  \item \textbf{cross edges} go to a vertex in another, already finished branch.
+\end{itemize}
+In an \emph{undirected} graph there are only tree edges and back edges: an edge to an already finished vertex in another
+branch would have been explored from that vertex while it was open, as a tree edge. This single fact is the basis of bridges,
+articulation points and cycle detection in undirected graphs (Chapter~\ref{ch:connectivity}), while the four classes drive
+cycle detection, topological sorting and strongly connected components in directed graphs.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[vtx] (v0) at (0, 0) {0};
+  \node[vtx] (v1) at (-1.7, -1.3) {1};
+  \node[vtx] (v2) at (-1.7, -2.8) {2};
+  \node[vtx] (v3) at (1.7, -1.3) {3};
+  \node[vtx] (v4) at (1.7, -2.8) {4};
+  \node[vtx] (v5) at (1.7, -4.3) {5};
+  \draw[bded] (v0) -- (v1); \draw[bded] (v1) -- (v2); \draw[bded] (v0) -- (v3); \draw[bded] (v3) -- (v4);
+  \draw[bded] (v4) -- (v5);
+  \draw[->, line width=1.2pt, draw=fgverm, dashed] (v2) to[out=165, in=180, looseness=1.3] (v0);
+  \draw[->, line width=1.2pt, draw=fgverm, dashed] (v5) to[out=15, in=0, looseness=1.3] (v3);
+  \draw[->, line width=1.2pt, draw=fggreen, dash pattern=on 5pt off 2pt] (v0) to[bend left=12] (v2);
+  \draw[->, line width=1.2pt, draw=fggray, dotted] (v3) -- (v2);
+  \begin{scope}[xshift=4.6cm, yshift=-1.0cm]
+    \draw[bded] (0, 0) -- (0.8, 0); \node[lbl, anchor=west] at (0.95, 0) {tree edge};
+    \draw[->, line width=1.2pt, draw=fgverm, dashed] (0, -0.5) -- (0.8, -0.5);
+    \node[lbl, anchor=west] at (0.95, -0.5) {back edge (to an open ancestor)};
+    \draw[->, line width=1.2pt, draw=fggreen, dash pattern=on 5pt off 2pt] (0, -1.0) -- (0.8, -1.0);
+    \node[lbl, anchor=west] at (0.95, -1.0) {forward edge (to a finished descendant)};
+    \draw[->, line width=1.2pt, draw=fggray, dotted] (0, -1.5) -- (0.8, -1.5);
+    \node[lbl, anchor=west] at (0.95, -1.5) {cross edge (to a finished other branch)};
+    \node[anchor=north west, font=\sffamily\footnotesize, text=fgink!85, inner sep=0pt] at (0, -2.0) {%
+      \begin{tabular}{@{}l c c c c c c@{}}
+        vertex & 0 & 1 & 2 & 3 & 4 & 5 \\ \hline
+        discovered & 1 & 2 & 3 & 6 & 7 & 8 \\
+        finished & 12 & 5 & 4 & 11 & 10 & 9 \\
+      \end{tabular}};
+    \node[notel, anchor=north west, text width=5.8cm] at (0, -3.35) {adjacency lists $0\colon 1, 2, 3$; \ $1\colon 2$;
+      \ $2\colon 0$; \ $3\colon 2, 4$; \ $4\colon 5$; \ $5\colon 3$};
+  \end{scope}
+\end{tikzpicture}
+\caption{DFS from vertex 0 on a directed graph and the classification of its edges. The back edges $2 \to 0$ and $5 \to 3$
+each close a cycle. The intervals from discovery to finishing time (table) nest exactly as the tree does: $[2, 5]$ and
+$[6, 11]$ lie inside $[1, 12]$ and are disjoint from each other.}
+\label{fig:dfsclasses}
+\end{figure}
+
+\begin{problem}{Building Roads (CSES)}
+A country has $n$ cities and $m$ roads. Add the minimum number of new roads so that every city can reach every other, and
+print them.
+\solution Each connected component needs to be linked to the others, and $k$ components need exactly $k - 1$ new roads (each
+road merges at most two components). Run a DFS from every city not yet visited: each start is a new component, and the start
+vertices serve as representatives. Linking consecutive representatives gives the $k - 1$ roads.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    vvi adj(n + 1);
+    rep(i, m) {
+        int a, b;
+        cin >> a >> b;
+        adj[a].push_back(b);
+        adj[b].push_back(a);
+    }
+    vector<bool> seen(n + 1, false);
+    auto dfs = [&](auto&& self, int u) -> void {
+        seen[u] = true;
+        for (int v : adj[u])
+            if (!seen[v]) self(self, v);
+    };
+    vi leader;  // one vertex from each connected component
+    rep(v, 1, n + 1) if (!seen[v]) leader.push_back(v), dfs(dfs, v);
+    print(sz(leader) - 1);  // a road between consecutive leaders
+    rep(i, 1, sz(leader)) print(leader[i - 1], leader[i]);
+}
+\end{code}
+
+\usetemplate{DFS (recursive, all components)}{Ctrl+Alt+T, D}{cpdfs}
+
+\begin{pitfall}[Recursion depth]
+On a path of $10^6$ vertices the recursion is $10^6$ calls deep, which needs tens of megabytes of stack. Codeforces and your
+local builds (which use a 256\,MB stack) are fine, and CSES is fine too, but judges with the default 8\,MB or 1\,MB stack
+crash with a segmentation fault that looks like a wrong answer. When in doubt, use an explicit stack (as in the flood fill of
+Section~\ref{sec:grids}) or process vertices in BFS order, which suffices for most tree DPs.
+\end{pitfall}
+
+% ======================================================================================================================
+\section[Breadth-first search]{Breadth-first search \hfill \silver}\label{sec:bfs}
+
+\defn{Breadth-first search} (BFS) explores a graph in order of distance from the start: first the start, then all its
+neighbours, then all their unvisited neighbours, and so on, layer by layer (Figure~\ref{fig:bfslayers}). A FIFO queue
+produces this order. BFS runs in $\Oh{n + m}$ and, in an unweighted graph, finds the \emph{shortest} path from the start to
+every vertex.
+
+\emph{Why the distances are correct.} At every moment the queue holds vertices of at most two consecutive distances, $d$ and
+$d + 1$, with all the $d$'s in front. (Initially it holds the start alone. Popping a vertex at distance $d$ appends
+unvisited neighbours at distance $d + 1$ at the back, which keeps the property.) So vertices are popped in non-decreasing order
+of their assigned distances, and a vertex is first discovered from a vertex of the smallest possible distance: by induction,
+the distance assigned to each vertex is the length of a shortest path to it. Recording, for each vertex, the vertex it was
+discovered from gives a \emph{BFS tree}, whose paths back to the start are shortest paths.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \foreach \rr/\cl in {0.62/fgverm, 1.52/fgorange, 2.42/fgblue} \draw[\cl, opacity=0.35, line width=0.8pt, dashed]
+    (0, 0) circle (\rr);
+  \node[vtx, hot] (s) at (0, 0) {0};
+  \node[vtx] (a) at (1.05, 0.1) {1}; \node[vtx] (b) at (-0.6, 0.85) {1}; \node[vtx] (c) at (-0.5, -0.9) {1};
+  \node[vtx] (d) at (1.9, 1.1) {2}; \node[vtx] (e) at (-1.6, 1.4) {2}; \node[vtx] (f) at (0.9, -1.7) {2};
+  \node[vtx] (g) at (2.8, -0.3) {3}; \node[vtx] (h) at (-2.6, -1.2) {3};
+  \draw[ed] (d) -- (g) (e) -- (h) (a) -- (f);
+  \draw[bded] (s) -- (a); \draw[bded] (s) -- (b); \draw[bded] (s) -- (c); \draw[bded] (a) -- (d); \draw[bded] (b) -- (e);
+  \draw[bded] (c) -- (f); \draw[bded] (f) -- (g); \draw[bded] (c) -- (h);
+  \node[notel, anchor=west, text width=5.4cm] at (3.6, 0.3) {Vertices are labelled with their distance from the start.
+    Blue arrows form a BFS tree: every vertex is reached from a vertex one layer closer. Grey edges join vertices of
+    equal or adjacent layers and are never used for discovery.};
+\end{tikzpicture}
+\caption{BFS explores layer by layer. The queue holds at most two consecutive layers at a time, so the first discovery of a
+vertex is along a shortest path.}
+\label{fig:bfslayers}
+\end{figure}
+
+\usetemplate{BFS (shortest path, unweighted)}{Ctrl+Alt+T, B}{cpbfs}
+
+\begin{problem}{Labyrinth (CSES)}
+In an $n \times m$ labyrinth ($n, m \le 1000$) with walls, find a shortest path from \texttt{A} to \texttt{B} and print it as
+a string of moves \texttt{L}, \texttt{R}, \texttt{U}, \texttt{D}, or report that none exists.
+\solution BFS from \texttt{A} over the free cells. Instead of a parent cell, store the direction of the move that first
+reached each cell; walking these directions backwards from \texttt{B} (undoing each move) leads to \texttt{A}, and reversing
+the collected letters gives the path. The grid is never turned into an adjacency list: the neighbours of a cell are generated
+from direction arrays.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    vector<string> g(n);
+    cin >> g;
+    const int dr[4] = {-1, 1, 0, 0}, dc[4] = {0, 0, -1, 1};
+    const string name = "UDLR";
+    vvi from(n, vi(m, -1));  // the direction that first reached each cell
+    queue<pii> q;
+    rep(r, n) rep(c, m) if (g[r][c] == 'A') q.push({r, c}), from[r][c] = 4;
+    while (!q.empty()) {
+        auto [r, c] = q.front();
+        q.pop();
+        rep(d, 4) {
+            int nr = r + dr[d], nc = c + dc[d];
+            if (nr < 0 || nr >= n || nc < 0 || nc >= m) continue;
+            if (g[nr][nc] == '#' || from[nr][nc] != -1) continue;
+            from[nr][nc] = d;
+            q.push({nr, nc});
+        }
+    }
+    int r = 0, c = 0;
+    rep(i, n) rep(j, m) if (g[i][j] == 'B') r = i, c = j;
+    if (from[r][c] == -1) {
+        print("NO");
+        return;
+    }
+    string path;  // walk back from B to A along the recorded directions
+    while (from[r][c] != 4) {
+        int d = from[r][c];
+        path += name[d];
+        r -= dr[d], c -= dc[d];
+    }
+    reverse(all(path));
+    print("YES");
+    print(sz(path));
+    print(path);
+}
+\end{code}
+
+\usetemplate{Grid BFS (shortest path on a grid)}{Ctrl+Alt+T, G}{cpgridbfs}
+
+\subsection{Several sources at once}
+
+To find, for every vertex, the distance to the \emph{nearest} of several sources (the nearest hospital, the first moment fire
+reaches a cell), there is no need for one BFS per source. Put all the sources into the queue with distance 0 before the
+search starts: the result is the same as a BFS from an imaginary super-source joined to all of them, which is exactly the
+distance to the nearest source. This \defn{multi-source BFS} costs one ordinary BFS.
+
+\begin{problem}{Monsters (CSES)}
+You and several monsters are in a labyrinth. Each step, you move to an adjacent free cell, and so does every monster, in the
+worst possible way for you. Escape through any border cell, never entering a cell that a monster can reach at the same time
+or earlier.
+\solution One multi-source BFS from all monsters computes the earliest time a monster can occupy each cell. A second BFS from
+your start then enters a cell only if you arrive strictly earlier than every monster (Figure~\ref{fig:monsters}). Any border
+cell that the second BFS reaches is an escape; its path is recovered from stored directions as in Labyrinth. The key insight
+is that the monsters need not be simulated step by step: if you can reach a cell strictly before any monster, no monster
+strategy can catch you there.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.62cm, y=0.62cm]
+  \foreach \rw/\cl in {0/{1,1,0,1,1,1,1,1}, 1/{1,0,0,0,0,0,0,1}, 2/{1,0,1,1,0,1,0,1}, 3/{1,0,0,0,0,1,0,1},
+      4/{1,0,1,0,0,1,0,1}, 5/{1,1,1,0,1,1,0,1}, 6/{1,0,0,0,0,0,0,1}, 7/{1,1,1,1,1,0,1,1}} {
+    \foreach \w [count=\ci from 0] in \cl {
+      \ifnum\w=1 \fill[fgink!75] (\ci, -\rw) rectangle ++(1, -1);
+      \else \draw[fgline!70, line width=0.3pt, fill=white] (\ci, -\rw) rectangle ++(1, -1); \fi
+    }
+  }
+  \foreach \rw/\ci in {1/5, 1/6, 2/6, 3/6, 4/6, 5/6, 6/1, 6/2, 6/3, 6/4, 6/5, 6/6, 7/5}
+    \fill[fggreen!25] (\ci + 0.04, -\rw - 0.04) rectangle ++(0.92, -0.92);
+  \draw[line width=4pt, draw=fggreen!55, opacity=0.8, line join=round] (6.5, -3.5) -- (6.5, -6.5) -- (5.5, -6.5)
+    -- (5.5, -8.0);
+  \foreach \rw/\ci/\tv in {0/2/2, 1/2/1, 1/3/2, 1/4/3, 1/5/4, 1/6/5, 2/1/1, 2/4/4, 2/6/6, 3/1/2, 3/2/3, 3/3/4, 3/4/5,
+      4/1/3, 4/3/5, 4/4/6, 4/6/8, 5/3/6, 5/6/9, 6/1/9, 6/2/8, 6/3/7, 6/4/8, 6/5/9, 6/6/10, 7/5/10}
+    \node[font=\sffamily\scriptsize, text=fgverm!80!black] at (\ci + 0.5, -\rw - 0.5) {\tv};
+  \node[font=\sffamily\small\bfseries, text=fgverm] at (1.5, -1.5) {M};
+  \node[font=\sffamily\small\bfseries, text=fggreen!50!black] at (6.5, -3.5) {A};
+  \draw[line width=1.2pt, draw=fgverm] (2.2, 0.35) -- (2.8, 0.95) (2.2, 0.95) -- (2.8, 0.35);
+  \node[font=\sffamily\scriptsize, text=fgverm, anchor=west] at (2.95, 0.65) {exit lost};
+  \node[font=\sffamily\scriptsize, text=fggreen!45!black, anchor=west] at (6.1, -8.35) {escape};
+  \node[notel, anchor=west, text width=5.6cm] at (8.6, -2.6) {Numbers: the earliest time a monster can be in each cell
+    (multi-source BFS from M). Green: the cells you reach strictly earlier. The top exit is reached by a monster at time 2,
+    long before you could get there; the bottom exit is safe, reached at time 5 against the monster's 10.};
+\end{tikzpicture}
+\caption{Monsters as two BFS runs. You may enter a cell only if you get there strictly before any monster; the escape path
+(thick green line) goes through such cells to the bottom border.}
+\label{fig:monsters}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    vector<string> g(n);
+    cin >> g;
+    const int dr[4] = {-1, 1, 0, 0}, dc[4] = {0, 0, -1, 1};
+    const string name = "UDLR";
+    const int UNSEEN = 1e9;  // larger than any distance
+    // multi-source BFS from all monsters: when can a monster reach a cell?
+    vvi mon(n, vi(m, UNSEEN));
+    queue<pii> q;
+    rep(r, n) rep(c, m) if (g[r][c] == 'M') mon[r][c] = 0, q.push({r, c});
+    auto bfs = [&](vvi& dist, vvi* from) {
+        while (!q.empty()) {
+            auto [r, c] = q.front();
+            q.pop();
+            rep(d, 4) {
+                int nr = r + dr[d], nc = c + dc[d];
+                if (nr < 0 || nr >= n || nc < 0 || nc >= m) continue;
+                if (g[nr][nc] == '#' || dist[nr][nc] != UNSEEN) continue;
+                int t = dist[r][c] + 1;
+                if (from && t >= mon[nr][nc]) continue;  // monster is first
+                dist[nr][nc] = t;
+                if (from) (*from)[nr][nc] = d;
+                q.push({nr, nc});
+            }
+        }
+    };
+    bfs(mon, nullptr);
+    vvi me(n, vi(m, UNSEEN)), from(n, vi(m, -1));
+    rep(r, n) rep(c, m) if (g[r][c] == 'A') me[r][c] = 0, q.push({r, c});
+    bfs(me, &from);
+    rep(r, n) rep(c, m) {
+        bool border = r == 0 || r == n - 1 || c == 0 || c == m - 1;
+        if (!border || me[r][c] == UNSEEN) continue;
+        string path;  // reachable border cell: walk back to the start
+        for (int y = r, x = c; me[y][x] > 0; ) {
+            int d = from[y][x];
+            path += name[d];
+            y -= dr[d], x -= dc[d];
+        }
+        reverse(all(path));
+        print("YES");
+        print(sz(path));
+        print(path);
+        return;
+    }
+    print("NO");
+}
+\end{code}
+
+\begin{trick}[BFS with 0--1 weights, and BFS on states]
+If every edge has weight 0 or 1, a \emph{deque} replaces the queue: push the endpoint of a 0-edge to the front and of a
+1-edge to the back. This \defn{0--1 BFS} keeps the two-layers invariant and runs in $\Oh{n + m}$ (Chapter~\ref{ch:shortest}).
+And when the rules of movement depend on more than the position (keys collected, direction faced, remaining jumps), BFS runs
+unchanged on the graph whose vertices are \emph{states} (position, extra information); the only question is whether the
+number of states fits in time and memory.
+\end{trick}
+
+% ======================================================================================================================
+\section[Grids and flood fill]{Grids and flood fill \hfill \silver}\label{sec:grids}
+
+A grid is a graph whose vertices are cells and whose edges join neighbouring cells, usually the four orthogonal neighbours.
+\defn{Flood fill} labels each connected region: start a DFS or BFS from any unlabelled free cell and label everything it
+reaches (Figure~\ref{fig:floodfill}). Every cell is visited once, so labelling the whole grid takes $\Oh{nm}$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.55cm, y=0.55cm]
+  \foreach \rw/\ci/\rmid in {0/0/0, 0/1/0, 0/3/1, 0/4/1, 0/5/1, 0/6/1, 0/8/2, 0/9/2, 1/0/0, 1/1/0, 1/3/1, 1/6/1, 1/8/2,
+      1/9/2, 2/3/1, 2/5/1, 2/6/1, 3/0/3, 3/1/3, 3/2/3, 3/5/1, 3/8/1, 3/9/1, 4/0/3, 4/2/3, 4/3/3, 4/5/1, 4/6/1, 4/7/1,
+      4/9/1, 5/0/3, 5/1/3, 5/3/3, 5/5/1, 5/7/1, 5/8/1, 5/9/1} {
+    \ifcase\rmid \def\fc{fgsky!45}\or\def\fc{fgorange!40}\or\def\fc{fgpink!40}\or\def\fc{fggreen!35}\fi
+    \fill[\fc] (\ci, -\rw) rectangle ++(1, -1);
+  }
+  \foreach \rw/\ci in {0/2, 0/7, 1/2, 1/4, 1/5, 1/7, 2/0, 2/1, 2/2, 2/4, 2/7, 2/8, 2/9, 3/3, 3/4, 3/6, 3/7, 4/1, 4/4,
+      4/8, 5/2, 5/4, 5/6}
+    \fill[fgink!75] (\ci, -\rw) rectangle ++(1, -1);
+  \draw[fgline!70, line width=0.3pt, step=1] (0, 0) grid (10, -6);
+  \node[notel, anchor=west, text width=5.2cm] at (10.6, -3) {Four rooms, each found by one search started at its first
+    free cell in reading order. The big orange room winds through gaps in the walls; the search follows it regardless of
+    its shape.};
+\end{tikzpicture}
+\caption{Flood fill on a grid: dark cells are walls, and each colour is one connected region of free cells.}
+\label{fig:floodfill}
+\end{figure}
+
+\begin{problem}{Counting Rooms (CSES)}
+Count the rooms (connected regions of floor cells) in an $n \times m$ map, $n, m \le 1000$.
+\solution Scan the cells; every unvisited floor cell starts a new room, which is then flooded. The code floods with an
+explicit stack, marking each cell when it is pushed, so that no cell enters the stack twice and the recursion depth is no
+concern, even for a $1000 \times 1000$ spiral.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    vector<string> g(n);
+    cin >> g;
+    const int dr[4] = {-1, 1, 0, 0}, dc[4] = {0, 0, -1, 1};
+    int rooms = 0;
+    rep(sr, n) rep(sc, m) {
+        if (g[sr][sc] != '.') continue;
+        rooms++;  // a new room: flood it with an explicit stack
+        vector<pii> st{{sr, sc}};
+        g[sr][sc] = '#';  // mark cells when they are pushed
+        while (!st.empty()) {
+            auto [r, c] = st.back();
+            st.pop_back();
+            rep(d, 4) {
+                int nr = r + dr[d], nc = c + dc[d];
+                if (nr < 0 || nr >= n || nc < 0 || nc >= m) continue;
+                if (g[nr][nc] != '.') continue;
+                g[nr][nc] = '#';
+                st.push_back({nr, nc});
+            }
+        }
+    }
+    print(rooms);
+}
+\end{code}
+
+\usetemplate{Flood fill (grid regions)}{Ctrl+Alt+T, F}{cpflood}
+
+\begin{tip}[Grid habits]
+Write the bounds check once, as the first line of the neighbour loop. For eight directions, use
+\begin{code}
+const int dr[8] = {-1, -1, -1, 0, 0, 1, 1, 1};
+const int dc[8] = {-1, 0, 1, -1, 1, -1, 0, 1};
+\end{code}
+Encode a cell as the single number
+$r \cdot m + c$ when a data structure (a DSU, a visited array, a hash set) wants one index. And remember that the
+\emph{perimeter} of a region is the number of (cell, direction) pairs whose neighbour is outside the region, which a flood
+fill can count as it goes: that is the whole of Icy Perimeter (USACO 2019 January Silver).
+\end{tip}
+
+% ======================================================================================================================
+\section[Bipartite graphs]{Bipartite graphs and 2-colouring \hfill \silver}\label{sec:bipartite}
+
+A graph is \defn{bipartite} if its vertices can be coloured with two colours so that every edge joins two different colours.
+The characterisation is clean: \emph{a graph is bipartite if and only if it has no cycle of odd length}. One direction is
+immediate: going around a cycle, the colours must alternate, so the cycle has even length. For the other, run BFS in every
+component and colour each vertex by the parity of its distance. An edge between two vertices of the same colour joins two
+vertices whose distances have the same parity (the distances of adjacent vertices differ by at most one, so they are equal);
+together with the two BFS paths back to their lowest common ancestor in the BFS tree, that edge closes a cycle of odd length
+(Figure~\ref{fig:bipartite}). So either the parity colouring works, or the graph has an odd cycle.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \begin{scope}
+    \node[vtx, cool] (a) at (0, 0) {1}; \node[vtx, warn] (b) at (1.3, 0.8) {2}; \node[vtx, warn] (c) at (1.3, -0.8) {3};
+    \node[vtx, cool] (d) at (2.6, 0.8) {4}; \node[vtx, cool] (e) at (2.6, -0.8) {5}; \node[vtx, warn] (f) at (3.9, 0) {6};
+    \draw[ed] (a) -- (b) (a) -- (c) (b) -- (d) (c) -- (e) (b) -- (e) (d) -- (f) (e) -- (f);
+    \node[lbl, text width=4.6cm, align=center] at (1.95, -1.65) {(a) BFS layers alternate colours;\\every edge crosses: bipartite};
+  \end{scope}
+  \begin{scope}[xshift=7.2cm]
+    \foreach \kk/\cl in {0/cool, 1/warn, 2/cool, 3/warn, 4/cool} {
+      \pgfmathsetmacro{\ang}{90 + \kk*72}
+      \node[vtx, \cl] (p\kk) at (\ang:1.15) {\the\numexpr\kk+1\relax};
+    }
+    \draw[ed] (p0) -- (p1) (p1) -- (p2) (p2) -- (p3) (p3) -- (p4);
+    \draw[hed] (p4) -- (p0);
+    \node[lbl, text width=4.6cm, align=center] at (0, -1.95) {(b) an odd cycle: the red edge joins two\\vertices of the same
+      colour};
+  \end{scope}
+\end{tikzpicture}
+\caption{Two-colouring by BFS parity. In (a) the colouring succeeds. In (b), a 5-cycle, some edge must join equal colours:
+graphs with an odd cycle are exactly the graphs that are not bipartite.}
+\label{fig:bipartite}
+\end{figure}
+
+\begin{problem}{Building Teams (CSES)}
+Divide $n$ pupils into two teams so that no two friends are in the same team, or report that it is impossible.
+\solution BFS from every uncoloured pupil, giving each newly discovered pupil the colour opposite to the one it was discovered
+from. If an edge ever joins two pupils of the same colour, there is an odd cycle and no division exists.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    vvi adj(n + 1);
+    rep(i, m) {
+        int a, b;
+        cin >> a >> b;
+        adj[a].push_back(b);
+        adj[b].push_back(a);
+    }
+    vi team(n + 1, 0);  // 0 = not coloured yet, otherwise 1 or 2
+    rep(s, 1, n + 1) {
+        if (team[s]) continue;
+        team[s] = 1;
+        queue<int> q;
+        q.push(s);
+        while (!q.empty()) {
+            int u = q.front();
+            q.pop();
+            for (int v : adj[u]) {
+                if (!team[v]) team[v] = 3 - team[u], q.push(v);
+                else if (team[v] == team[u]) {  // an odd cycle
+                    print("IMPOSSIBLE");
+                    return;
+                }
+            }
+        }
+    }
+    print(vi(team.begin() + 1, team.end()));
+}
+\end{code}
+
+\usetemplate{Bipartite check (2-coloring)}{Ctrl+Alt+T, 2}{cpbipartite}
+
+\begin{recognize}
+``Split into two groups such that each pair of rivals is separated'', ``two teams'', ``can the map be 2-coloured'', and
+checkerboard arguments on grids (a grid graph is always bipartite: colour by $(r + c) \bmod 2$). Constraints of the form
+``$x$ and $y$ in the \emph{same} group'' mixed with ``different groups'' are handled by a DSU with parity
+(Chapter~\ref{ch:dsu}), and arbitrary boolean constraints on pairs by 2-SAT (Chapter~\ref{ch:connectivity}). Bipartite graphs
+are also where matching theory lives (Chapter~\ref{ch:flows}).
+\end{recognize}
+
+% ======================================================================================================================
+\section[Finding cycles]{Finding cycles \hfill \gold}\label{sec:cycles}
+
+\paragraph{Undirected graphs.} In a DFS of an undirected graph, every non-tree edge goes to an ancestor
+(Section~\ref{sec:dfs}), so a cycle exists exactly when some vertex $u$ has an edge to an already visited vertex $v$ other
+than its parent. The cycle is $v$, the tree path down to $u$, and the edge back. Two details matter in practice. Parallel
+edges to the parent must not count (they would make a 2-cycle), which is why the code skips the parent vertex rather than
+the parent edge. And an edge from $u$ to a \emph{child} that was already explored can reappear through a parallel edge;
+comparing depths distinguishes it from a real back edge, which goes \emph{up}.
+
+\begin{problem}{Round Trip (CSES)}
+Find a round trip, a route that visits at least three distinct cities and returns to its start without repeating a city, or
+report that none exists.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    vvi adj(n + 1);
+    rep(i, m) {
+        int a, b;
+        cin >> a >> b;
+        adj[a].push_back(b);
+        adj[b].push_back(a);
+    }
+    vi par(n + 1, 0), depth(n + 1, -1);  // depth -1: not visited yet
+    vi cycle;
+    // returns true once a cycle has been found and stored in cycle
+    auto dfs = [&](auto&& self, int u) -> bool {
+        for (int v : adj[u]) {
+            if (v == par[u]) continue;  // back along the tree edge
+            if (depth[v] == -1) {
+                par[v] = u, depth[v] = depth[u] + 1;
+                if (self(self, v)) return true;
+            } else if (depth[v] < depth[u]) {  // an edge up to an ancestor
+                for (int x = u; x != v; x = par[x]) cycle.push_back(x);
+                cycle.push_back(v);
+                cycle.push_back(u);
+                return true;
+            }  // otherwise a child reached again through a parallel edge
+        }
+        return false;
+    };
+    rep(s, 1, n + 1) {
+        if (depth[s] != -1) continue;
+        depth[s] = 0;
+        if (!dfs(dfs, s)) continue;
+        print(sz(cycle));
+        print(cycle);
+        return;
+    }
+    print("IMPOSSIBLE");
+}
+\end{code}
+
+When only the \emph{existence} of a cycle matters, a DSU is even simpler: add the edges one by one, and the first edge whose
+endpoints are already connected closes a cycle (Chapter~\ref{ch:dsu}).
+
+\paragraph{Directed graphs.} In a directed graph, an edge to a visited vertex does not imply a cycle: cross and forward edges
+reach finished vertices without closing anything. What closes a cycle is an edge to a vertex that is still \emph{open}, on the
+current recursion path. So DFS keeps three states: white (not visited), grey (open, on the stack) and black (finished). An
+edge into a grey vertex is a back edge, and the cycle is the stack segment from that vertex down to the current one
+(Figure~\ref{fig:dircycle}). Conversely, if DFS finds no back edge, the finishing order is a topological order, so the graph is
+acyclic: a directed graph has a cycle if and only if DFS finds a back edge.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[wht/.style={fill=white, draw=fgink}, gry/.style={fill=fgline!45, draw=fgink},
+    blk/.style={fill=fgink!85, draw=fgink}]
+  \node[vtx, fill=fgline!45, draw=fgink] (a) at (0, 0) {1};
+  \node[vtx, fill=fgline!45, draw=fgink] (b) at (1.6, 0) {2};
+  \node[vtx, fill=fgline!45, draw=fgink] (c) at (3.2, 0) {3};
+  \node[vtx, fill=fgline!45, draw=fgink] (d) at (4.8, 0) {4};
+  \node[vtx, fill=fgink!85, text=white, draw=fgink] (e) at (1.6, -1.4) {5};
+  \node[vtx, fill=white] (f) at (4.8, -1.4) {6};
+  \draw[bded] (a) -- (b); \draw[bded] (b) -- (c); \draw[bded] (c) -- (d);
+  \draw[ded] (b) -- (e); \draw[ded] (c) -- (e);
+  \draw[hded] (d) to[bend right=38] (b);
+  \draw[ded, draw=fgline] (d) -- (f);
+  \node[font=\sffamily\scriptsize, text=fgverm, above] at (3.2, 0.95) {edge into a grey vertex: cycle $2 \to 3 \to 4 \to 2$};
+  \legendat{(6.4, 0.3)}{wht/white: not visited, gry/grey: open (on the stack), blk/black: finished}
+\end{tikzpicture}
+\caption{Three colours in a directed DFS. The search is at vertex 4 with the path $1 \to 2 \to 3 \to 4$ open. The edge
+$3 \to 5$ led to a finished vertex (no cycle there), but the edge $4 \to 2$ enters an open vertex and closes a cycle.}
+\label{fig:dircycle}
+\end{figure}
+
+\begin{problem}{Round Trip II (CSES)}
+Find a directed cycle in a graph of $n \le 10^5$ cities and $m \le 2\cdot10^5$ one-way flights, and print it.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    vvi adj(n + 1);
+    rep(i, m) {
+        int a, b;
+        cin >> a >> b;
+        adj[a].push_back(b);
+    }
+    vi color(n + 1, 0), par(n + 1, -1);  // 0 white, 1 grey (on stack), 2 black
+    vi cycle;
+    auto dfs = [&](auto&& self, int u) -> bool {
+        color[u] = 1;
+        for (int v : adj[u]) {
+            if (color[v] == 1) {  // an edge back into the current path
+                cycle.push_back(v);
+                for (int x = u; x != v; x = par[x]) cycle.push_back(x);
+                cycle.push_back(v);
+                reverse(all(cycle));
+                return true;
+            }
+            if (color[v] == 0) {
+                par[v] = u;
+                if (self(self, v)) return true;
+            }
+        }
+        color[u] = 2;  // finished: no cycle goes through u any more
+        return false;
+    };
+    rep(s, 1, n + 1) {
+        if (color[s] || !dfs(dfs, s)) continue;
+        print(sz(cycle));
+        print(cycle);
+        return;
+    }
+    print("IMPOSSIBLE");
+}
+\end{code}
+
+\usetemplate{Find a directed cycle}{Ctrl+Alt+T, /}{cpcycle}
+
+% ======================================================================================================================
+\section[Functional graphs]{Functional graphs \hfill \gold}\label{sec:functional}
+
+In a \defn{functional graph} (or successor graph) every vertex has exactly one outgoing edge, $v \to f(v)$. They arise from
+permutations, from ``each cow points to its best friend'' and from any deterministic process, where $f$ maps a state to the
+next one (Section~\ref{sec:simulation}). Their structure is rigid. Follow the edges from any vertex: since there are finitely
+many vertices, the walk eventually repeats a vertex and from then on goes around a cycle forever. So every component consists
+of exactly one cycle with trees hanging into it, their edges pointing towards the cycle (Figure~\ref{fig:functional}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \foreach \kk in {0,...,5} \node[vtx, cool] (c\kk) at ({2.2 + 1.15*cos(60*\kk)}, {1.15*sin(60*\kk)}) {};
+  \foreach \kk in {0,...,5} {
+    \pgfmathtruncatemacro{\nk}{mod(\kk + 1, 6)}
+    \draw[->, line width=1.1pt, draw=fgblue] (c\kk) to[bend right=18] (c\nk);
+  }
+  \node[vtx] (t1) at (-0.35, 0) {}; \node[vtx] (t2) at (-1.55, 0.2) {}; \node[vtx] (t3) at (-1.2, 1.2) {};
+  \node[vtx] (t6) at (-1.3, -1.0) {};
+  \node[vtx] (t4) at (4.6, 1.35) {}; \node[vtx] (t5) at (5.7, 2.0) {};
+  \draw[ded] (t2) -- (t1); \draw[ded] (t3) -- (t1); \draw[ded] (t6) -- (t1); \draw[ded] (t1) -- (c3);
+  \draw[ded] (t5) -- (t4); \draw[ded] (t4) -- (c1);
+  \node[font=\sffamily\scriptsize, text=fgblue] at (2.2, 0) {cycle};
+  \node[notel, anchor=west, text width=5.2cm] at (6.3, 0.2) {Blue: the cycle of the component. Grey: trees hanging into
+    it, all edges pointing towards the cycle. From any vertex, the walk reaches the cycle after some number of steps (the
+    tail) and then repeats with the cycle's length.};
+\end{tikzpicture}
+\caption{A component of a functional graph: exactly one cycle, with in-trees attached to its vertices.}
+\label{fig:functional}
+\end{figure}
+
+For every vertex, two numbers describe its future completely: the length of its tail (steps until it reaches a cycle) and the
+length of that cycle. Both can be computed for all vertices in $\Oh{n}$ by walking from each unvisited vertex until the walk
+hits a vertex that is either on the current walk (a new cycle has been found) or already solved (then the tail lengths follow
+by counting back); Planets Cycles in Chapter~\ref{ch:worked} does exactly this. ``Where is $v$ after $k$ steps?'' for many
+$v$ and huge $k$ is answered by binary lifting in $\Oh{\log k}$ each.
+
+\usetemplate{Functional graph (successor graph) cycles}{Ctrl+Alt+T, ,}{cpfuncgraph}
+
+\usetemplate{K-th successor (binary lifting / jumping)}{Ctrl+Alt+T, .}{cpjump}
+
+\subsection{Cycle finding with constant memory}
+
+Sometimes $f$ is given by a formula on a huge domain ($f(x) = x^2 + c \bmod N$ in Pollard's rho, the next state of a large
+simulation) and the visited vertices cannot be stored. \defn{Floyd's cycle-finding algorithm} runs two walkers from $x_0$, the
+tortoise one step at a time and the hare two steps at a time. Once both are on the cycle, the hare gains one step per round on
+the tortoise, so they meet within $\mu + \lambda$ rounds, where $\mu$ is the tail length and $\lambda$ the cycle length.
+\defn{Brent's algorithm} is the practical refinement: the hare walks alone while the tortoise waits at the positions
+$1, 2, 4, 8, \ldots$; when the hare meets the waiting tortoise, the number of steps since the last teleport is exactly
+$\lambda$. Then two walkers started $\lambda$ steps apart from $x_0$ meet precisely at the cycle's entry, after $\mu$ steps.
+Brent uses about a third fewer evaluations of $f$ than Floyd, and both use $\Oh{1}$ memory.
+
+\begin{code}
+template <class T, class F>
+pair<ll, ll> find_rho(T x0, F f) {  // returns (mu, lambda)
+    ll power = 1, lam = 1;
+    T tortoise = x0, hare = f(x0);
+    while (!(tortoise == hare)) {  // the tortoise waits at 1, 2, 4, ...
+        if (power == lam) tortoise = hare, power *= 2, lam = 0;
+        hare = f(hare), lam++;
+    }
+    T a = x0, b = x0;  // b starts lambda steps ahead: they meet at the entry
+    for (ll i = 0; i < lam; i++) b = f(b);
+    ll mu = 0;
+    while (!(a == b)) a = f(a), b = f(b), mu++;
+    return {mu, lam};
+}
+\end{code}
+
+\usetemplate{Cycle finding in O(1) memory (Floyd / Brent)}{Ctrl+Alt+U, F}{cpcyclefind}
+
+% ======================================================================================================================
+\section[Bidirectional search and A*]{Bidirectional search and A* \hfill \ioi}\label{sec:bibfs}
+
+In an implicit graph with branching factor $b$, a BFS to depth $d$ explores about $b^d$ states. Two ideas cut this down, one
+by halving the exponent and one by steering the search.
+
+\paragraph{Bidirectional BFS.} When the target is known, search from both ends at once, expanding one whole layer at a time
+from whichever side has the smaller frontier, and stop as soon as the two searches touch. Each side then only needs depth about
+$d/2$, so the work drops from about $b^d$ to about $2b^{d/2}$ (Figure~\ref{fig:bibfs}). This is meet in the middle
+(Section~\ref{sec:mitm}) for shortest paths. The first contact found while expanding a layer gives a shortest path: before that
+layer, no contact means the distance exceeds the sum of the two explored depths, and every contact found during the layer has
+exactly that length plus one.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \begin{scope}
+    \fill[fgsky!25] (0, 0) circle (2.0);
+    \draw[line width=0.8pt, draw=fgblue] (0, 0) circle (2.0);
+    \fill[fgblue] (0, 0) circle (2.5pt) node[below, font=\sffamily\small] {$s$};
+    \fill[fgverm] (2.0, 0) circle (2.5pt) node[right, font=\sffamily\small] {$t$};
+    \node[lbl] at (0, -2.4) {one search: radius $d$};
+  \end{scope}
+  \begin{scope}[xshift=6.4cm]
+    \fill[fgsky!25] (-1.0, 0) circle (1.0);
+    \draw[line width=0.8pt, draw=fgblue] (-1.0, 0) circle (1.0);
+    \fill[fgorange!25] (1.0, 0) circle (1.0);
+    \draw[line width=0.8pt, draw=fgorange!85!black] (1.0, 0) circle (1.0);
+    \fill[fgblue] (-1.0, 0) circle (2.5pt) node[below, font=\sffamily\small] {$s$};
+    \fill[fgverm] (1.0, 0) circle (2.5pt) node[below, font=\sffamily\small] {$t$};
+    \node[lbl] at (0, -2.4) {two searches: radius $d/2$ each};
+  \end{scope}
+\end{tikzpicture}
+\caption{Why bidirectional search wins: in a graph where the number of states within distance $r$ grows like $b^r$, two balls
+of radius $d/2$ contain far fewer states than one ball of radius $d$.}
+\label{fig:bibfs}
+\end{figure}
+
+\begin{problem}{Swap Game (CSES)}
+A $3 \times 3$ grid holds the numbers $1, \ldots, 9$. One move swaps two adjacent numbers. Find the minimum number of moves
+that sorts the grid.
+\solution The states are the $9! = 362\,880$ permutations and each has 12 neighbours, so even a plain BFS fits. Bidirectional
+BFS, from the start and from the sorted grid, explores far fewer states whenever the answer is not close to the maximum
+(Figure~\ref{fig:swapstates}). Each state is encoded as the nine digits read row by row, a number below $10^9$.
+\end{problem}
+
+\begin{code}
+void solve() {
+    // a state is the 3 x 3 grid read row by row as a 9-digit number
+    auto encode = [](const array<int, 9>& a) {
+        int x = 0;
+        for (int v : a) x = x * 10 + v;
+        return x;
+    };
+    auto decode = [](int x) {
+        array<int, 9> a;
+        per(i, 9) a[i] = x % 10, x /= 10;
+        return a;
+    };
+    array<int, 9> start;
+    for (int& v : start) cin >> v;
+    int s = encode(start), t = 123456789;
+    vector<pii> swaps;  // the 12 pairs of adjacent cells
+    rep(i, 9) {
+        if (i % 3 < 2) swaps.push_back({i, i + 1});
+        if (i < 6) swaps.push_back({i, i + 3});
+    }
+    // bidirectional BFS: grow the smaller frontier until they touch
+    unordered_map<int, int> dist[2];
+    vi frontier[2] = {{s}, {t}};
+    dist[0][s] = 0, dist[1][t] = 0;
+    if (s == t) {
+        print(0);
+        return;
+    }
+    while (true) {
+        int side = sz(frontier[0]) <= sz(frontier[1]) ? 0 : 1;
+        vi next;
+        for (int x : frontier[side]) {
+            array<int, 9> a = decode(x);
+            int d = dist[side][x];
+            for (auto [i, j] : swaps) {
+                swap(a[i], a[j]);
+                int y = encode(a);
+                swap(a[i], a[j]);
+                if (dist[side].count(y)) continue;
+                auto it = dist[side ^ 1].find(y);
+                if (it != dist[side ^ 1].end()) {  // the two searches meet
+                    print(d + 1 + it->second);
+                    return;
+                }
+                dist[side][y] = d + 1;
+                next.push_back(y);
+            }
+        }
+        frontier[side] = next;
+    }
+}
+\end{code}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \begin{axis}[cpplot, width=10.5cm, height=5.6cm, ymode=log, xmin=1, xmax=17, ymin=10, ymax=1e6,
+      xlabel={distance $d$ between start and target}, ylabel={states explored}, xtick={2,4,...,16},
+      legend pos=south east]
+    \addplot coordinates {(2,101) (4,2549) (6,27288) (8,131470) (10,291158) (12,358449) (14,362855) (16,362880)};
+    \addlegendentry{one BFS: states within $d$}
+    \addplot coordinates {(2,26) (4,202) (6,1142) (8,5098) (10,18414) (12,54576) (14,132448) (16,262940)};
+    \addlegendentry{bidirectional: twice the states within $d/2$}
+  \end{axis}
+\end{tikzpicture}
+\caption{Swap Game: the number of states that each search explores in the worst case, computed from the exact distance
+distribution of all $9!$ states. At distance 10 bidirectional search explores 16 times fewer states; near the maximum distance
+16 the gain shrinks, because a plain BFS cannot explore more than the $9!$ states that exist.}
+\label{fig:swapstates}
+\end{figure}
+
+\usetemplate{Bidirectional BFS (meet in the middle on shortest paths)}{Ctrl+Alt+U, 2}{cpbibfs}
+
+\paragraph{A*.} When a good estimate of the remaining distance is available, a search can be \emph{steered} towards the target.
+\defn{A*} is Dijkstra's algorithm (Chapter~\ref{ch:shortest}) with priority $g(v) + h(v)$, where $g(v)$ is the distance found so
+far and $h(v)$ is a lower bound on the remaining distance to the target, such as the Manhattan distance on a grid. If $h$ never
+overestimates (it is \emph{admissible}), the first time the target is taken from the priority queue its distance is optimal. If
+moreover $h(u) \le w(u, v) + h(v)$ for every edge (it is \emph{consistent}, as the Manhattan distance is on a grid), no vertex
+is ever expanded twice, and A* is exactly Dijkstra on the edge weights $w(u, v) - h(u) + h(v) \ge 0$. With $h = 0$ it is plain
+Dijkstra; the better the bound, the fewer vertices are expanded (Figure~\ref{fig:astar}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.36cm, y=0.36cm]
+  \begin{scope}[xshift=0cm]
+    \foreach \rw/\ci in {
+      6/2, 5/2, 7/2, 6/1, 6/3, 4/2, 5/1, 5/3, 8/2, 7/1, 7/3, 6/0, 6/4, 3/2, 4/1, 4/3, 5/0, 5/4, 8/1, 8/3, 7/0, 7/4,
+      6/5, 2/2, 3/1, 4/0, 4/4, 5/5, 8/0, 8/4, 7/5, 6/6, 1/2, 2/1, 2/3, 3/0, 4/5, 5/6, 8/5, 7/6, 6/7, 0/2, 1/1, 1/3,
+      2/0, 2/4, 4/6, 5/7, 8/6, 7/7, 0/1, 0/3, 1/0, 1/4, 2/5, 4/7, 8/7, 0/0, 0/4, 1/5, 2/6, 0/5, 1/6, 2/7, 0/6, 1/7,
+      0/7, 0/8, 0/9, 1/9, 0/10, 2/9, 1/10, 0/11, 3/9, 2/10, 1/11, 0/12, 4/9, 3/10, 2/11, 1/12, 0/13, 5/9, 4/10, 3/11,
+      2/12, 1/13, 0/14, 6/9, 5/10, 4/11, 3/12, 2/13, 1/14, 0/15, 7/9, 6/10, 5/11, 4/12, 3/13, 2/14}
+      \fill[fgsky!40] (\ci, -\rw) rectangle ++(1, -1);
+    \foreach \rw/\ci in {1/8, 2/8, 3/3, 3/4, 3/5, 3/6, 3/7, 3/8, 4/8, 5/8, 6/8, 7/8, 8/8}
+      \fill[fgink!75] (\ci, -\rw) rectangle ++(1, -1);
+    \draw[fgline!60, line width=0.25pt, step=1] (0, 0) grid (17, -9);
+    \draw[line width=1.3pt, draw=fgverm] (2.5, -6.5) -- (2.5, -0.5) -- (9.5, -0.5) -- (9.5, -2.5) -- (14.5, -2.5);
+    \fill[fggreen!60!black] (2.5, -6.5) circle (4pt);
+    \fill[fgverm] (14.5, -2.5) circle (4pt);
+    \node[lbl] at (8.5, -9.9) {BFS: 102 cells expanded};
+  \end{scope}
+  \begin{scope}[xshift=6.84cm]
+    \foreach \rw/\ci in {
+      6/2, 5/2, 4/2, 3/2, 2/2, 2/3, 2/4, 2/5, 2/6, 2/7, 4/3, 4/4, 4/5, 4/6, 4/7, 5/3, 5/4, 5/5, 5/6, 5/7, 6/3, 6/4,
+      6/5, 6/6, 6/7, 1/7, 1/6, 1/5, 1/4, 1/3, 7/7, 1/2, 2/1, 7/6, 3/1, 7/5, 4/1, 7/4, 5/1, 7/3, 6/1, 7/2, 0/7, 0/8,
+      0/9, 0/10, 0/11, 0/12, 0/13, 0/14, 1/14, 2/14}
+      \fill[fgsky!40] (\ci, -\rw) rectangle ++(1, -1);
+    \foreach \rw/\ci in {1/8, 2/8, 3/3, 3/4, 3/5, 3/6, 3/7, 3/8, 4/8, 5/8, 6/8, 7/8, 8/8}
+      \fill[fgink!75] (\ci, -\rw) rectangle ++(1, -1);
+    \draw[fgline!60, line width=0.25pt, step=1] (0, 0) grid (17, -9);
+    \draw[line width=1.3pt, draw=fgverm] (2.5, -6.5) -- (2.5, -2.5) -- (7.5, -2.5) -- (7.5, -0.5) -- (14.5, -0.5) -- (14.5, -2.5);
+    \fill[fggreen!60!black] (2.5, -6.5) circle (4pt);
+    \fill[fgverm] (14.5, -2.5) circle (4pt);
+    \node[lbl] at (8.5, -9.9) {A* with the Manhattan distance: 52 cells};
+  \end{scope}
+\end{tikzpicture}
+\caption{BFS versus A* from the green start to the red target around a wall (dark). Blue cells were expanded before the target;
+both searches find a shortest path of length 20 (red), but A* with the Manhattan distance as its bound expands half as many
+cells.}
+\label{fig:astar}
+\end{figure}
+
+A* is the method of choice for puzzles with a good lower bound (the sum of Manhattan distances of the tiles in the 15-puzzle),
+and its memory-light variant IDA*, iterative deepening on the bound $g + h$, solves the 15-puzzle within the limits of an
+ordinary contest problem. In typical contest graphs without such a bound, bidirectional BFS or a smarter state space are
+usually the better investment.
+
+\begin{summary}[Chapter summary]
+\begin{itemize}
+  \item Store graphs as adjacency lists by default; matrices for small dense graphs, edge lists for edge-by-edge algorithms.
+  \item DFS runs in $\Oh{n + m}$; its tree and discovery times classify edges into tree, back, forward and cross edges. In
+        undirected graphs only tree and back edges exist.
+  \item BFS finds shortest paths in unweighted graphs; several sources go into the queue at once; directions or parents
+        recover the path.
+  \item A graph is bipartite if and only if it has no odd cycle; BFS parity finds the colouring or the cycle.
+  \item Undirected cycles are back edges to non-parent ancestors; directed cycles are edges into grey vertices.
+  \item Every component of a functional graph is one cycle with in-trees; Floyd and Brent find tails and cycles in
+        $\Oh{1}$ memory.
+  \item Bidirectional BFS turns $b^d$ into $2b^{d/2}$; A* steers Dijkstra with an admissible lower bound.
+\end{itemize}
+\end{summary}
+
+\begin{practice}
+\ppgroup{Traversals}
+\begin{pplist}
+  \item Counting Rooms
+  \item Labyrinth
+  \item Building Roads
+  \item Message Route
+  \item Building Teams
+  \item Monsters
+\end{pplist}
+\ppgroup{Cycles, functional graphs and searches}
+\begin{pplist}
+  \item Round Trip
+  \item Round Trip II
+  \item Planets Cycles
+  \item Planets Queries I
+  \item Swap Game
+  \item Planets Queries II
+\end{pplist}
+\end{practice}

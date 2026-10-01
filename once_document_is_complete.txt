@@ -1,0 +1,9 @@
+now do the following, not necessarily in this order:
+1. think for a while on how to design the cover pages and flow chart better, revamp that to make it the best possible, aesthetic looking, and professional
+2. to make it a complete book, add a preface, introduction, and about the author sections
+3. revamp the guidebook with this new book, instead of making it a new separate book, add it as an appendix to our existing book. make all the sections and crossreferences after that clickable.
+4. Title the book Something appropirate, professional, and publication ready
+5. add a blank line after every chapters first paragrah, before the 'in this chapter' box
+6. check to make sure that all the topics you missed in edition 1 are covered in this edition 3 in the quality of our book
+7. include a fully walk through solved example per subtopic of all the subtopic covered in book, and atleast 30 that mix greater than 1 topic in the worked problems section at the end. each solved example should contain the full approach, thinking process, why this was chosen, and ruling out other ideas and their rationale behind it. also state the complete problem statement before going to the problem solution. you may use existing problems from cses, codeforces, usaco etc. 
+8. fix the index, chapters/topics with 4 digit numbers like 22.10 render with no space between the last digit and the start of the name of the topic

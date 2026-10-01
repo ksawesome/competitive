@@ -1,0 +1,157 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\@writefile{toc}{\contentsline {chapter}{\numberline {14}Connectivity}{177}{chapter.14}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{ch:connectivity}{{14}{177}{Connectivity}{chapter.14}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {14.1}Strongly connected components}{177}{section.14.1}\protected@file@percent }
+\newlabel{sec:scc}{{14.1}{177}{Strongly connected components}{section.14.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {14.1}{\ignorespaces A directed graph with three strongly connected components (shaded), and its condensation.}}{177}{figure.caption.230}\protected@file@percent }
+\newlabel{fig:scc}{{14.1}{177}{A directed graph with three strongly connected components (shaded), and its condensation}{figure.caption.230}{}}
+\@writefile{toc}{\contentsline {paragraph}{Tarjan's algorithm.}{177}{paragraph*.231}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {14.2}{\ignorespaces Tarjan's algorithm on a graph with three SCCs; labels are $\mathit  {tin}/\mathit  {low}$, blue edges are tree edges and red dashed edges go back to open vertices. Vertex $g$ finishes first with $\mathit  {low} = \mathit  {tin}$ and forms SCC 1; then vertex $d$ (popping $f$, $e$, $d$), then vertex $a$. Components come out in reverse topological order of the condensation.}}{178}{figure.caption.232}\protected@file@percent }
+\newlabel{fig:tarjan}{{14.2}{178}{Tarjan's algorithm on a graph with three SCCs; labels are $\mathit {tin}/\mathit {low}$, blue edges are tree edges and red dashed edges go back to open vertices. Vertex $g$ finishes first with $\mathit {low} = \mathit {tin}$ and forms SCC 1; then vertex $d$ (popping $f$, $e$, $d$), then vertex $a$. Components come out in reverse topological order of the condensation}{figure.caption.232}{}}
+\newlabel{tpl:cpscc}{{14.1}{179}{Tarjan's algorithm}{section*.233}{}}
+\@writefile{toc}{\contentsline {paragraph}{Why components come out in reverse topological order.}{179}{paragraph*.234}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {14.2}2-SAT}{181}{section.14.2}\protected@file@percent }
+\newlabel{sec:2sat}{{14.2}{181}{2-SAT}{section.14.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {14.3}{\ignorespaces An implication graph with two SCCs that are mirror images of each other. The edge between them fixes the order, and the later component is set true: $a = \text  {true}$, $b = \text  {false}$, $c = \text  {true}$.}}{182}{figure.caption.235}\protected@file@percent }
+\newlabel{fig:2sat}{{14.3}{182}{An implication graph with two SCCs that are mirror images of each other. The edge between them fixes the order, and the later component is set true: $a = \text {true}$, $b = \text {false}$, $c = \text {true}$}{figure.caption.235}{}}
+\newlabel{tpl:cp2sat}{{14.2}{183}{2-SAT}{section*.236}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {14.3}Bridges and articulation points}{183}{section.14.3}\protected@file@percent }
+\newlabel{sec:bridges}{{14.3}{183}{Bridges and articulation points}{section.14.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {14.4}{\ignorespaces Bridges and articulation points from low-link values: the red edge is the only bridge, and the red vertices are the articulation points.}}{183}{figure.caption.237}\protected@file@percent }
+\newlabel{fig:bridges}{{14.4}{183}{Bridges and articulation points from low-link values: the red edge is the only bridge, and the red vertices are the articulation points}{figure.caption.237}{}}
+\newlabel{tpl:cpbridges}{{14.3}{185}{Bridges and articulation points}{section*.238}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {14.3.1}Bridge trees and block-cut trees}{185}{subsection.14.3.1}\protected@file@percent }
+\newlabel{tpl:cp2ecc}{{14.3.1}{185}{Bridge trees and block-cut trees}{section*.240}{}}
+\newlabel{tpl:cpbcc}{{14.3.1}{185}{Bridge trees and block-cut trees}{section*.241}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {14.5}{\ignorespaces Three blocks (shaded) that share the articulation points 2 and 4, and the block-cut tree, which alternates between block nodes and articulation-point nodes. The single edge 4--5 is a block of its own (and a bridge).}}{186}{figure.caption.239}\protected@file@percent }
+\newlabel{fig:blockcut}{{14.5}{186}{Three blocks (shaded) that share the articulation points 2 and 4, and the block-cut tree, which alternates between block nodes and articulation-point nodes. The single edge 4--5 is a block of its own (and a bridge)}{figure.caption.239}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {14.4}Eulerian paths and circuits}{186}{section.14.4}\protected@file@percent }
+\newlabel{sec:euler}{{14.4}{186}{Eulerian paths and circuits}{section.14.4}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {14.1}{\ignorespaces Existence of Eulerian circuits and paths, assuming all edges are in one (weakly) connected component.}}{186}{table.caption.242}\protected@file@percent }
+\newlabel{tab:euler}{{14.1}{186}{Existence of Eulerian circuits and paths, assuming all edges are in one (weakly) connected component}{table.caption.242}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {14.6}{\ignorespaces Hierholzer's algorithm splices closed sub-tours into the current walk wherever unused edges remain.}}{186}{figure.caption.243}\protected@file@percent }
+\newlabel{fig:hierholzer}{{14.6}{186}{Hierholzer's algorithm splices closed sub-tours into the current walk wherever unused edges remain}{figure.caption.243}{}}
+\newlabel{tpl:cpeuler}{{14.4}{188}{Eulerian paths and circuits}{section*.244}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {14.5}Offline dynamic connectivity}{188}{section.14.5}\protected@file@percent }
+\newlabel{sec:offline-dyncon}{{14.5}{188}{Offline dynamic connectivity}{section.14.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {14.7}{\ignorespaces A segment tree on time. Each edge is stored in the $\ensuremath  {\mathcal  {O}(\log q)}$ nodes that tile its lifetime; a leaf at time $t$ sees exactly the edges stored on its root path, which are the edges alive at $t$.}}{189}{figure.caption.245}\protected@file@percent }
+\newlabel{fig:segtime}{{14.7}{189}{A segment tree on time. Each edge is stored in the $\Oh {\log q}$ nodes that tile its lifetime; a leaf at time $t$ sees exactly the edges stored on its root path, which are the edges alive at $t$}{figure.caption.245}{}}
+\newlabel{tpl:cpofflinecc}{{14.5}{190}{Offline dynamic connectivity}{section*.246}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {14.6}Euler's formula and planar graphs}{190}{section.14.6}\protected@file@percent }
+\newlabel{sec:planar}{{14.6}{190}{Euler's formula and planar graphs}{section.14.6}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {14.8}{\ignorespaces Euler's formula on a small planar graph: three bounded faces and the outer face.}}{191}{figure.caption.247}\protected@file@percent }
+\newlabel{fig:euler-formula}{{14.8}{191}{Euler's formula on a small planar graph: three bounded faces and the outer face}{figure.caption.247}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {14.7}Critical vertices and dominators}{191}{section.14.7}\protected@file@percent }
+\newlabel{sec:dominators}{{14.7}{191}{Critical vertices and dominators}{section.14.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {14.9}{\ignorespaces A DAG and its dominator tree. Every path from $s$ to $t$ passes through $c$ and $d$ (the ancestors of $t$), but neither $a$ nor $b$ is unavoidable, so $c$'s immediate dominator is $s$.}}{191}{figure.caption.248}\protected@file@percent }
+\newlabel{fig:dominator}{{14.9}{191}{A DAG and its dominator tree. Every path from $s$ to $t$ passes through $c$ and $d$ (the ancestors of $t$), but neither $a$ nor $b$ is unavoidable, so $c$'s immediate dominator is $s$}{figure.caption.248}{}}
+\@writefile{toc}{\contentsline {paragraph}{Link-cut trees.}{191}{paragraph*.249}\protected@file@percent }
+\@setckpt{algorithms/13_connectivity}{
+\setcounter{page}{193}
+\setcounter{equation}{0}
+\setcounter{enumi}{2}
+\setcounter{enumii}{0}
+\setcounter{enumiii}{0}
+\setcounter{enumiv}{0}
+\setcounter{footnote}{0}
+\setcounter{mpfootnote}{0}
+\setcounter{part}{3}
+\setcounter{chapter}{14}
+\setcounter{section}{7}
+\setcounter{subsection}{0}
+\setcounter{subsubsection}{0}
+\setcounter{paragraph}{0}
+\setcounter{subparagraph}{0}
+\setcounter{figure}{9}
+\setcounter{table}{1}
+\setcounter{parentequation}{0}
+\setcounter{lstnumber}{73}
+\setcounter{tcbbreakpart}{1}
+\setcounter{tcblayer}{0}
+\setcounter{tcolorbox@number}{579}
+\setcounter{tcblisting}{114}
+\setcounter{tcbrastercolumn}{1}
+\setcounter{tcbrasterrow}{1}
+\setcounter{tcbrasternum}{1}
+\setcounter{tcbraster}{3}
+\setcounter{cpsegfig}{0}
+\setcounter{LT@tables}{0}
+\setcounter{LT@chunks}{0}
+\setcounter{nlinenum}{0}
+\setcounter{ALG@line}{7}
+\setcounter{ALG@rem}{0}
+\setcounter{ALG@nested}{0}
+\setcounter{ALG@Lnr}{2}
+\setcounter{ALG@blocknr}{15}
+\setcounter{ALG@storecount}{0}
+\setcounter{ALG@tmpcounter}{0}
+\setcounter{algpx@codeBoxCount}{0}
+\setcounter{algpx@nestedCBoxCount}{0}
+\setcounter{algpx@startedBoxesCount}{0}
+\setcounter{algpx@endedBoxesCount}{0}
+\setcounter{algpx@nestedBoxedStringCount}{0}
+\setcounter{algpx@nestedBoxedStringMaxCount}{0}
+\setcounter{algpx@indentCount}{14}
+\setcounter{algpx@lastIndentEnded}{13}
+\setcounter{algpx@pageCount}{0}
+\setcounter{algpx@tmpCount}{0}
+\setcounter{caption@flags}{2}
+\setcounter{continuedfloat}{0}
+\setcounter{float@type}{16}
+\setcounter{section@level}{0}
+\setcounter{Item}{8}
+\setcounter{Hfootnote}{0}
+\setcounter{bookmark@seq@number}{0}
+\setcounter{algpx@indentEndPage-0@totc}{0}
+\setcounter{algpx@indentEndPage-1@totc}{0}
+\setcounter{algpx@indentEndPage-2@totc}{0}
+\setcounter{algpx@indentEndPage-3@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-2@totc}{3}
+\setcounter{algpx@indentEndCoordIndex-0@totc}{3}
+\setcounter{algpx@indentEndPage-4@totc}{0}
+\setcounter{algpx@indentEndPage-5@totc}{0}
+\setcounter{algpx@indentEndPage-6@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-4@totc}{6}
+\setcounter{algpx@indentEndPage-7@totc}{0}
+\setcounter{algpx@indentEndPage-8@totc}{0}
+\setcounter{algpx@indentEndPage-9@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-8@totc}{9}
+\setcounter{algpx@indentEndPage-10@totc}{0}
+\setcounter{algpx@indentEndPage-11@totc}{0}
+\setcounter{algpx@indentEndPage-12@totc}{0}
+\setcounter{algpx@indentEndPage-13@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-12@totc}{13}
+\setcounter{algpx@indentEndCoordIndex-10@totc}{13}
+\setcounter{algpx@indentEndPage-14@totc}{0}
+\setcounter{algpx@indentEndPage-15@totc}{0}
+\setcounter{algpx@indentEndPage-16@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-15@totc}{16}
+\setcounter{algpx@indentEndPage-17@totc}{0}
+\setcounter{algpx@indentEndPage-18@totc}{1}
+\setcounter{algpx@indentEndPage-19@totc}{1}
+\setcounter{algpx@indentEndCoordIndex-18@totc}{19}
+\setcounter{lstlisting}{0}
+\setcounter{algpx@indentEndPage-0}{0}
+\setcounter{algpx@indentEndPage-1}{0}
+\setcounter{algpx@indentEndPage-2}{0}
+\setcounter{algpx@indentEndPage-3}{0}
+\setcounter{algpx@indentEndCoordIndex-2}{3}
+\setcounter{algpx@indentEndCoordIndex-0}{3}
+\setcounter{algpx@indentEndPage-4}{0}
+\setcounter{algpx@indentEndPage-5}{0}
+\setcounter{algpx@indentEndPage-6}{0}
+\setcounter{algpx@indentEndCoordIndex-4}{6}
+\setcounter{algpx@indentEndPage-7}{0}
+\setcounter{algpx@indentEndPage-8}{0}
+\setcounter{algpx@indentEndPage-9}{0}
+\setcounter{algpx@indentEndCoordIndex-8}{9}
+\setcounter{algpx@indentEndPage-10}{0}
+\setcounter{algpx@indentEndPage-11}{0}
+\setcounter{algpx@indentEndPage-12}{0}
+\setcounter{algpx@indentEndPage-13}{0}
+\setcounter{algpx@indentEndCoordIndex-12}{13}
+\setcounter{algpx@indentEndCoordIndex-10}{13}
+}

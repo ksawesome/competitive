@@ -1,0 +1,86 @@
+\chapter{Reference Tables}\label{ch:appendix}
+
+\section{Complexity of the standard algorithms}
+
+\begin{small}
+\begin{longtable}{>{\raggedright\arraybackslash}p{6cm}>{\raggedright\arraybackslash}p{4.4cm}>{\ttfamily}p{3.2cm}}
+\toprule
+\thd{Algorithm / structure} & \thd{Complexity} & \thd{Library prefix} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+sorting & $\Oh{n\log n}$ & -- \\
+binary search / on the answer & $\Oh{\log n}$ / $\Oh{\log R\cdot\text{check}}$ & cpbsearch \\
+prefix sums (1D / 2D) & $\Oh{n}$ build, $\Oh{1}$ query & cpprefix, cpprefix2d \\
+two pointers, sliding window & $\Oh{n}$ & cptwoptr, cpwindow \\
+monotonic stack & $\Oh{n}$ & cpmonostack \\
+BFS / DFS / flood fill & $\Oh{n + m}$ & cpbfs, cpdfs, cpflood \\
+0-1 BFS & $\Oh{n + m}$ & cp01bfs \\
+Dijkstra & $\Oh{(n + m)\log n}$ & cpdijkstra \\
+Bellman--Ford & $\Oh{nm}$ & cpbellman \\
+Floyd--Warshall & $\Oh{n^3}$ & cpfloyd \\
+topological sort & $\Oh{n + m}$ & cptopo \\
+DSU & $\Oh{\alpha(n)}$ amortized & cpdsu \\
+Kruskal / Prim (dense) & $\Oh{m\log m}$ / $\Oh{n^2}$ & cpkruskal, cpprim \\
+SCC, 2-SAT, bridges, BCC & $\Oh{n + m}$ & cpscc, cp2sat, cpbridges, cpbcc \\
+Euler path & $\Oh{n + m}$ & cpeuler \\
+Dinic / Hopcroft--Karp & $\Oh{n^2m}$ / $\Oh{m\sqrt n}$ & cpdinic, cphopcroft \\
+min-cost flow (SPFA) & $\Oh{F\cdot nm}$ worst case & cpmcmf \\
+LCA (binary lifting) & $\Oh{n\log n}$ + $\Oh{\log n}$ & cplca \\
+HLD path query & $\Oh{\log^2 n}$ & cphld \\
+centroid decomposition & $\Oh{n\log n}$ & cpcentroid \\
+Fenwick tree & $\Oh{\log n}$ & cpbit, cpbitrange, cpbit2d \\
+segment tree (+ lazy) & $\Oh{\log n}$ & cpseg, cplazy, cpsegnode \\
+sparse table & $\Oh{n\log n}$ + $\Oh{1}$ & cpsparse \\
+Mo's algorithm & $\Oh{(n + q)\sqrt n}$ & cpmo \\
+persistent segment tree & $\Oh{\log n}$, $\Oh{\log n}$ memory per update & cppersist \\
+treap & $\Oh{\log n}$ expected & cptreap \\
+LIS & $\Oh{n\log n}$ & cplis \\
+knapsack & $\Oh{nW}$ & cpknap \\
+bitmask DP (TSP) & $\Oh{2^n n^2}$ & cptsp \\
+digit DP & $\Oh{\text{digits}\cdot\text{states}\cdot 10}$ & cpdigit \\
+SOS DP & $\Oh{B\,2^B}$ & cpsos \\
+D\&C / Knuth optimization & $\Oh{kn\log n}$ / $\Oh{n^2}$ & cpdnc, cpknuth \\
+convex hull trick & $\Oh{\log n}$ per operation & cplinecontainer, cplichao \\
+sieve / linear sieve & $\Oh{n\log\log n}$ / $\Oh{n}$ & cpsieve \\
+trial division / Pollard rho & $\Oh{\sqrt n}$ / $\Oh{n^{1/4}}$ & cpfactor, cppollard \\
+modular power & $\Oh{\log e}$ & cpmodpow \\
+matrix power & $\Oh{k^3\log n}$ & cpmatrix \\
+FFT / NTT & $\Oh{n\log n}$ & cpfft, cpntt \\
+KMP / Z / Manacher & $\Oh{n}$ & cpkmp, cpz, cpmanacher \\
+string hashing & $\Oh{n}$ + $\Oh{1}$ & cpstrhash \\
+suffix array + LCP & $\Oh{n\log n}$ & cpsa \\
+suffix automaton, Aho--Corasick & $\Oh{n\Sigma}$ & cpsam, cpaho \\
+convex hull, closest pair & $\Oh{n\log n}$ & cphull, cpclosest \\
+\end{longtable}
+\end{small}
+
+\section{Formula sheet}
+
+\begin{center}
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{5.2cm}L}
+\toprule
+\thd{Quantity} & \thd{Formula} \\
+\midrule
+arithmetic series & $\sum_{i=1}^n i = \frac{n(n+1)}{2}$,\quad $\sum_{i=1}^n i^2 = \frac{n(n+1)(2n+1)}{6}$ \\
+geometric series & $\sum_{i=0}^{n-1} r^i = \frac{r^n - 1}{r - 1}$ \\
+binomial & $\binom nk = \frac{n!}{k!(n-k)!}$,\quad $\binom nk = \binom{n-1}{k-1} + \binom{n-1}{k}$ \\
+stars and bars & $\binom{n+k-1}{k-1}$ ways to put $n$ items into $k$ boxes \\
+Catalan & $C_n = \frac{1}{n+1}\binom{2n}n$ \\
+derangements & $D_n = (n-1)(D_{n-1} + D_{n-2})$ \\
+divisors of $\prod p_i^{e_i}$ & count $\prod(e_i + 1)$, sum $\prod\frac{p_i^{e_i+1}-1}{p_i-1}$ \\
+totient & $\varphi(n) = n\prod_{p\mid n}(1 - 1/p)$ \\
+Fermat / Euler & $a^{p-1} \equiv 1 \pmod p$, $a^{\varphi(n)} \equiv 1 \pmod n$ \\
+Pick & $A = I + B/2 - 1$ \\
+shoelace & $2A = |\sum_i (x_i y_{i+1} - x_{i+1} y_i)|$ \\
+Euler (planar graphs) & $V - E + F = 2$ \\
+distance & Manhattan $|dx| + |dy|$; Chebyshev $\max(|dx|, |dy|)$; rotating by $45^\circ$ ($u = x + y$, $v = x - y$) turns Manhattan into Chebyshev \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Where the templates are}
+
+Every template named in this book is in \file{library/} and documented card by card in the User Guide (GUIDE.pdf,
+Chapter~8), with its keyboard shortcut. The one-page version is \file{CHEATSHEET.md}.

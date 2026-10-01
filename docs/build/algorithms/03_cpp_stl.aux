@@ -1,0 +1,138 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\@writefile{toc}{\contentsline {chapter}{\numberline {4}C++ and the STL for Contests}{39}{chapter.4}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{ch:cpp}{{4}{39}{C++ and the STL for Contests}{chapter.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.1}Input and output}{39}{section.4.1}\protected@file@percent }
+\newlabel{sec:io}{{4.1}{39}{Input and output}{section.4.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1.1}Reading patterns}{40}{subsection.4.1.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1.2}Writing patterns}{40}{subsection.4.1.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4.2}Integer types and overflow}{40}{section.4.2}\protected@file@percent }
+\newlabel{sec:overflow}{{4.2}{40}{Integer types and overflow}{section.4.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{When 64 bits are not enough.}{40}{paragraph*.64}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4.1}{\ignorespaces Type ranges (bars) against quantities that appear in contests (red ticks), on a logarithmic ruler. A sum of $2\cdot 10^5$ values up to $10^9$ overflows \texttt  {int} by a factor of $10^5$; a product of two such values fits in \texttt  {long long} with a factor of 9 to spare, but a product of three does not fit anywhere except \texttt  {\_\_int128}.}}{41}{figure.caption.63}\protected@file@percent }
+\newlabel{fig:ranges}{{4.1}{41}{Type ranges (bars) against quantities that appear in contests (red ticks), on a logarithmic ruler. A sum of $2\cdot 10^5$ values up to $10^9$ overflows \texttt {int} by a factor of $10^5$; a product of two such values fits in \texttt {long long} with a factor of 9 to spare, but a product of three does not fit anywhere except \texttt {\_\_int128}}{figure.caption.63}{}}
+\@writefile{toc}{\contentsline {paragraph}{Unsigned arithmetic wraps by design.}{41}{paragraph*.65}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Floating point.}{41}{paragraph*.66}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4.3}Choosing a container}{41}{section.4.3}\protected@file@percent }
+\newlabel{sec:containers}{{4.3}{41}{Choosing a container}{section.4.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.2}{\ignorespaces Choosing a container: ask the questions from the top and take the first ``yes''. Most problems stop at the first question; \texttt  {vector} is the right answer far more often than any other container.}}{42}{figure.caption.67}\protected@file@percent }
+\newlabel{fig:container-choice}{{4.2}{42}{Choosing a container: ask the questions from the top and take the first ``yes''. Most problems stop at the first question; \texttt {vector} is the right answer far more often than any other container}{figure.caption.67}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4.1}{\ignorespaces STL containers and the cost of their operations ($n$ = number of elements).}}{42}{table.caption.68}\protected@file@percent }
+\newlabel{tab:containers}{{4.1}{42}{STL containers and the cost of their operations ($n$ = number of elements)}{table.caption.68}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3.1}vector, and resetting between test cases}{42}{subsection.4.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3.2}Iterators and half-open ranges}{43}{subsection.4.3.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4.3}{\ignorespaces Iterators on a sorted vector. Both bounds take $\ensuremath  {\mathcal  {O}(\log n)}$ and return \texttt  {end()} when no element qualifies.}}{43}{figure.caption.69}\protected@file@percent }
+\newlabel{fig:iterators}{{4.3}{43}{Iterators on a sorted vector. Both bounds take $\Oh {\log n}$ and return \texttt {end()} when no element qualifies}{figure.caption.69}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3.3}set, multiset and map}{43}{subsection.4.3.3}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4.4}{\ignorespaces \texttt  {lower\_bound} in a balanced search tree walks one path from the root (orange), remembering the last node where it went left. With $n$ keys the path has about $\log _2 n$ nodes.}}{44}{figure.caption.70}\protected@file@percent }
+\newlabel{fig:bst-lower}{{4.4}{44}{\texttt {lower\_bound} in a balanced search tree walks one path from the root (orange), remembering the last node where it went left. With $n$ keys the path has about $\log _2 n$ nodes}{figure.caption.70}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3.4}priority\_queue and the binary heap}{44}{subsection.4.3.4}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4.5}{\ignorespaces A max-heap drawn as a tree (left) and stored as an array (right). The tree is complete, so the array has no gaps, and no pointers are needed: the parent of index $i$ is $\lfloor (i - 1)/2 \rfloor $.}}{44}{figure.caption.71}\protected@file@percent }
+\newlabel{fig:heap}{{4.5}{44}{A max-heap drawn as a tree (left) and stored as an array (right). The tree is complete, so the array has no gaps, and no pointers are needed: the parent of index $i$ is $\lfloor (i - 1)/2 \rfloor $}{figure.caption.71}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3.5}unordered\_map and hash attacks}{45}{subsection.4.3.5}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4.6}{\ignorespaces An anti-hash test against \texttt  {unordered\_map} (left) and the fix (right): hash with a random seed, as the library's \texttt  {custom\_hash} does, so that no fixed input can force collisions.}}{45}{figure.caption.72}\protected@file@percent }
+\newlabel{fig:hashattack}{{4.6}{45}{An anti-hash test against \texttt {unordered\_map} (left) and the fix (right): hash with a random seed, as the library's \texttt {custom\_hash} does, so that no fixed input can force collisions}{figure.caption.72}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3.6}bitset}{45}{subsection.4.3.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4.4}Sorting and comparators}{45}{section.4.4}\protected@file@percent }
+\newlabel{sec:sorting-stl}{{4.4}{45}{Sorting and comparators}{section.4.4}{}}
+\@writefile{toc}{\contentsline {paragraph}{Sorting pairs and tuples.}{46}{paragraph*.73}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Coordinate compression.}{46}{paragraph*.74}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4.5}The algorithm toolbox}{46}{section.4.5}\protected@file@percent }
+\newlabel{sec:toolbox}{{4.5}{46}{The algorithm toolbox}{section.4.5}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.6}Modern C++ that saves time}{47}{section.4.6}\protected@file@percent }
+\newlabel{sec:modern}{{4.6}{47}{Modern C++ that saves time}{section.4.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.6.1}Lambdas and recursion}{47}{subsection.4.6.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4.7}Policy-based data structures}{47}{section.4.7}\protected@file@percent }
+\newlabel{sec:pbds}{{4.7}{47}{Policy-based data structures}{section.4.7}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.8}Randomness}{48}{section.4.8}\protected@file@percent }
+\newlabel{sec:random-stl}{{4.8}{48}{Randomness}{section.4.8}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.9}Undefined behaviour and common bugs}{48}{section.4.9}\protected@file@percent }
+\newlabel{sec:ub}{{4.9}{48}{Undefined behaviour and common bugs}{section.4.9}{}}
+\@setckpt{algorithms/03_cpp_stl}{
+\setcounter{page}{50}
+\setcounter{equation}{0}
+\setcounter{enumi}{3}
+\setcounter{enumii}{0}
+\setcounter{enumiii}{0}
+\setcounter{enumiv}{0}
+\setcounter{footnote}{0}
+\setcounter{mpfootnote}{0}
+\setcounter{part}{1}
+\setcounter{chapter}{4}
+\setcounter{section}{9}
+\setcounter{subsection}{0}
+\setcounter{subsubsection}{0}
+\setcounter{paragraph}{0}
+\setcounter{subparagraph}{0}
+\setcounter{figure}{6}
+\setcounter{table}{1}
+\setcounter{parentequation}{0}
+\setcounter{lstnumber}{1}
+\setcounter{tcbbreakpart}{1}
+\setcounter{tcblayer}{0}
+\setcounter{tcolorbox@number}{154}
+\setcounter{tcblisting}{27}
+\setcounter{tcbrastercolumn}{1}
+\setcounter{tcbrasterrow}{1}
+\setcounter{tcbrasternum}{1}
+\setcounter{tcbraster}{0}
+\setcounter{cpsegfig}{0}
+\setcounter{LT@tables}{0}
+\setcounter{LT@chunks}{0}
+\setcounter{nlinenum}{0}
+\setcounter{ALG@line}{0}
+\setcounter{ALG@rem}{0}
+\setcounter{ALG@nested}{0}
+\setcounter{ALG@Lnr}{2}
+\setcounter{ALG@blocknr}{15}
+\setcounter{ALG@storecount}{0}
+\setcounter{ALG@tmpcounter}{0}
+\setcounter{algpx@codeBoxCount}{0}
+\setcounter{algpx@nestedCBoxCount}{0}
+\setcounter{algpx@startedBoxesCount}{0}
+\setcounter{algpx@endedBoxesCount}{0}
+\setcounter{algpx@nestedBoxedStringCount}{0}
+\setcounter{algpx@nestedBoxedStringMaxCount}{0}
+\setcounter{algpx@indentCount}{0}
+\setcounter{algpx@lastIndentEnded}{0}
+\setcounter{algpx@pageCount}{0}
+\setcounter{algpx@tmpCount}{0}
+\setcounter{caption@flags}{2}
+\setcounter{continuedfloat}{0}
+\setcounter{float@type}{16}
+\setcounter{section@level}{0}
+\setcounter{Item}{6}
+\setcounter{Hfootnote}{0}
+\setcounter{bookmark@seq@number}{0}
+\setcounter{algpx@indentEndPage-0@totc}{0}
+\setcounter{algpx@indentEndPage-1@totc}{0}
+\setcounter{algpx@indentEndPage-2@totc}{0}
+\setcounter{algpx@indentEndPage-3@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-2@totc}{3}
+\setcounter{algpx@indentEndCoordIndex-0@totc}{3}
+\setcounter{algpx@indentEndPage-4@totc}{0}
+\setcounter{algpx@indentEndPage-5@totc}{0}
+\setcounter{algpx@indentEndPage-6@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-4@totc}{6}
+\setcounter{algpx@indentEndPage-7@totc}{0}
+\setcounter{algpx@indentEndPage-8@totc}{0}
+\setcounter{algpx@indentEndPage-9@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-8@totc}{9}
+\setcounter{algpx@indentEndPage-10@totc}{0}
+\setcounter{algpx@indentEndPage-11@totc}{0}
+\setcounter{algpx@indentEndPage-12@totc}{0}
+\setcounter{algpx@indentEndPage-13@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-12@totc}{13}
+\setcounter{algpx@indentEndCoordIndex-10@totc}{13}
+\setcounter{algpx@indentEndPage-14@totc}{0}
+\setcounter{algpx@indentEndPage-15@totc}{0}
+\setcounter{algpx@indentEndPage-16@totc}{0}
+\setcounter{algpx@indentEndCoordIndex-15@totc}{16}
+\setcounter{algpx@indentEndPage-17@totc}{0}
+\setcounter{algpx@indentEndPage-18@totc}{1}
+\setcounter{algpx@indentEndPage-19@totc}{1}
+\setcounter{algpx@indentEndCoordIndex-18@totc}{19}
+\setcounter{lstlisting}{0}
+}

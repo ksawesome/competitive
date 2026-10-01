@@ -1,0 +1,1024 @@
+\chapter{Combinatorics, Probability and Games}\label{ch:combinatorics}
+
+Counting problems ask ``in how many ways?'', usually modulo a prime, and their answers are formulas assembled from a few building
+blocks: binomial coefficients, inclusion--exclusion, symmetry, and a handful of famous sequences. This chapter builds that toolbox,
+adds the algebra that turns hard counts into easy ones (Stirling numbers, polynomial interpolation, determinants), and ends with two
+neighbouring subjects: expected values, and games in which two players alternate moves.
+
+\begin{chapterintro}{\silver\ \gold\ \plat\ \ioi}{Chapter~\ref{ch:numbertheory} (modular inverses) and
+Section~\ref{sec:probdp} and Section~\ref{sec:gamedp} (probability and game DPs).}
+  \item count with the product, sum and complement rules, bijections and double counting;
+  \item compute binomial coefficients modulo a prime in $\Oh{1}$, and modulo small primes with Lucas's theorem;
+  \item count lattice paths, distributions and bracket sequences with stars and bars and the reflection principle;
+  \item subtract overcounts with inclusion--exclusion, and count up to symmetry with Burnside's lemma;
+  \item use Stirling numbers, Lagrange interpolation, and determinants (matrix-tree theorem, LGV lemma);
+  \item compute expected values by linearity, and win impartial games with Nim and Sprague--Grundy theory.
+\end{chapterintro}
+
+% ======================================================================================================================
+\section[Counting principles]{Counting principles \hfill \silver}\label{sec:counting}
+
+Almost every count is built from five principles.
+\begin{itemize}
+  \item \textbf{Product rule}: a sequence of $k$ independent choices with $c_1, \dots, c_k$ options gives $c_1 c_2 \cdots c_k$ outcomes.
+        ``Independent'' means that the number of options at each step does not depend on the earlier choices, even if the options
+        themselves do.
+  \item \textbf{Sum rule}: if the outcomes split into disjoint cases, add the counts of the cases.
+  \item \textbf{Complement}: count everything and subtract the outcomes you do not want; ``at least one'' is usually ``all minus none''.
+  \item \textbf{Bijection}: count a different set that is in one-to-one correspondence with the one you want, such as subsets and
+        bit strings, or lattice paths and bracket sequences.
+  \item \textbf{Double counting}: count the same quantity in two ways, typically as a sum over objects of their parts, and as a sum
+        over parts of the objects that contain them. The ``contribution technique'' of Chapter~\ref{ch:patterns} is this principle.
+\end{itemize}
+
+Choosing $k$ elements out of $n$ comes in four flavours (Table~\ref{tab:selections}), depending on whether order matters and whether
+an element may be chosen more than once.
+
+\begin{table}[htbp]
+\centering\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+choose $k$ of $n$ & order matters & order does not matter \\
+\midrule
+without repetition & $n^{\underline{k}} = n (n-1) \cdots (n - k + 1) = \frac{n!}{(n-k)!}$ & $\binom{n}{k} = \frac{n!}{k!\,(n-k)!}$ \\[2pt]
+with repetition & $n^k$ & $\binom{n + k - 1}{k}$ (stars and bars) \\
+\bottomrule
+\end{tabular}
+\caption{The four ways to choose $k$ elements from $n$.}
+\label{tab:selections}
+\end{table}
+
+When the objects are not all different, divide out the orderings that cannot be told apart: a word with $n$ letters in which letter $i$
+occurs $c_i$ times has $\frac{n!}{c_1!\, c_2! \cdots}$ distinct arrangements, the \defn{multinomial coefficient}.
+
+\begin{problem}{Creating Strings II (CSES)}
+How many distinct strings can be formed from the letters of a given string of length $n \le 10^6$? Answer modulo $10^9 + 7$.
+\solution The multinomial coefficient $n! / \prod_c (\text{count of } c)!$, with the divisions done by multiplying with precomputed
+inverse factorials (next section). The program takes 0.09\,s for $n = 10^6$.
+\end{problem}
+
+\begin{code}
+void solve() {  // nCr (cpncr) is pasted above solve()
+    string s;
+    cin >> s;
+    init_comb(sz(s));
+    vi cnt(26);
+    for (char c : s) cnt[c - 'a']++;
+    ll ans = fact[sz(s)];  // all orders, then forget the order of equal letters
+    for (ll c : cnt) ans = ans * inv_fact[c] % MOD;
+    print(ans);
+}
+\end{code}
+
+% ======================================================================================================================
+\section[Binomial coefficients]{Binomial coefficients \hfill \gold}\label{sec:binomial}
+
+$\binom{n}{k}$ counts the $k$-element subsets of an $n$-element set. Modulo a prime $p > n$, precompute $i!$ for all $i \le N$ and then
+the inverse factorials: $(N!)^{-1}$ with one fast exponentiation, and $(i - 1)!^{-1} = i!^{-1} \cdot i$ going down. After this $\Oh{N}$
+preparation, every $\binom{n}{k} = n! \cdot (k!)^{-1} \cdot ((n-k)!)^{-1}$ costs two multiplications.
+
+\usetemplate{nCr / factorials, Pascal}{Ctrl+Alt+T, N / Ctrl+Alt+Y, Shift+N}{cpncr, cppascal}
+
+\begin{problem}{Binomial Coefficients (CSES)}
+Answer $10^5$ queries $\binom{a}{b} \bmod (10^9 + 7)$ with $0 \le b \le a \le 10^6$.
+\solution Factorials and inverse factorials up to $10^6$, once; every query is then $\Oh{1}$. 0.12\,s in total.
+\end{problem}
+
+\begin{code}
+void solve() {  // nCr (cpncr) is pasted above solve()
+    init_comb(1000000);  // factorials and inverse factorials, once
+    int q;
+    cin >> q;
+    while (q--) {
+        int a, b;
+        cin >> a >> b;
+        print(nCr(a, b));
+    }
+}
+\end{code}
+
+\paragraph{Pascal's rule.} $\binom{n}{k} = \binom{n-1}{k-1} + \binom{n-1}{k}$: a $k$-subset of $\{1, \dots, n\}$ either contains $n$ or
+not. The rule needs no division, so Pascal's triangle computes binomial coefficients modulo \emph{any} number, including composite
+moduli where inverses do not exist, in $\Oh{n^2}$ (Figure~\ref{fig:pascal}). Exact values fit in 64 bits up to $\binom{66}{33}
+\approx 7.2 \cdot 10^{18}$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \begin{scope}
+    \tikzset{pn/.style={vtx, minimum size=6.6mm, font=\sffamily\scriptsize}}
+    \foreach \rowv [count=\rn from 0] in {{1}, {1,1}, {1,2,1}, {1,3,3,1}, {1,4,6,4,1}, {1,5,10,10,5,1}, {1,6,15,20,15,6,1}} {
+      \foreach \vv [count=\kk from 0] in \rowv \node[pn] (C\rn-\kk) at (0.78*\kk - 0.39*\rn, -0.68*\rn) {\vv};
+    }
+    \node[pn, cool] at (C3-1) {3};
+    \node[pn, cool] at (C3-2) {3};
+    \node[pn, hot] at (C4-2) {6};
+    \draw[->, line width=0.8pt, draw=fgblue, shorten >=1pt, shorten <=1pt] (C3-1) -- (C4-2);
+    \draw[->, line width=0.8pt, draw=fgblue, shorten >=1pt, shorten <=1pt] (C3-2) -- (C4-2);
+    \node[title] at (0, 0.75) {Pascal's triangle};
+  \end{scope}
+  \begin{scope}[shift={(7.4, 0)}, x=0.27cm, y=0.27cm]
+    \foreach \rn in {0, ..., 15} \foreach \kk in {0, ..., \rn}
+      \node[draw=fgline!80, line width=0.3pt, minimum size=2.5mm, inner sep=0pt] at (\kk - \rn / 2, -\rn) {};
+    \foreach \rn/\kk in {0/0, 1/0, 1/1, 2/0, 2/2, 3/0, 3/1, 3/2, 3/3, 4/0, 4/4, 5/0, 5/1, 5/4, 5/5, 6/0, 6/2, 6/4, 6/6, 7/0,
+        7/1, 7/2, 7/3, 7/4, 7/5, 7/6, 7/7, 8/0, 8/8, 9/0, 9/1, 9/8, 9/9, 10/0, 10/2, 10/8, 10/10, 11/0, 11/1, 11/2, 11/3, 11/8,
+        11/9, 11/10, 11/11, 12/0, 12/4, 12/8, 12/12, 13/0, 13/1, 13/4, 13/5, 13/8, 13/9, 13/12, 13/13, 14/0, 14/2, 14/4, 14/6,
+        14/8, 14/10, 14/12, 14/14, 15/0, 15/1, 15/2, 15/3, 15/4, 15/5, 15/6, 15/7, 15/8, 15/9, 15/10, 15/11, 15/12, 15/13, 15/14,
+        15/15}
+      \node[draw=fgblue, fill=fgblue!65, line width=0.3pt, minimum size=2.5mm, inner sep=0pt] at (\kk - \rn / 2, -\rn) {};
+    \node[title] at (0, 2.8) {odd entries, rows 0 to 15};
+  \end{scope}
+\end{tikzpicture}
+\caption{Left: each entry is the sum of the two above it, $\binom42 = \binom31 + \binom32$. Right: the odd entries of the first 16 rows
+form a Sierpi\'nski triangle. By Lucas's theorem, $\binom{n}{k}$ is odd exactly when every 1-bit of $k$ is also a 1-bit of $n$: 81 of
+the 136 entries.}
+\label{fig:pascal}
+\end{figure}
+
+\begin{fact}[Identities worth knowing]
+Each has a one-line counting proof.
+\begin{itemize}
+  \item $\binom{n}{k} = \binom{n}{n-k}$ (choose the elements to leave out) and $\sum_k \binom{n}{k} = 2^n$ (all subsets).
+  \item $k \binom{n}{k} = n \binom{n-1}{k-1}$ (choose a $k$-subset and a leader in it, or the leader first).
+  \item $\sum_{i=k}^{n} \binom{i}{k} = \binom{n+1}{k+1}$, the hockey stick (classify the $(k+1)$-subsets of $\{0, \dots, n\}$ by their
+        largest element $i$).
+  \item $\sum_k \binom{m}{k}\binom{n}{r-k} = \binom{m+n}{r}$, Vandermonde (choose $r$ from two groups).
+  \item Monotone lattice paths from $(0, 0)$ to $(a, b)$: $\binom{a+b}{a}$ (choose which steps go right).
+\end{itemize}
+\end{fact}
+
+\begin{trick}[Lucas's and Kummer's theorems]
+For a prime $p$ smaller than $n$, factorials vanish modulo $p$ and the inverse-factorial method breaks. Write $n$ and $k$ in base $p$;
+then $\binom{n}{k} \equiv \prod_i \binom{n_i}{k_i} \pmod p$ (\textbf{Lucas}), where each small binomial is taken from a table of size
+$p^2$. Kummer's theorem says more: the power of $p$ that divides $\binom{n}{k}$ is the number of carries when $k$ and $n - k$ are
+added in base $p$. For $p = 2$, $\binom{n}{k}$ is odd exactly when \cc{(k & n) == k} (Figure~\ref{fig:pascal}). For composite moduli,
+compute modulo each prime power and combine with the Chinese remainder theorem (Section~\ref{sec:crt}).
+\end{trick}
+
+% ======================================================================================================================
+\section[Stars and bars and lattice paths]{Stars and bars and lattice paths \hfill \gold}\label{sec:starsbars}
+
+The number of ways to put $n$ identical items into $k$ distinguishable boxes, empty boxes allowed, is $\binom{n + k - 1}{k - 1}$: write
+the items as $n$ stars and separate the boxes by $k - 1$ bars; every arrangement of the $n + k - 1$ symbols is one distribution
+(Figure~\ref{fig:starsbars}). If every box must get at least one item, first put one item in each box: $\binom{n - 1}{k - 1}$. The same
+count answers ``how many solutions in non-negative integers does $x_1 + \dots + x_k = n$ have?''.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \foreach \xx/\kind in {0/s, 1/s, 2/b, 3/s, 4/b, 5/b, 6/s, 7/s, 8/s} {
+    \if\kind s
+      \node[font=\Large, text=fgblue] at (0.62*\xx, 0) {$\star$};
+    \else
+      \draw[line width=1.6pt, draw=fgverm] (0.62*\xx, -0.32) -- (0.62*\xx, 0.32);
+    \fi
+  }
+  \foreach \xa/\xb/\cnt in {0/1/2, 3/3/1, 4.5/4.5/0, 6/8/3}
+    \draw[mbrace] (0.62*\xa - 0.25, -0.42) -- node[below=6pt, lbl] {\cnt} (0.62*\xb + 0.25, -0.42);
+  \node[notel, anchor=west, text width=7.2cm] at (6.1, -0.1) {6 stars and 3 bars: the boxes receive 2, 1, 0 and 3 items. Choosing
+    which 3 of the 9 positions hold bars gives $\binom{9}{3} = 84$ distributions of 6 items into 4 boxes.};
+\end{tikzpicture}
+\caption{Stars and bars: a distribution of identical items is an arrangement of stars and bars.}
+\label{fig:starsbars}
+\end{figure}
+
+\begin{problem}{Distributing Apples (CSES)}
+In how many ways can $m$ identical apples be given to $n$ children ($n, m \le 10^6$)?
+\solution $\binom{n + m - 1}{n - 1}$, in 0.09\,s including the factorial table.
+\end{problem}
+
+\begin{code}
+void solve() {  // nCr (cpncr) is pasted above solve()
+    int n, m;
+    cin >> n >> m;
+    init_comb(n + m);
+    print(nCr(n + m - 1, n - 1));  // m stars and n - 1 bars
+}
+\end{code}
+
+\paragraph{Paths that avoid forbidden cells.} On a grid, the monotone paths from $(y_1, x_1)$ to $(y_2, x_2)$ number
+$\binom{(y_2 - y_1) + (x_2 - x_1)}{y_2 - y_1}$. With a few forbidden cells, inclusion--exclusion becomes manageable once every bad path is
+charged to the \emph{first} forbidden cell it visits (Figure~\ref{fig:gridtraps}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[scale=0.62]
+  \foreach \yy in {1, ..., 6} \foreach \xx in {1, ..., 6}
+    \node[draw=fgline, line width=0.5pt, minimum size=6.2mm, inner sep=0pt, fill=white] at (\xx, -\yy) {};
+  \foreach \yy/\xx in {2/4, 4/2, 4/5}
+    \node[draw=fgverm, line width=1pt, minimum size=6.2mm, inner sep=0pt, fill=fgverm!18] at (\xx, -\yy) {};
+  \draw[line width=2pt, draw=fgverm, line cap=round] (1, -1) -- (1, -3) -- (2, -3) -- (2, -4);
+  \draw[line width=2pt, draw=fgblue, line cap=round] (2, -4) -- (3, -4) -- (3, -5) -- (4, -5) -- (4, -6) -- (6, -6);
+  \fill[fgink] (1, -1) circle (3pt);
+  \fill[fgink] (6, -6) circle (3pt);
+  \node[lbl, anchor=east] at (0.55, -1) {start};
+  \node[lbl, anchor=west] at (6.45, -6) {end};
+  \node[notel, anchor=west, text width=7.4cm] at (7.6, -3.5) {Traps (red cells) at $(2, 4)$, $(4, 2)$ and $(4, 5)$. The bad path
+    shown is counted once, at its first trap $(4, 2)$: its red part is one of the $f(4, 2)$ paths from the start that reach $(4, 2)$
+    without touching an earlier trap, and its blue part is any of the $\binom{2 + 4}{2}$ paths from $(4, 2)$ to the end.};
+\end{tikzpicture}
+\caption{Grid Paths II: every path through a trap is charged to the first trap it visits.}
+\label{fig:gridtraps}
+\end{figure}
+
+\begin{problem}{Grid Paths II (CSES)}
+Count the monotone paths from the top-left to the bottom-right corner of an $n \times n$ grid ($n \le 10^6$) that avoid $m \le 1000$
+traps, modulo $10^9 + 7$.
+\solution Sort the traps; a trap can be reached only through traps that come before it. Let $f_i$ be the number of paths from the
+start to trap $i$ that avoid all earlier traps: all paths to it, minus, for every earlier trap $j$, the $f_j$ paths that reach $j$ first
+times the paths from $j$ to $i$. Treating the target as one more trap, its $f$ is the answer. $\Oh{m^2}$ binomials after an $\Oh{n}$
+table: 0.10\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // nCr (cpncr) is pasted above solve()
+    int n, m;
+    cin >> n >> m;
+    vector<pii> t(m);
+    for (auto& [y, x] : t) cin >> y >> x;
+    sort(all(t));  // a trap can only be reached through traps before it
+    t.push_back({n, n});  // the target, treated as the last trap
+    init_comb(2 * n);
+    auto paths = [&](pii a, pii b) {  // monotone paths from a to b
+        ll dy = b.first - a.first, dx = b.second - a.second;
+        return dy < 0 || dx < 0 ? 0LL : nCr(dy + dx, dy);
+    };
+    vi f(m + 1);  // f[i]: paths from (1, 1) to t[i] avoiding earlier traps
+    rep(i, m + 1) {
+        f[i] = paths({1, 1}, t[i]);
+        rep(j, i) f[i] = (f[i] - f[j] * paths(t[j], t[i]) % MOD + MOD) % MOD;
+    }
+    print(f[m]);
+}
+\end{code}
+
+% ======================================================================================================================
+\section[Catalan numbers and the reflection principle]{Catalan numbers and the reflection principle \hfill \plat}\label{sec:catalan}
+
+Read a bracket sequence as a walk: ``('' is a step up, ``)'' a step down. The sequence is balanced exactly when the walk ends at height 0
+and never goes below 0. How many walks of $2n$ steps from 0 to 0 never go below 0? All walks from 0 to 0 number $\binom{2n}{n}$. Take a
+bad one, find the first time it touches $-1$, and reflect the part before that moment in the line $-1$: the result is a walk from $-2$
+to 0. The reflection is reversible, so bad walks correspond one to one to walks from $-2$ to 0, which number $\binom{2n}{n+1}$
+(Figure~\ref{fig:ballot}). The good walks number
+\[
+  C_n = \binom{2n}{n} - \binom{2n}{n+1} = \frac{1}{n+1}\binom{2n}{n}, \qquad 1, 1, 2, 5, 14, 42, 132, 429, 1430, 4862, \dots
+\]
+the \defn{Catalan numbers}.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=0.62cm, y=0.5cm]
+  \fill[fgverm!8] (0, -1) rectangle (10, -3.4);
+  \draw[line width=0.4pt, draw=fgline] (0, -3) grid (10, 2);
+  \draw[line width=0.8pt, draw=fgink!70] (0, 0) -- (10, 0);
+  \draw[line width=0.8pt, draw=fgverm, dashed] (0, -1) -- (10, -1);
+  \node[lbl, anchor=east] at (-0.15, 0) {0};
+  \node[lbl, anchor=east] at (-0.15, -1) {$-1$};
+  \node[lbl, anchor=east] at (-0.15, -2) {$-2$};
+  \draw[line width=1.8pt, draw=fgblue, line cap=round, line join=round] (0, 0) -- (1, 1) -- (2, 0) -- (3, -1) -- (4, 0) -- (5, 1)
+    -- (6, 0) -- (7, 1) -- (8, 2) -- (9, 1) -- (10, 0);
+  \draw[line width=1.8pt, draw=fgverm, line cap=round, line join=round, dash pattern=on 5pt off 3pt] (0, -2) -- (1, -3) -- (2, -2)
+    -- (3, -1);
+  \fill[fgverm] (3, -1) circle (3.5pt);
+  \node[font=\sffamily\scriptsize, text=fgverm, anchor=north west] at (3.1, -1.1) {first touch of $-1$};
+  \node[notel, anchor=west, text width=5.6cm] at (10.6, -0.5) {The walk \texttt{())(()(())} (blue) goes below 0. Reflecting its
+    first three steps in the line $-1$ gives a walk from $-2$ to 0 (red, then blue). Of the 252 walks from 0 to 0 in 10 steps, 210
+    are bad, leaving $C_5 = 42$ balanced sequences.};
+\end{tikzpicture}
+\caption{The reflection principle: bad walks from 0 correspond to walks from $-2$.}
+\label{fig:ballot}
+\end{figure}
+
+The same walks count binary trees with $n$ nodes, triangulations of a convex $(n+2)$-gon, ways to multiply $n + 1$ matrices, monotone
+lattice paths below the diagonal of an $n \times n$ grid, and non-crossing matchings of $2n$ points on a circle (Figure~\ref{fig:catalan}).
+Each satisfies the recurrence $C_{n+1} = \sum_{i=0}^{n} C_i C_{n-i}$: split a balanced sequence at the bracket that closes its first
+``('', a binary tree at its root, a triangulation at the triangle on one fixed side.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \foreach \brk [count=\ii from 0] in {((())), (()()), (())(), ()(()), ()()()}
+    \node[font=\ttfamily\small] at (2.3*\ii, 1.25) {\brk};
+  \foreach \ii in {0, ..., 4} {
+    \begin{scope}[shift={(2.3*\ii, 0)}]
+      \foreach \vv in {0, ..., 4} \coordinate (P\ii-\vv) at (90 + 72*\vv:0.62);
+      \draw[line width=0.8pt, draw=fgink!80, fill=fgfill] (P\ii-0) -- (P\ii-1) -- (P\ii-2) -- (P\ii-3) -- (P\ii-4) -- cycle;
+      \pgfmathtruncatemacro{\da}{mod(\ii + 2, 5)}
+      \pgfmathtruncatemacro{\db}{mod(\ii + 3, 5)}
+      \draw[line width=1.2pt, draw=fgverm] (P\ii-\ii) -- (P\ii-\da) (P\ii-\ii) -- (P\ii-\db);
+      \fill[fgverm] (P\ii-\ii) circle (1.8pt);
+    \end{scope}
+  }
+\end{tikzpicture}
+\caption{$C_3 = 5$: the five balanced sequences of three bracket pairs, and the five triangulations of a pentagon.}
+\label{fig:catalan}
+\end{figure}
+
+\begin{problem}{Bracket Sequences II (CSES)}
+How many balanced bracket sequences of length $n \le 10^6$ begin with a given prefix?
+\solution Scan the prefix; if its height ever drops below 0, the answer is 0. Otherwise it ends at height $b$, and the remaining $r$
+brackets form a walk from $b$ to 0 that never goes below 0. Among the $r$ steps, $d = (r + b)/2$ go down, so there are $\binom{r}{d}$
+walks in all; reflecting the part before the first touch of $-1$ maps the bad ones to walks from $-b - 2$ to 0, which have $d + 1$ down
+steps. The answer is $\binom{r}{d} - \binom{r}{d+1}$. 0.07\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // nCr (cpncr) is pasted above solve()
+    int n;
+    string s;
+    cin >> n >> s;
+    int b = 0;  // the balance: open minus closed brackets so far
+    for (char c : s) {
+        b += c == '(' ? 1 : -1;
+        if (b < 0) {  // a prefix with more ')' than '(' never recovers
+            print(0);
+            return;
+        }
+    }
+    int r = n - sz(s);  // the rest is a path of r steps from height b to 0
+    if (r < b || (r - b) % 2) {
+        print(0);
+        return;
+    }
+    init_comb(r);
+    int down = (r + b) / 2;  // the number of ')' among the r brackets
+    print((nCr(r, down) - nCr(r, down + 1) + MOD) % MOD);  // minus bad paths
+}
+\end{code}
+
+% ======================================================================================================================
+\section[Inclusion--exclusion]{Inclusion--exclusion \hfill \plat}\label{sec:incexc}
+
+To count the elements of a union, add the sets, subtract the pairwise intersections, add the triple intersections, and so on:
+\[
+  \Bigl| \bigcup_{i=1}^{k} A_i \Bigr| = \sum_{\emptyset \ne S \subseteq \{1, \dots, k\}} (-1)^{|S| + 1} \Bigl| \bigcap_{i \in S} A_i
+  \Bigr| .
+\]
+An element that lies in exactly $t \ge 1$ of the sets is counted $\binom t1 - \binom t2 + \binom t3 - \dots = 1 - (1 - 1)^t = 1$ time
+(Figure~\ref{fig:venn}). The method fits whenever the intersections are easy to count but the union is not: ``at least one condition
+holds'', ``no forbidden event happens'' (the complement), ``every one of $k$ things is used''.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \begin{scope}[blend group=multiply]
+    \fill[fgsky!45] (0, 0) circle (1.35);
+    \fill[fgorange!40] (1.6, 0) circle (1.35);
+    \fill[fggreen!35] (0.8, -1.3) circle (1.35);
+  \end{scope}
+  \draw[line width=0.9pt, draw=fgblue] (0, 0) circle (1.35);
+  \draw[line width=0.9pt, draw=fgorange!85!black] (1.6, 0) circle (1.35);
+  \draw[line width=0.9pt, draw=fggreen] (0.8, -1.3) circle (1.35);
+  \node[font=\sffamily\small\bfseries, text=fgblue] at (-1.3, 1.25) {$A_2$};
+  \node[font=\sffamily\small\bfseries, text=fgorange!85!black] at (2.9, 1.25) {$A_3$};
+  \node[font=\sffamily\small\bfseries, text=fggreen] at (0.8, -2.95) {$A_5$};
+  \foreach \px/\py/\vv in {-0.5/0.3/8, 2.1/0.3/4, 0.8/-1.95/2, 0.8/0.55/4, -0.05/-0.95/2, 1.65/-0.95/1, 0.8/-0.45/1}
+    \node[font=\sffamily\small] at (\px, \py) {\vv};
+  \node[notel, anchor=west, text width=7cm] at (3.6, -0.6) {The numbers up to 30 divisible by 2, 3 or 5, split by which of the
+    three they are divisible by. Inclusion--exclusion: $15 + 10 + 6 - 5 - 3 - 2 + 1 = 22$; the centre number (30) is added three times,
+    subtracted three times and added once. The other $30 - 22 = 8 = \varphi(30)$ numbers are coprime to 30.};
+\end{tikzpicture}
+\caption{Inclusion--exclusion for three sets: every region is counted exactly once.}
+\label{fig:venn}
+\end{figure}
+
+\usetemplate{Inclusion--exclusion (divisible by any)}{Ctrl+Alt+Y, 3}{cpincexc}
+
+\begin{problem}{Prime Multiples (CSES)}
+Given $n \le 10^{18}$ and $k \le 20$ distinct primes, count the integers in $[1, n]$ divisible by at least one of them.
+\solution For a subset of the primes, the numbers divisible by all of them are the multiples of their product, $\lfloor n /
+\prod \rfloor$ of them. Sum over the $2^k$ subsets with alternating signs. Products overflow quickly, so stop multiplying as soon as the
+product exceeds $n$ (the term is then 0), testing \cc{prod > n / p} before multiplying. 0.22\,s for 20 primes.
+\end{problem}
+
+\begin{code}
+void solve() {  // count_divisible_by_any (cpincexc) is pasted above solve()
+    ll n;
+    int k;
+    cin >> n >> k;
+    vi a(k);
+    for (ll& x : a) cin >> x;
+    print(count_divisible_by_any(n, a));  // odd subsets add, even subtract
+}
+\end{code}
+
+\paragraph{Derangements.} A permutation with no fixed point is a \defn{derangement}. Let $A_i$ be the permutations that fix $i$; any $j$
+of these sets intersect in $(n - j)!$ permutations, so inclusion--exclusion gives $D_n = \sum_{j=0}^{n} (-1)^j \binom{n}{j} (n-j)! = n!
+\sum_{j=0}^{n} \frac{(-1)^j}{j!}$, and $D_n / n! \to 1/e$. A recurrence avoids the alternating sum: in a derangement, element $n$ goes
+to some position $i \ne n$ ($n - 1$ choices); either $i$ goes to $n$ (a swap, leaving $D_{n-2}$ derangements of the rest), or it does
+not (then $i$ effectively takes the role of $n$, leaving $D_{n-1}$). So $D_n = (n - 1)(D_{n-1} + D_{n-2})$, with values $1, 0, 1, 2, 9,
+44, 265, 1854, \dots$
+
+\begin{problem}{Christmas Party (CSES)}
+$n \le 10^6$ children each bring a gift and receive one, and no child may receive their own. Count the ways modulo $10^9 + 7$.
+\solution $D_n$ by the recurrence: 0.06\,s.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vi d(max(n + 1, 2LL));  // d[k]: derangements of k children
+    d[0] = 1, d[1] = 0;
+    rep(k, 2, n + 1) d[k] = (k - 1) * (d[k - 1] + d[k - 2]) % MOD;
+    print(d[n]);
+}
+\end{code}
+
+\begin{fact}[Surjections]
+The functions from an $n$-set onto a $k$-set (every element of the $k$-set is hit) number $\sum_{j=0}^{k} (-1)^j \binom{k}{j}
+(k - j)^n$: inclusion--exclusion over the elements that are missed. This equals $k! \cdot S(n, k)$, where $S(n, k)$ is a Stirling number
+of the second kind (Section~\ref{sec:stirling}).
+\end{fact}
+
+\begin{trick}[Inclusion--exclusion over subsets of a large ground set]
+When the conditions are indexed by the subsets of a $k$-element set and $k \le 20$, the $2^k$ terms can be computed for all subsets at
+once with the subset-sum (zeta and M\"obius) transforms of Section~\ref{sec:sosdp}: ``exactly the set $S$'' from ``at least the set $S$''
+is a M\"obius transform over supersets.
+\end{trick}
+
+% ======================================================================================================================
+\section[Burnside's lemma]{Burnside's lemma \hfill \ioi}\label{sec:burnside}
+
+To count objects \emph{up to symmetry}, such as necklaces up to rotation or colourings of a grid up to turning it, list the symmetries
+as a group $G$ of transformations and count the \emph{orbits}: two objects are equivalent when a symmetry maps one to the other.
+\textbf{Burnside's lemma} says that the number of orbits is the average number of objects fixed by a symmetry:
+\[
+  \#\text{orbits} = \frac{1}{|G|} \sum_{g \in G} \mathrm{fix}(g), \qquad \mathrm{fix}(g) = \#\{x : g(x) = x\}.
+\]
+(Count the pairs $(g, x)$ with $g(x) = x$ in two ways. For each object $x$ there are $|G| / |\text{orbit of } x|$ such $g$, so every
+orbit contributes exactly $|G|$ pairs in total.) The point is that fixed objects are easy to count: a colouring is fixed by a rotation
+exactly when it is constant on every cycle of positions that the rotation moves around, so $\mathrm{fix}(g) = (\text{colours})^{\text{cycles of } g}$ (Figure~\ref{fig:necklaces}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \foreach \ncol/\nrow/\ba/\bb/\bc/\bd in {0/0/0/0/0/0, 0/1/0/0/0/1, 1/1/0/0/1/0, 2/1/0/1/0/0, 3/1/1/0/0/0, 0/2/0/0/1/1,
+      1/2/0/1/1/0, 2/2/1/0/0/1, 3/2/1/1/0/0, 0/3/0/1/0/1, 1/3/1/0/1/0, 0/4/0/1/1/1, 1/4/1/0/1/1, 2/4/1/1/0/1, 3/4/1/1/1/0,
+      0/5/1/1/1/1} {
+    \begin{scope}[shift={(1.05*\ncol, -0.82*\nrow)}]
+      \draw[line width=0.5pt, draw=fgline] (0, 0) circle (0.25);
+      \foreach \bit/\ang in {\ba/90, \bb/0, \bc/-90, \bd/180} {
+        \ifnum\bit=1
+          \fill[fgink] (\ang:0.25) circle (0.085);
+        \else
+          \filldraw[fill=white, draw=fgink, line width=0.5pt] (\ang:0.25) circle (0.085);
+        \fi
+      }
+    \end{scope}
+  }
+  \foreach \nrow/\osz in {0/1, 1/4, 2/4, 3/2, 4/4, 5/1} \node[lbl, anchor=east] at (-0.55, -0.82*\nrow) {orbit of size \osz};
+  \node[notel, anchor=west, text width=6.4cm] at (4.1, -2.05) {The $2^4 = 16$ two-coloured necklaces of 4 beads, one orbit per row.
+    Rotation by 0 fixes all 16, by one bead only the 2 single-coloured necklaces, by two beads the 4 that repeat with period 2, and by
+    three beads again 2. Burnside: $(16 + 2 + 4 + 2)/4 = 6$ orbits.};
+\end{tikzpicture}
+\caption{Necklaces of length 4 with two colours, up to rotation.}
+\label{fig:necklaces}
+\end{figure}
+
+\begin{problem}{Counting Necklaces (CSES)}
+Count the necklaces of $n$ beads with $m$ colours up to rotation, modulo $10^9 + 7$ ($n, m \le 10^6$).
+\solution Rotation by $i$ beads splits the positions into $\gcd(i, n)$ cycles, so it fixes $m^{\gcd(i, n)}$ necklaces. The answer is
+$\frac{1}{n} \sum_{i=0}^{n-1} m^{\gcd(i, n)}$; grouping the $i$ by the value of the gcd gives the classic $\frac{1}{n}\sum_{d \mid n}
+\varphi(n/d)\, m^d$. 0.10\,s.
+\end{problem}
+
+\begin{code}
+void solve() {  // modpow (cpmodpow) is pasted above solve()
+    int n, m;
+    cin >> n >> m;
+    vi pw(n + 1, 1);  // pw[g] = m^g
+    rep(g, 1, n + 1) pw[g] = pw[g - 1] * m % MOD;
+    ll sum = 0;  // rotating by i fixes the m^gcd(i, n) colourings with period i
+    rep(i, n) sum += pw[gcd(i, n)];
+    print(sum % MOD * modinv(n) % MOD);  // Burnside: average over n rotations
+}
+\end{code}
+
+\begin{problem}{Counting Grids (CSES)}
+Count the black-and-white colourings of an $n \times n$ grid up to rotation by multiples of $90^\circ$ ($n \le 10^9$).
+\solution Four rotations. The identity fixes all $2^{n^2}$ colourings. A half turn pairs up the cells, except the centre when $n$ is
+odd, so it has $\lceil n^2/2 \rceil$ cycles; a quarter turn (either direction) groups them in fours, with $\lceil n^2/4 \rceil$ cycles.
+The answer is $(2^{n^2} + 2 \cdot 2^{\lceil n^2/4 \rceil} + 2^{\lceil n^2/2 \rceil}) / 4$. The exponent $n^2 \le 10^{18}$ is used
+directly by fast exponentiation.
+\end{problem}
+
+\begin{code}
+void solve() {  // modpow (cpmodpow) is pasted above solve()
+    ll n;
+    cin >> n;
+    ll c = n * n;  // cells; a quarter turn has (c + 3) / 4 cycles of cells
+    ll fix = modpow(2, c) + 2 * modpow(2, (c + 3) / 4) + modpow(2, (c + 1) / 2);
+    print(fix % MOD * modinv(4) % MOD);  // average over the four rotations
+}
+\end{code}
+
+\begin{pitfall}[Rotations or also reflections?]
+``Necklaces'' usually allow only rotations; ``bracelets'' may also be turned over, which doubles the group (the dihedral group of
+$2n$ elements) and adds the reflections' fixed points to the sum. Read the statement carefully, and check small cases by brute force:
+for $n = 4$ and two colours there are 6 necklaces and also 6 bracelets, but for $n = 6$ there are 14 necklaces and 13 bracelets.
+\end{pitfall}
+
+% ======================================================================================================================
+\section[Stirling numbers]{Stirling numbers \hfill \ioi}\label{sec:stirling}
+
+The \defn{Stirling number of the second kind} $S(n, k)$ counts the ways to partition $n$ labelled elements into $k$ non-empty unlabelled
+groups. Look at element $n$: it is either alone in its group, leaving $S(n - 1, k - 1)$ partitions of the others, or it joins one of the
+$k$ groups of a partition of the others, so
+\[
+  S(n, k) = S(n - 1, k - 1) + k \cdot S(n - 1, k), \qquad S(0, 0) = 1
+\]
+(Figure~\ref{fig:stirling}). The \defn{Bell number} $B_n = \sum_k S(n, k)$ counts all partitions: $1, 1, 2, 5, 15, 52, 203, 877,
+\dots$ The \defn{Stirling number of the first kind} $\left[{n \atop k}\right]$ counts the permutations of $n$ elements with exactly $k$
+cycles, with $\left[{n \atop k}\right] = \left[{n-1 \atop k-1}\right] + (n - 1) \left[{n-1 \atop k}\right]$: element $n$ forms its own
+cycle, or is inserted after one of the $n - 1$ others in their cycles.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{sc/.style={cellc, minimum width=9mm, minimum height=6.5mm, font=\sffamily\small}}
+  \foreach \kk in {0, ..., 6} \node[lbl] at (0.9*\kk, 0.6) {$k = \kk$};
+  \foreach \rowv [count=\rn from 0] in {{1}, {0,1}, {0,1,1}, {0,1,3,1}, {0,1,7,6,1}, {0,1,15,25,10,1}, {0,1,31,90,65,15,1}} {
+    \node[lbl, anchor=east] at (-0.6, -0.68*\rn) {$n = \rn$};
+    \foreach \vv [count=\kk from 0] in \rowv \node[sc] (S\rn-\kk) at (0.9*\kk, -0.68*\rn) {\vv};
+  }
+  \node[sc, cool] at (S4-2) {7};
+  \node[sc, cool] at (S4-3) {6};
+  \node[sc, hot] at (S5-3) {25};
+  \node[notel, anchor=west, text width=5.8cm] at (6.5, -2.4) {$S(5, 3) = S(4, 2) + 3 \cdot S(4, 3) = 7 + 18 = 25$ (red from
+    the two blue cells): element 5 is
+    alone, next to one of the 7 ways to split $\{1, 2, 3, 4\}$ in two, or it joins one of the 3 groups of one of the 6 ways to
+    split $\{1, 2, 3, 4\}$ in three. The row sums are the Bell numbers 1, 1, 2, 5, 15, 52, 203.};
+\end{tikzpicture}
+\caption{Stirling numbers of the second kind.}
+\label{fig:stirling}
+\end{figure}
+
+\usetemplate{Stirling numbers (both kinds) and Bell numbers}{Ctrl+Alt+U, S}{cpstirling}
+
+\paragraph{Powers and falling factorials.} The most useful identity converts powers into falling factorials $x^{\underline{j}} = x (x-1)
+\cdots (x - j + 1)$:
+\[
+  x^k = \sum_{j=0}^{k} S(k, j)\, x^{\underline{j}} ,
+\]
+because both sides count the functions from a $k$-set to an $x$-set, the right side grouped by the partition of the $k$-set into
+the preimages of the $j$ values that are hit. Falling factorials sum as easily as powers integrate: $\sum_{i=0}^{n} i^{\underline{j}} =
+\frac{(n+1)^{\underline{j+1}}}{j + 1}$. Together they give the sum of $k$-th powers in $\Oh{k^2}$.
+
+\begin{problem}{Sums of powers}
+Compute $1^k + 2^k + \dots + n^k \bmod (10^9 + 7)$ for $n \le 10^{18}$ and $1 \le k \le 1000$.
+\solution $\sum_{i=0}^{n} i^k = \sum_{j} S(k, j) \frac{(n+1)^{\underline{j+1}}}{j+1}$; the falling factorial is built up one factor at
+a time, and $n$ enters only through these factors, so its size does not matter. 0.08\,s for $k = 1000$, most of it filling the
+Stirling table.
+\end{problem}
+
+\begin{code}
+void solve() {  // init_stirling (cpstirling), modinv (cpmodpow) pasted above
+    ll n;
+    int k;
+    cin >> n >> k;
+    init_stirling(k);
+    ll ans = 0, fall = 1;  // fall: (n + 1) n (n - 1) ... (n + 1 - j)
+    rep(j, k + 1) {
+        fall = fall * ((n + 1 - j) % MOD) % MOD;
+        // i^k = sum_j S2(k, j) i(i-1)...(i-j+1); summing over i = 0..n
+        // turns i(i-1)...(i-j+1) into (n+1) n ... (n+1-j) / (j+1)
+        ans = (ans + S2[k][j] * fall % MOD * modinv(j + 1)) % MOD;
+    }
+    print(ans);
+}
+\end{code}
+
+% ======================================================================================================================
+\section[Lagrange interpolation]{Lagrange interpolation \hfill \ioi}\label{sec:lagrange}
+
+A polynomial of degree less than $k$ is determined by its values at $k$ points, and \textbf{Lagrange's formula} writes it down
+directly:
+\[
+  P(x) = \sum_{i=0}^{k-1} y_i \prod_{j \ne i} \frac{x - x_j}{x_i - x_j} .
+\]
+Each term is $y_i$ at $x_i$ and 0 at the other points, so the sum takes the right values, and the polynomial is unique because the
+difference of two solutions would be a polynomial of degree less than $k$ with $k$ roots. For general points the formula costs
+$\Oh{k^2}$. For the consecutive points $0, 1, \dots, k - 1$ the denominators are $\pm\, i!\,(k - 1 - i)!$ and the numerators are a prefix
+product times a suffix product, so a value at any $x$ costs $\Oh{k}$ (Figure~\ref{fig:lagrange}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[cpplot, width=8.4cm, height=5.6cm, xmin=-0.3, xmax=4.6, ymin=-2, ymax=34, xlabel={$x$},
+  ylabel={$S(x) = 1^2 + \dots + x^2$}, xtick={0, 1, 2, 3, 4}, ytick={0, 5, 14, 30}]
+  \addplot[domain=0:4.4, samples=80, line width=1.2pt, draw=fgblue, no marks] {x*(x+1)*(2*x+1)/6};
+  \addplot[only marks, mark=*, mark size=2.6pt, fill=fgverm, draw=fgverm] coordinates {(0,0) (1,1) (2,5) (3,14)};
+  \addplot[only marks, mark=square*, mark size=2.6pt, fill=fggreen, draw=fggreen] coordinates {(4,30)};
+\end{axis}
+\node[notel, anchor=west, text width=5.0cm] at (8.6, 2.1) {$S(x) = \sum_{i=1}^{x} i^2$ is a polynomial of degree 3, so the four
+  values $0, 1, 5, 14$ (red) determine it everywhere: interpolation predicts $S(4) = 30$ (green) and $S(10^9)$ just as easily.};
+\end{tikzpicture}
+\caption{Four points determine a cubic.}
+\label{fig:lagrange}
+\end{figure}
+
+\usetemplate{Lagrange interpolation}{Ctrl+Alt+U, I}{cplagrange}
+
+\begin{problem}{Sums of powers, faster}
+Compute $1^k + 2^k + \dots + n^k \bmod (10^9 + 7)$ for $n \le 10^{18}$ and $k \le 10^6$.
+\solution $S(x) = \sum_{i=1}^{x} i^k$ is a polynomial of degree $k + 1$ in $x$: compute its values at $x = 0, \dots, k + 1$ directly
+and interpolate at $n$. $\Oh{k \log k}$ instead of the Stirling method's $\Oh{k^2}$: 0.11\,s for $k = 10^6$.
+\end{problem}
+
+\begin{code}
+void solve() {  // lagrange_consecutive (cplagrange) is pasted above solve()
+    ll n;
+    int k;
+    cin >> n >> k;
+    vi y(k + 2);  // S(x) = 1^k + ... + x^k is a polynomial of degree k + 1
+    rep(x, 1, k + 2) y[x] = (y[x - 1] + lag_pow(x, k)) % MOD;
+    print(lagrange_consecutive(y, n));  // k + 2 values determine it everywhere
+}
+\end{code}
+
+\begin{trick}[Guess that the answer is a polynomial]
+Many counting answers are polynomials in a parameter, often for a structural reason (a sum of a polynomial over a range, a DP whose
+transitions are polynomial in $n$), and the degree $d$ can be bounded. Then compute the first $d + 1$ answers with a slow brute force or
+DP, and interpolate to the requested $n$, however large. Check the guess by predicting one extra small value.
+\end{trick}
+
+% ======================================================================================================================
+\section[Determinants, spanning trees and paths]{Determinants, spanning trees and paths \hfill \ioi}\label{sec:matrixtree}
+
+The determinant of an $n \times n$ matrix modulo a prime is computed by Gaussian elimination in $\Oh{n^3}$: bring the matrix to
+triangular form with row operations, track the sign of every row swap, and multiply the diagonal. Two theorems turn determinants into
+counting tools.
+
+\paragraph{The matrix-tree theorem.} The \defn{Laplacian} of a multigraph is the matrix $L = D - A$, with the degrees on the diagonal
+and minus the number of edges between $u$ and $v$ off it. \textbf{Kirchhoff's theorem}: the number of spanning trees equals the
+determinant of $L$ with any one row and the same column removed (Figure~\ref{fig:matrixtree}). For the complete graph it gives
+\textbf{Cayley's formula} $n^{n-2}$, which Prüfer codes (Section~\ref{sec:prufer}) prove by a bijection.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \tikzset{mv/.style={vtx, minimum size=6mm, font=\sffamily\scriptsize}}
+  \node[mv] (G1) at (0, 1.6) {1};
+  \node[mv] (G2) at (1.6, 1.6) {2};
+  \node[mv] (G3) at (1.6, 0) {3};
+  \node[mv] (G4) at (0, 0) {4};
+  \draw[ed] (G1) -- (G2) (G2) -- (G3) (G3) -- (G4) (G4) -- (G1) (G1) -- (G3);
+  \node[font=\small, anchor=west] at (2.5, 0.8) {$\det \begin{pmatrix} 3 & -1 & -1 \\ -1 & 2 & -1 \\ -1 & -1 & 3 \end{pmatrix} = 8$};
+  \foreach \tr [count=\ti from 0] in {{1/2, 2/3, 3/4}, {1/2, 2/3, 4/1}, {1/2, 3/4, 4/1}, {1/2, 3/4, 1/3}, {1/2, 4/1, 1/3},
+      {2/3, 3/4, 4/1}, {2/3, 3/4, 1/3}, {2/3, 4/1, 1/3}} {
+    \pgfmathtruncatemacro{\tcol}{mod(\ti, 4)}
+    \pgfmathtruncatemacro{\trow}{\ti / 4}
+    \begin{scope}[shift={(7.1 + 1.45*\tcol, 1.55 - 1.45*\trow)}]
+      \coordinate (T\ti-1) at (0, 0.85);
+      \coordinate (T\ti-2) at (0.85, 0.85);
+      \coordinate (T\ti-3) at (0.85, 0);
+      \coordinate (T\ti-4) at (0, 0);
+      \draw[line width=0.5pt, draw=fgline, dashed] (T\ti-1) -- (T\ti-2) -- (T\ti-3) -- (T\ti-4) -- cycle (T\ti-1) -- (T\ti-3);
+      \foreach \ea/\eb in \tr \draw[line width=1.6pt, draw=fgblue] (T\ti-\ea) -- (T\ti-\eb);
+      \foreach \vv in {1, ..., 4} \fill[fgink] (T\ti-\vv) circle (1.6pt);
+    \end{scope}
+  }
+\end{tikzpicture}
+\caption{The square 1--2--3--4 with the diagonal 1--3. Its Laplacian without the row and column of vertex 4 has determinant 8, and
+indeed there are 8 spanning trees: every 3 of the 5 edges except the two triangles.}
+\label{fig:matrixtree}
+\end{figure}
+
+\usetemplate{Determinant mod $p$, matrix-tree theorem}{Ctrl+Alt+U, Shift+D}{cpdet}
+
+\begin{problem}{Counting spanning trees}
+Count the spanning trees of a multigraph with $n \le 500$ vertices and $m \le 10^5$ edges, modulo $10^9 + 7$.
+\solution Build the Laplacian without the last vertex and take its determinant: $\Oh{n^3}$, 0.15\,s for $n = 500$. Parallel edges
+simply add up in the Laplacian, and self-loops are ignored.
+\end{problem}
+
+\begin{code}
+void solve() {  // count_spanning_trees (cpdet) is pasted above solve()
+    int n, m;
+    cin >> n >> m;
+    vector<pii> e(m);
+    for (auto& [u, v] : e) cin >> u >> v, u--, v--;
+    print(count_spanning_trees(n, e));  // a minor of the Laplacian (Kirchhoff)
+}
+\end{code}
+
+\paragraph{The LGV lemma.} In a directed acyclic graph, let $e(a, b)$ be the number of paths from $a$ to $b$. For sources $a_1, \dots,
+a_k$ and sinks $b_1, \dots, b_k$, the \textbf{Lindstr\"om--Gessel--Viennot lemma} says that $\det\bigl(e(a_i, b_j)\bigr)$ counts the
+systems of $k$ vertex-disjoint paths from the sources to the sinks, each weighted by the sign of the permutation that matches sources to
+sinks. In planar settings such as grids, where only the identity matching can be disjoint, the determinant simply counts the
+non-intersecting path systems (Figure~\ref{fig:lgv}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[scale=0.62]
+  \draw[line width=0.4pt, draw=fgline] (0, 0) grid (4, 4);
+  \draw[line width=2pt, draw=fgblue, line cap=round, line join=round] (0, 1) -- (0, 3) -- (1, 3) -- (1, 4) -- (3, 4);
+  \draw[line width=2pt, draw=fgverm, line cap=round, line join=round] (1, 0) -- (3, 0) -- (3, 2) -- (4, 2) -- (4, 3);
+  \foreach \px/\py/\nm/\pos in {0/1/a_1/left, 1/0/a_2/below, 3/4/b_1/above, 4/3/b_2/right}
+    \node[circle, fill=fgink, inner sep=1.6pt, label={[font=\sffamily\scriptsize]\pos:$\nm$}] at (\px, \py) {};
+  \node[notel, anchor=west, text width=7.6cm] at (5.2, 2) {Monotone paths from $a_1 = (0, 1)$ to $b_1 = (3, 4)$ and from $a_2 = (1,
+    0)$ to $b_2 = (4, 3)$. $e(a_1, b_1) = e(a_2, b_2) = \binom63 = 20$ and $e(a_1, b_2) = e(a_2, b_1) = \binom62 = 15$, so
+    $20 \cdot 20 - 15 \cdot 15 = 175$ pairs of paths share no point, as a brute force confirms.};
+\end{tikzpicture}
+\caption{The LGV lemma: a determinant of path counts counts non-intersecting pairs of paths.}
+\label{fig:lgv}
+\end{figure}
+
+% ======================================================================================================================
+\section[Probability and expected value]{Probability and expected value \hfill \gold}\label{sec:probability}
+
+With finitely many equally likely outcomes, $P(E) = |E| / |\Omega|$, and every counting technique becomes a probability technique.
+Section~\ref{sec:probdp} computed probabilities and expectations with DPs; this section collects the tools that avoid a DP altogether.
+
+\paragraph{Linearity and indicators.} $E[X + Y] = E[X] + E[Y]$ always, even for dependent variables. Write the quantity of interest as a
+sum of \emph{indicator variables}, each 1 when some event happens and 0 otherwise; the expectation is then the sum of the events'
+probabilities, and each event is usually simple even when the whole is not.
+
+\begin{fact}[Expectations by indicators]
+\begin{itemize}
+  \item A random permutation has on average 1 fixed point ($n$ events of probability $\frac1n$), $H_n = 1 + \frac12 + \dots + \frac1n$
+        cycles, and $H_n$ left-to-right maxima (position $i$ is a maximum with probability $\frac1i$).
+  \item Collecting all $n$ coupons, drawn uniformly at random, takes $n H_n \approx n \ln n$ draws on average: after $i$ distinct
+        coupons, a new one appears with probability $\frac{n-i}{n}$, so it takes $\frac{n}{n-i}$ draws on average.
+  \item An experiment that succeeds with probability $p$ needs $\frac1p$ tries on average.
+  \item For a non-negative integer variable, $E[X] = \sum_{x \ge 1} P(X \ge x)$, the right tool for maxima: $P(\max \le x)$ is a product
+        of independent probabilities (Candy Lottery, Section~\ref{sec:probdp}).
+\end{itemize}
+\end{fact}
+
+\begin{problem}{Inversion Probability (CSES)}
+Each $x_i$ ($n \le 100$) is chosen uniformly from $1, \dots, r_i$ ($r_i \le 100$). What is the expected number of inversions?
+\solution An inversion is a pair $i < j$ with $x_i > x_j$; by linearity the answer is $\sum_{i<j} P(x_i > x_j)$. For one pair, count
+the value pairs $(a, b)$ with $a > b$: for each $a$ there are $\min(a - 1, r_j)$ of them (Figure~\ref{fig:inversion}). $\Oh{n^2 r}$
+operations, 0.06\,s.
+\end{problem}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[scale=0.55]
+  \foreach \av in {1, ..., 5} \foreach \bv in {1, ..., 3} {
+    \pgfmathtruncatemacro{\inv}{\av > \bv ? 1 : 0}
+    \ifnum\inv=1
+      \node[draw=fgblue, fill=fgsky!40, line width=0.6pt, minimum size=5.5mm, inner sep=0pt] at (\av, \bv) {};
+    \else
+      \node[draw=fgline, fill=white, line width=0.6pt, minimum size=5.5mm, inner sep=0pt] at (\av, \bv) {};
+    \fi
+  }
+  \foreach \av in {1, ..., 5} \node[lbl] at (\av, 0.2) {\av};
+  \foreach \bv in {1, ..., 3} \node[lbl] at (0.2, \bv) {\bv};
+  \node[lbl] at (3, -0.55) {$a = x_i$};
+  \node[lbl, rotate=90] at (-0.55, 2) {$b = x_j$};
+  \node[notel, anchor=west, text width=6.4cm] at (6.3, 2) {$r_i = 5$, $r_j = 3$: of the 15 equally likely value pairs, the 9
+    shaded ones have $x_i > x_j$ (column $a$ contributes $\min(a - 1, 3)$ cells), so this pair is an inversion with probability
+    $9/15 = 0.6$.};
+\end{tikzpicture}
+\caption{The probability that one pair is inverted.}
+\label{fig:inversion}
+\end{figure}
+
+\begin{code}
+void solve() {
+    int n;
+    cin >> n;
+    vi r(n);
+    for (ll& x : r) cin >> x;
+    ld e = 0;  // linearity: add up P(x_i > x_j) over all pairs i < j
+    rep(i, n) rep(j, i + 1, n) {
+        ll good = 0;  // pairs (a, b) with a <= r_i, b <= r_j and a > b
+        rep(a, 1, r[i] + 1) good += min(a - 1, r[j]);
+        e += (ld)good / (r[i] * r[j]);
+    }
+    cout << fixed << setprecision(6) << e << '\n';
+}
+\end{code}
+
+\begin{pitfall}[Exact answers modulo a prime]
+``Print the expected value as $P \cdot Q^{-1} \bmod p$'' asks for an exact rational answer: keep every probability as a residue, divide
+with modular inverses, and never pass through floating point. Conversely, problems that print decimals rarely need more than
+\cc{double}; sums of many small probabilities lose less precision when added from smallest to largest.
+\end{pitfall}
+
+% ======================================================================================================================
+\section[Impartial games]{Impartial games \hfill \plat}\label{sec:games}
+
+Section~\ref{sec:gamedp} classified the positions of a single game as winning or losing with a DP. Many games are \emph{sums} of
+independent games, such as several heaps of which a move changes exactly one. Their positions are too many for a DP, and the theory of
+impartial games (both players have the same moves, and whoever cannot move loses) handles them.
+
+\paragraph{Nim.} There are several heaps, and a move removes any positive number of stones from one heap. \textbf{Bouton's theorem}:
+the player to move wins exactly when the XOR of the heap sizes is non-zero (Figure~\ref{fig:nim}). If the XOR is $s \ne 0$, take a heap
+$h$ that has the highest bit of $s$ set; then $h \oplus s < h$, and reducing $h$ to $h \oplus s$ makes the XOR 0. If the XOR is 0, every
+move changes one heap and therefore the XOR, so the opponent faces a non-zero XOR again. The final position (all heaps empty) has
+XOR 0 and is lost for the player to move, so XOR 0 positions are exactly the losing ones.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \foreach \hx/\hv/\nm in {0/3/A, 1.4/4/B, 2.8/5/C} {
+    \foreach \jj in {1, ..., \hv} \node[circle, draw=fgorange!85!black, fill=fgorange!25, line width=0.6pt, minimum size=4.6mm,
+      inner sep=0pt] at (\hx, 0.5*\jj - 0.2) {};
+    \node[lbl] at (\hx, -0.4) {\nm: \hv};
+  }
+  \node[circle, draw=fgverm, line width=1pt, minimum size=4.6mm, inner sep=0pt, dashed] at (0, 1.3) {};
+  \node[circle, draw=fgverm, line width=1pt, minimum size=4.6mm, inner sep=0pt, dashed] at (0, 0.8) {};
+  \begin{scope}[shift={(4.6, 2.3)}]
+    \foreach \nm/\bits/\yy in {A/011/0, B/100/-0.55, C/101/-1.1} {
+      \node[lbl, anchor=east] at (0, \yy) {\nm};
+      \node[font=\ttfamily\small, anchor=west] at (0.1, \yy) {\bits};
+    }
+    \draw[line width=0.6pt, draw=fgink!60] (0.1, -1.42) -- (1.0, -1.42);
+    \node[lbl, anchor=east] at (0, -1.75) {XOR};
+    \node[font=\ttfamily\small\bfseries, text=fgverm, anchor=west] at (0.1, -1.75) {010};
+  \end{scope}
+  \node[notel, anchor=west, text width=6.2cm] at (6.2, 1.2) {Heaps 3, 4, 5 have XOR $011 \oplus 100 \oplus 101 = 010 \ne 0$: the
+    player to move wins. Heap A has the bit 010 set, and $3 \oplus 2 = 1$, so take two stones from A (dashed). Now $1 \oplus 4 \oplus 5
+    = 0$, and every reply breaks the zero again.};
+\end{tikzpicture}
+\caption{Nim: the XOR of the heap sizes decides the game.}
+\label{fig:nim}
+\end{figure}
+
+\paragraph{Sprague--Grundy.} Every position $x$ of an impartial game gets a \defn{Grundy number}: $g(x) = \operatorname{mex}\{g(y) : y
+\text{ reachable from } x\}$, where $\operatorname{mex}$ is the smallest non-negative integer not in the set. A position with $g(x) = k$
+behaves exactly like a Nim heap of size $k$: from it one can move to positions of every Grundy number below $k$, and possibly to some
+above $k$, but such a move can be answered by moving back down to $k$. So positions with $g = 0$ are losing, and the
+\textbf{Sprague--Grundy theorem} follows: the Grundy number of a sum of games is the XOR of the Grundy numbers of its parts. Every game
+built from independent parts is Nim in disguise once the parts' Grundy numbers are known (Figure~\ref{fig:grundy}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[blbl, anchor=east] at (-0.2, 0.75) {heap size $x$};
+  \foreach \xv in {0, ..., 14} \node[lbl] at (0.35 + 0.7*\xv, 0.75) {\xv};
+  \node[blbl, anchor=east] at (-0.2, 0) {moves $\{1, 2, 3\}$};
+  \arrs{Ga}{0}{0}{0/hot, 1/n, 2/n, 3/n, 0/hot, 1/n, 2/n, 3/n, 0/hot, 1/n, 2/n, 3/n, 0/hot, 1/n, 2/n}
+  \node[blbl, anchor=east] at (-0.2, -0.9) {moves $\{1, 3, 4\}$};
+  \arrs{Gb}{0}{-0.9}{0/hot, 1/n, 0/hot, 1/n, 2/n, 3/n, 2/n, 0/hot, 1/n, 0/hot, 1/n, 2/n, 3/n, 2/n, 0/hot}
+\end{tikzpicture}
+\caption{Grundy numbers of single heaps for two subtraction games. With moves $\{1, 2, 3\}$, $g(x) = x \bmod 4$; with $\{1, 3, 4\}$ the
+values repeat with period 7. Red cells are the losing positions.}
+\label{fig:grundy}
+\end{figure}
+
+\usetemplate{Grundy numbers}{Ctrl+Alt+Y, G}{cpgrundy}
+
+\begin{problem}{Nim Game II (CSES)}
+Nim, except that a move removes only 1, 2 or 3 sticks from a heap. Who wins (up to $2 \cdot 10^5$ heaps in total, sizes up to
+$10^9$)?
+\solution A heap of size $x$ has Grundy number $x \bmod 4$ (Figure~\ref{fig:grundy}); XOR them. 1000 tests of 200 heaps take 0.08\,s.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int t;
+    cin >> t;
+    while (t--) {
+        int n;
+        cin >> n;
+        ll x = 0;
+        rep(i, n) {
+            ll h;
+            cin >> h;
+            x ^= h % 4;  // the Grundy number of a heap when 1 to 3 are taken
+        }
+        print(x ? "first" : "second");
+    }
+}
+\end{code}
+
+\begin{trick}[Find the pattern]
+The Grundy numbers of a single heap are usually periodic after a short prefix, or follow a simple formula. Compute them up to a few
+thousand with the template, print them, and look; then answer heaps of size up to $10^{18}$ from the pattern. Verify the pattern
+against the brute force further out than you expect to need.
+\end{trick}
+
+\paragraph{Staircase Nim.} Balls lie on stairs $1, \dots, n$, and a move takes any positive number of balls from stair $k \ge 2$ down
+to stair $k - 1$; balls on stair 1 can no longer move. Only the even stairs matter: the game is Nim on the even stairs
+(Figure~\ref{fig:stairnim}). Moving balls from an even stair to an odd one removes them from that Nim heap; moving balls from an odd stair
+to an even one adds to a heap, but the opponent can move exactly those balls one stair further, back onto an odd stair, restoring the
+position. So the winner of Nim on the even stairs wins the staircase.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \foreach \stp/\cnt in {1/2, 2/3, 3/1, 4/4, 5/2} {
+    \pgfmathtruncatemacro{\ev}{mod(\stp, 2) == 0 ? 1 : 0}
+    \ifnum\ev=1
+      \fill[fgsky!35] (1.3*\stp - 1.3, 0) rectangle (1.3*\stp, 0.45*\stp);
+    \else
+      \fill[fgpaper] (1.3*\stp - 1.3, 0) rectangle (1.3*\stp, 0.45*\stp);
+    \fi
+    \draw[line width=0.8pt, draw=fgink!70] (1.3*\stp - 1.3, 0) rectangle (1.3*\stp, 0.45*\stp);
+    \foreach \bl in {1, ..., \cnt}
+      \node[circle, draw=fgorange!85!black, fill=fgorange!30, line width=0.6pt, minimum size=3.6mm, inner sep=0pt] at
+        (1.3*\stp - 1.3 + 0.27*\bl, 0.45*\stp + 0.2) {};
+    \node[lbl] at (1.3*\stp - 0.65, -0.3) {stair \stp};
+  }
+  \draw[->, line width=0.9pt, draw=fgverm] (4.35, 2.42) to[bend right=40] node[above, font=\sffamily\scriptsize, text=fgverm]
+    {a move} (3.45, 1.9);
+  \node[notel, anchor=west, text width=5.8cm] at (7.0, 1.2) {Balls 2, 3, 1, 4, 2 on stairs 1 to 5. The even stairs (blue) hold 3 and
+    4 balls, and $3 \oplus 4 = 7 \ne 0$, so the first player wins: moving one ball from stair 4 to stair 3 (arrow) leaves $3 \oplus
+    3 = 0$ on the even stairs.};
+\end{tikzpicture}
+\caption{Staircase Nim is Nim on the even stairs.}
+\label{fig:stairnim}
+\end{figure}
+
+\begin{problem}{Stair Game (CSES)}
+Decide the staircase game above for many tests.
+\solution XOR the ball counts on the even stairs. 0.08\,s for 1000 tests of 200 stairs.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int t;
+    cin >> t;
+    while (t--) {
+        int n;
+        cin >> n;
+        ll x = 0;  // staircase Nim: only the balls on even stairs matter
+        rep(k, 1, n + 1) {
+            ll p;
+            cin >> p;
+            if (k % 2 == 0) x ^= p;
+        }
+        print(x ? "first" : "second");
+    }
+}
+\end{code}
+
+\begin{problem}{Another Game (CSES)}
+Several heaps of coins; a move takes one coin from each heap in any non-empty set of non-empty heaps. Who takes the last coin?
+\solution Not every game needs Grundy numbers; sometimes an invariant suffices. If all heaps are even, any move makes some heap odd,
+and the reply ``one coin from every odd heap'' makes them all even again; the final position, all zeros, is all-even. So the player to
+move loses exactly when every heap is even.
+\end{problem}
+
+\begin{code}
+void solve() {
+    int t;
+    cin >> t;
+    while (t--) {
+        int n;
+        cin >> n;
+        bool odd = false;  // all heaps even: the first player loses
+        rep(i, n) {
+            ll x;
+            cin >> x;
+            if (x % 2) odd = true;
+        }
+        print(odd ? "first" : "second");
+    }
+}
+\end{code}
+
+\begin{recognize}
+Two players alternate, both have the same moves, there is no chance and no hidden information, and the player who cannot move loses:
+classify single games with a DP, combine independent games with Grundy numbers and XOR, and look for invariants (parity, symmetry,
+copying the opponent's move) before computing anything. When the player who makes the \emph{last} move loses (mis\`ere play), Nim
+changes only when every heap has at most one stone; then the player to move wins exactly when the number of non-empty heaps is even.
+\end{recognize}
+
+\begin{summary}[Chapter summary]
+\begin{itemize}
+  \item Product, sum and complement rules, bijections and double counting build every count; multinomials divide out repeated letters.
+  \item Factorials and inverse factorials give $\binom{n}{k}$ in $\Oh{1}$; Pascal's rule works for any modulus; Lucas and Kummer
+        handle small primes.
+  \item Stars and bars distributes identical items; lattice paths avoiding obstacles are counted by charging each bad path to its first
+        obstacle; the reflection principle gives Catalan numbers and ballot counts.
+  \item Inclusion--exclusion counts unions, derangements and surjections; Burnside's lemma averages fixed points to count up to symmetry.
+  \item Stirling numbers convert powers to falling factorials; Lagrange interpolation evaluates any polynomial from enough values;
+        determinants count spanning trees and non-intersecting paths.
+  \item Expectations are sums of indicator probabilities; maxima use tail sums.
+  \item Nim is decided by XOR; Sprague--Grundy reduces sums of impartial games to Nim; staircase Nim is Nim on the even stairs.
+\end{itemize}
+\end{summary}
+
+\begin{practice}
+\ppgroup{Counting}
+\begin{pplist}
+  \item Binomial Coefficients
+  \item Creating Strings II
+  \item Distributing Apples
+  \item Christmas Party
+  \item Bracket Sequences I
+  \item Bracket Sequences II
+  \item Counting Necklaces
+  \item Counting Grids
+  \item Grid Paths II
+\end{pplist}
+\ppgroup{Probability and games}
+\begin{pplist}
+  \item Dice Probability
+  \item Moving Robots
+  \item Candy Lottery
+  \item Inversion Probability
+  \item Stick Game
+  \item Nim Game I
+  \item Nim Game II
+  \item Stair Game
+  \item Grundy's Game
+  \item Another Game
+\end{pplist}
+\end{practice}
