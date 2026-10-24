@@ -56,6 +56,22 @@ template <class... T> void print(const T&... xs) {  // print(a, b, c) -> "a b c\
 }
 void yn(bool ok) { cout << (ok ? "YES" : "NO") << '\n'; }
 
+template <class T> int mex(const vector<T>& a) {  // smallest non-negative integer not in a, O(n)
+    vector<bool> seen(sz(a) + 1);
+    for (const auto& x : a) if (0 <= x && x <= sz(a)) seen[x] = true;
+    int m = 0;
+    while (seen[m]) m++;
+    return m;
+}
+struct Mex {  // multiset holding at most n values at once: add(x), remove(x), get() = mex, O(log n) each
+    vi cnt;
+    set<int> missing;
+    Mex(int n) : cnt(n + 1) { rep(v, n + 1) missing.insert(missing.end(), v); }
+    void add(ll x) { if (0 <= x && x < sz(cnt) && cnt[x]++ == 0) missing.erase(x); }
+    void remove(ll x) { if (0 <= x && x < sz(cnt) && --cnt[x] == 0) missing.insert(x); }
+    int get() const { return *missing.begin(); }
+};
+
 // USACO-style file I/O switches on by itself: when CPH creates this file it fills the two raw strings
 // below from the problem ("type":"file","fileName":"xxx.in" for USACO, "type":"stdin" otherwise).
 // It only runs on the judge; locally (CPH, F5) input always comes from stdin.
