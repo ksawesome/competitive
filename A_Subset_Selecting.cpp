@@ -71,8 +71,31 @@ void file_io() {
 #endif
 }
 
-void solve() {
 
+
+void solve() {
+    int n, k;
+    cin >> n >> k;
+    map<int, int> freq;
+
+    rep(i, n + 1) {
+        freq[i] = 0;
+    }
+
+    vi a(n);
+    rep(i, n) {
+        cin >> a[i];
+        freq[a[i]]++;
+    }
+    
+    sort(all(a));
+
+    int ans = 0;
+    while (binary_search(all(a), ans) && upper_bound(all(a), ans) - a.begin() >= k * (ans + 1)) {
+        ans++;
+    }
+
+    cout << ans << '\n';
 }
 
 signed main() {
@@ -82,6 +105,6 @@ signed main() {
     file_io();
 
     int t = 1;
-    // cin >> t;
+    cin >> t;
     while (t--) solve();
 }
