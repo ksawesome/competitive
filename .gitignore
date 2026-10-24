@@ -1,0 +1,8 @@
+# Build outputs
+.build/
+*.exe
+*.o
+*.gch
+
+# Large local archives
+*.zip

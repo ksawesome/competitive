@@ -1,9 +1,9 @@
 /**
  *    author:  Kshitish Madbhavi
- *    problem: Problem 3. Where's Bessie?
- *    source:  USACO - USACO 2017 US Open Contest, Silver
- *    url:     https://usaco.org/index.php?page=viewproblem2&cpid=740
- *    created: 2026-10-09 04:12:06
+ *    problem: C. PolandBall and Forest
+ *    source:  Codeforces - 8VC Venture Cup 2017 - Elimination Round
+ *    url:     https://codeforces.com/contest/755/problem/C
+ *    created: 2026-10-15 12:04:56
  */
 #include <bits/stdc++.h>
 using namespace std;
@@ -65,14 +65,36 @@ void file_io() {
         size_t p = spec.find("\"fileName\":\"");
         return p == string::npos ? string() : spec.substr(p + 12, spec.find('"', p + 12) - p - 12);
     };
-    string in = file(R"("fileName":"where.in","type":"file")"), out = file(R"("fileName":"where.out","type":"file")");
+    string in = file(R"("type":"stdin")"), out = file(R"("type":"stdout")");
     if (!in.empty()) freopen(in.c_str(), "r", stdin);
     if (!out.empty()) freopen(out.c_str(), "w", stdout);
 #endif
 }
 
+
+
 void solve() {
+    int n;
+    cin >> n;
+
+    vector<int> p(n);
+
+    rep(i, n) {
+        cin >> p[i];
+        p[i]--;
+    }
+    int ans = 0;
+    set<int> s;
+
+    rep(i, n) {
+        if (p[i] == i) ans++;
+        else s.insert(p[i]);
+    }
+    ans += sz(s) / 2;
     
+
+    if (n == 1) cout << 1;
+    else cout << ans;
 }
 
 signed main() {
